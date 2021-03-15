@@ -1,0 +1,5 @@
+# use 'hits' as the name of the data source in the filter expression. Multiple filter expressions can be union-ed.
+
+filter.tbl	name	filter.exp
+long	shrub	filter(hits, str_to_lower(growth_habit_first) %in% c("shrub", "subshrub") & height_cm != 0)
+long	graminoid	filter(hits, str_to_lower(growth_habit_first) %in% c("graminoid") & height_cm != 0)

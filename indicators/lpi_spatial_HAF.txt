@@ -1,0 +1,16 @@
+ind.type	ind.name	layer
+cover	tree	any
+cover	shrub	any
+cover	graminoid	any
+cover	forb	any
+cover	perennial_graminoid	any
+cover	perennial_forb	any
+cover	introduced_annual_gram	any
+cover	introduced_annual_forb	any
+cover	total_litter	any
+cover	bare_soil	all
+cover	total_rock	any
+cover	biological_crust	any
+cover	total	any
+height	graminoid
+height	shrub

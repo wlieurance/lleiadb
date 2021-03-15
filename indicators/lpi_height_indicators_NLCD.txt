@@ -1,0 +1,9 @@
+# use 'hits' as the name of the data source in the filter expression. Multiple filter expressions can be union-ed.
+
+filter.tbl	name	filter.exp
+long	woody	filter(hits, hit_sub == "woody" & height_cm != 0)
+long	herbaceous	filter(hits, hit_sub == "herbaceous" & height_cm != 0)
+long	woody_zeros	filter(hits, hit_sub == "woody")
+long	herbaceous_zeros	filter(hits, hit_sub == "herbaceous")
+long	shrub	filter(hits, str_to_lower(growth_habit_first) %in% c("shrub", "subshrub") & height_cm != 0 & family != "Cactaceae")
+long	sagebrush	filter(hits, str_to_lower(genus) == "artemisia" & !(str_to_lower(species) %in% c("frigida", "ludoviciana")) & str_to_lower(growth_habit_first) %in% c("tree", "shrub", "subshrub") & height_cm != 0)
