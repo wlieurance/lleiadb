@@ -11,11 +11,11 @@ long	introduced_annual_gram	filter(hits, grepl("L48(I)", native_status, fixed = 
 long	introduced_annual_forb	filter(hits, grepl("L48(I)", native_status, fixed = TRUE) & growth_habit_first == "Forb/herb" & duration_first %in% c("Annual", "Biennial"))
 
 # soil surface indicators
-long	total_litter	filter(hits, str_to_lower(hit_code) %in% c("l", "hl", "wl", "nl", "vl", "d", "el", "al", "om"))
-wide	bare_soil	filter(hits, hit1_top == "None" & is.na(coalesce(hit2_l, hit3_l, hit4_l, hit5_l, hit6_l, hit7_l, hit8_l)) & str_to_lower(hit9_surf) %in% c("s"))
-long	total_rock	filter(hits, str_to_lower(hit_code) %in% c("rf", "gr", "r", "cb", "br", "st", "by"))
-long	biological_crust	filter(hits, str_to_lower(hit_code) %in% c("cy", "m", "lc"))
+long	total_litter	filter(hits, str_to_lower(hit) %in% c("l", "hl", "wl", "nl", "vl", "d", "el", "al", "om"))
+wide	bare_soil	filter(hits, hit1_t == "None" & str_to_lower(hit9_s) %in% c("s", "cy")) %>% filter_at(vars(starts_with("hit") & ends_with("_l")), all_vars((is.na(.))))
+long	total_rock	filter(hits, str_to_lower(hit) %in% c("rf", "gr", "r", "cb", "br", "st", "by"))
+long	biological_crust	filter(hits, str_to_lower(hit) %in% c("cy", "m", "lc"))
 
 # total cover indicators
-long	total	filter(hits, !(str_to_lower(hit_code) %in% c("s","hl","l","rf","gr","wl","r","m","lc","el","cb","d","br","st","cy","om","by","nl","vl","w","al","wa","ds")) & hit_code != "None")
+long	total	filter(hits, !(str_to_lower(hit) %in% c("s","hl","l","rf","gr","wl","r","m","lc","el","cb","d","br","st","cy","om","by","nl","vl","w","al","wa","ds")) & hit != "None")
 

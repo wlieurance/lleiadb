@@ -1,0 +1,3 @@
+--cover "tree, any; shrub, any; graminoid, any; forb, any; perennial_graminoid, any; perennial_forb, any; introduced_annual_gram, any; introduced_annual_forb, any; total_litter, any; bare_soil, all; total_rock, any; biological_crust, any; total, top"
+
+--height "shrub, any; graminoid, any"

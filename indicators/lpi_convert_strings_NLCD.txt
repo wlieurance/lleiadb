@@ -1,0 +1,2 @@
+--cover "shrub_live, top; sagebrush_live, top; big_sagebrush_live, top; herb_live, top; annual_herb_live, top; bare_litter; bare_ground"
+--height "shrub_live, any; sagebrush_live, any"
