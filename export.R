@@ -1,13 +1,14 @@
 #!/usr/bin/env Rscript
 
-suppressMessages(library(optparse))
-suppressMessages(library(dplyr))
-suppressMessages(library(dbplyr))
-suppressMessages(library(DBI))
-suppressMessages(library(RPostgres))
-suppressMessages(library(RSQLite))
-suppressMessages(library(stringr))
-# suppressMessages(library(sf))
+libraries = c("optparse", "dplyr", "dbplyr", "DBI", "RPostgres", "RSQLite", 
+              "stringr")
+
+for (lib in libraries){
+  if(lib %in% rownames(installed.packages()) == FALSE) {
+    install.packages(lib)
+  }
+  suppressMessages(library(lib, character.only = TRUE))
+}
 
 # custom sources
 suppressMessages(source("parse_sql.R"))
@@ -29,6 +30,16 @@ try.execute.sql <- function(dbcon, sql){
   }
 }
 
+
+#' Takes a CREATE TABLE SQL statement for a Postgres instance and converts it
+#' to A CREATE TABLE statement that will work for SQLite.
+#'
+#' @param sql A string CREATE TABLE statement for a Postgres instance. 
+#'
+#' @return A list containing a string CREATE TABLE statement for an SQLite 
+#'   database, the name of the table, and geometry type and srid variables if
+#'   present.
+#' @export
 convert.sqlite <- function(sql){
   table.match <- sql %>% str_match(
     regex(paste0("(?:CREATE|DROP) TABLE (?:IF (?:NOT ){0,1}EXISTS ){0,1}",
@@ -64,30 +75,53 @@ convert.sqlite <- function(sql){
 }
 
 
-create.sqlite <- function(spatial){
+#' Loads CREATE TABLE statements from a file, separates them, converts them to
+#' SQlite statements, executes thema nd adds spatial metadata and columns if
+#' necessary
+#' 
+#' @param con An RSQLite database connection.
+#' @param spatial logical. A flag telling the function to initialize SpatiaLite
+#'   metadata, converting the database from SQLite to SpatialLite.
+#' @param sql.path A string file path to a file containing Postgres CREATE TABLE
+#'   statements.
+#'
+#' @return Nothing.
+#' @export
+create.sqlite <- function(con, spatial, sql.path){
   cat("Creating sqlite database...\n")
   if (spatial == TRUE){
     cat("Intializing spatial metadata...\n")
-    res <- dbExecute(con.f, "SELECT InitSpatialMetadata(1);")
+    res <- dbExecute(con, "SELECT InitSpatialMetadata(1);")
   }
-  sql <- sep.sql.stmts(sql.path = "sql/create_eco_tables.sql")
+  sql <- sep.sql.stmts(sql.path = sql.path)
   new.sql <- lapply(sql, FUN=convert.sqlite)
   for (s in new.sql){
     stmt <-  s$sql
     geom <- s$geom
     table <- s$table
     if (!trimws(stmt) %in% c("", ";")){
-      try.execute.sql(dbcon = con.f, sql = stmt)
+      try.execute.sql(dbcon = con, sql = stmt)
       if (!is.null(geom) & spatial == TRUE){
         geom.stmt <- paste0("SELECT AddGeometryColumn('", table, 
                             "', 'geom', ", geom[2], ", '", geom[1], "');")
-        dbExecute(con.f, geom.stmt)
+        dbExecute(con, geom.stmt)
       }
     }
   }
 }
 
 
+#' Creates an SQLite SELECT statement based on the table definition present
+#' in the Postgres instance.
+#'
+#' @param schema A string. The name of the schema in the Postgres instance.
+#' @param table A string. The name of the table in the Postgres instance.
+#' @param spatial logical. A flag tell the function that \code{table} contains
+#'   PostGIS geometry columns. 
+#'
+#' @return A list containing the SELECT SQL statement and a vector of the 
+#'   column names used to construct it.
+#' @export
 create.post.select <- function(schema, table, spatial){
   tbl.info <- get.dest.info(schema = schema, table = table)
   cols <- tbl.info$col.info$column_name
@@ -102,6 +136,21 @@ create.post.select <- function(schema, table, spatial){
 }
 
 
+#' This function creates an SQLite INSERT statement based on the table 
+#' definition stored in the Postgres instance.
+#'
+#' @param schema A string. The name of the schema in the Postgres instance.
+#' @param table A string. The name of the table in the Postgres instance. 
+#' @param update logical. A flag telling the function to create an UPSERT 
+#'   statement rather than an INSERT statement.
+#' @param ins.cols A string vector which contains columns names to use in the
+#'   INSERT statement.
+#' @param srid An integer which is the srid/EPSG code representing the GPS 
+#'   coordinate system/datum to store spatial data in.
+#'
+#' @return A list containing the INSERT SQL statement as well as a vector of 
+#'   column names used to construct it.
+#' @export
 create.sqlite.insert <- function(schema, table, update = FALSE, 
                                  ins.cols = NULL, srid = 4326){
   info <- get.dest.info(schema, table)
@@ -140,6 +189,15 @@ create.sqlite.insert <- function(schema, table, update = FALSE,
 }
 
 
+#' Queries the Postgres instance for table data and inserts data into an SQLite 
+#' table.
+#'
+#' @param schema A string. The name of the schema in the Postgres instance.
+#' @param spatial logical. A flag tell the function that \code{table} contains
+#'   PostGIS geometry columns. 
+#'
+#' @return Nothing.
+#' @export
 copy.post.tables <-  function(schema, spatial){
   cat("Copying data...\n")
   tbl.order <- insert.order(schema)
@@ -171,11 +229,29 @@ copy.post.tables <-  function(schema, spatial){
 }
 
 
+#' The main processing function.
+#'
+#' @param pg_db A string. The database to connect to in the Postgres instance.
+#' @param pg_user A string. The user name to connect to the Postgres instance 
+#' with. 
+#' @param password A string. The password to connect to the Postgres instance 
+#'   with. 
+#' @param dbpath A string file path that points to the location to create and 
+#'   store data from the Postgres \code{schema} in an SQLite/SpatiaLite 
+#'   database.
+#'   
+#' @param port An integer. The port which the Postgres instance uses to monitor
+#'   connection requests.
+#' @param host A string. The IP address or DNS name which hosts the database. 
+#' @param schema A string. The name of the schema in the Postgres instance.
+#'
+#' @return Nothing.
+#' @export
 main <- function(pg_db, pg_user, password, dbpath, port = 5432,
                  host = "localhost", schema = "eco"){
   con.f <<- dbConnect(RSQLite::SQLite(), dbpath)
   res <- dbExecute(con.f, "PRAGMA foreign_keys = on;")
-  con <<- dbConnect(RPostgres::Postgres(), dbname = pg_db, 
+  con <- dbConnect(RPostgres::Postgres(), dbname = pg_db, 
                     host = host, port = port, 
                     user = pg_user, password = password)
   res <- dbExecute(con, "SET client_min_messages TO WARNING;")
@@ -190,7 +266,8 @@ main <- function(pg_db, pg_user, password, dbpath, port = 5432,
       return(FALSE)
     }
   )
-  create.sqlite(spatial = spatial)
+  create.sqlite(con = con.f, spatial = spatial, 
+                sql.path = "sql/create_eco_tables.sql")
   copy.post.tables(schema = schema, spatial = spatial)
   
   dbDisconnect(con)

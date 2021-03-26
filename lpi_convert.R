@@ -21,6 +21,7 @@ for (lib in libraries){
 #'   {indicator2}, {hit_type2}; etc." which is used to build filters for in.tbl
 #' @return A tibble which has been pivoted to a wide format via 
 #'   tidyr::pivot_longer() where each row has a unique plotkey and survey_year
+#' @export
 filter.table <- function(in.tbl, val, filter.str){
   filter.matrix <- (filter.str %>% 
     str_match_all("([^,;\\s]+)[\\s,]*([^,;\\s]+)*[\\s;$]*"))[[1]]
@@ -84,7 +85,8 @@ filter.table <- function(in.tbl, val, filter.str){
 #' @param layer.name A string. The name of the layer to be used in the 
 #'   destination (\code{out.path}) when the feature is written.
 #' @param srid An integer. The SRID/EPSG code that the output should have. 
-#' @return Nothing. 
+#' @return Nothing.
+#' @export
 write.spatial <- function(tbl.out, out.path, dbname, user, password, host, 
                           port, layer.name, srid){
   con <- dbConnect(RPostgres::Postgres(), dbname = dbname, 
@@ -135,6 +137,7 @@ write.spatial <- function(tbl.out, out.path, dbname, user, password, host,
 #' @param height.str A string. Similar to \code{cover.str}, but for height fields.
 #' @param dead.str A string. Similar to \code{cover.str}, but for dead fields.
 #' @returns Nothing.
+#' @export
 main <- function(dbname, user, password, in.path, out.path, host = "localhost", 
                  port = 5432, layer.name = "point", srid = 4326, sep = ",",
                  cover.str = NULL, height.str = NULL, dead.str = NULL){

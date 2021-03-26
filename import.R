@@ -1,28 +1,52 @@
 #!/usr/bin/env Rscript
+libraries = c("optparse", "dplyr", "tibble", "digest", "tictoc", "DBI", "pool", 
+              "RPostgres", "RSQLite", "odbc", "rgdal", "getPass", "tools", 
+              "stringr", "glue")
 
-# general
-suppressMessages(library(optparse))
-suppressMessages(library(dplyr))
-suppressMessages(library(tibble))  # for adding rows to tibbles et al.
-suppressMessages(library(digest))  # for hashing db objects
-suppressMessages(library(tictoc))
+for (lib in libraries){
+  if(lib %in% rownames(installed.packages()) == FALSE) {
+    install.packages(lib)
+  }
+  suppressMessages(library(lib, character.only = TRUE))
+}
 vdigest <- Vectorize(digest)
 
-# database connection libs
-suppressMessages(library(DBI))
-suppressMessages(library(pool))
-suppressMessages(library(RPostgres))
-suppressMessages(library(RSQLite))
-suppressMessages(library(odbc))  # for MS access connection
-suppressMessages(library(rgdal))  # for ESRI gdb connection
-suppressMessages(library(getPass))
 
-# string manipulation libs 
-suppressMessages(library(tools))  # for path manipulation
-suppressMessages(library(stringr))
-suppressMessages(library(glue))
 
-#' returns a list of tables in a postgres schema
+#' This function will take a log message and write it to stdout and/or a log 
+#' file.
+#'
+#' @param msg A string. The message to write. 
+#' @param log A string file path to a log wehre messages are to be written.
+#' @param sep A string, the separator to paste after the message (e.g. an EOL 
+#'   character)
+#' @param prnt logical. A flag indicating whether or not to print the msg to 
+#'   stdout 
+#'
+#' @return Nothing
+#' @export
+msg.out <- function(msg, log = NULL, sep = "\n", prnt = TRUE){
+  if (prnt == TRUE){
+    cat(paste0(msg, sep))
+  }
+  if (!is.null(log)){
+    log.file <- file(log, "a", encoding = "UTF-8") 
+    writeLines(msg, log.file, sep = sep)
+    close(log.file) 
+  }
+}
+
+#######################################
+## retrieving info related functions ##
+#######################################
+
+
+#' Queries the Postgres LLEIA db instance for tables in a specific schema
+#'
+#' @param schema A string. The schema to query for tables.
+#'
+#' @return A table containing the table names in \code{schema}.
+#' @export
 get.dest.tables <- function(schema){
   tables.sql <- glue(paste(
     "SELECT table_name ", 
@@ -36,9 +60,77 @@ get.dest.tables <- function(schema){
 }
 
 
-#' recursive function which
-#' returns an ordered list of postgres tables where tables that are foreign key 
-#' parents are before their children
+#' This function generates an md5hash for database files or ESRI file 
+#' geodatabase folders.
+#'
+#' @param src A string file path to a file with one of the following extensions:
+#'   (.mdb, .accdb, .sqlite, .db) or a folder path with the .gdb extension.
+#'
+#' @return An md5hash of the file, or in the case of a folder, a hash of the 
+#'   vector of hashes for each of the files in the folder, minus certain files
+#'   in the gdb folder which are mutable or transient.
+#' @export
+get.key <- function(src){
+  allowed.exts <- c("mdb", "accdb", "gdb", "sqlite", "db")
+  ext <- file_ext(src)
+  base <- basename(src)
+  dir <- dirname(src)
+  if (str_to_lower(ext) == "gdb" & dir.exists(src)){
+    exists <-  TRUE
+    in.type <- "folder"
+  } else if (str_to_lower(ext) != "gdb" & file.exists(src)){
+    exists <-  TRUE
+    in.type <- "file"
+  } else {
+    exists <- FALSE
+  }
+  if(!exists){
+    stop("Source path does not exist. Quitting...")
+  }
+  if(!(ext %in% allowed.exts)){
+    stop(paste0("Source is not of type (", paste(allowed.exts, collapse = ", "),
+                "). Quitting..."))
+  }
+  cat("Calculating md5 hash...\n")
+  if (in.type == "file"){
+    key <- digest(src, algo="md5", file=TRUE)
+  } else if (in.type == "folder"){
+    files <- list.files(path = src, recursive = TRUE, all.files = TRUE,
+                        full.names = FALSE) %>%
+      # removes anything which ends in .lock
+      str_subset(pattern = ".*(?<!\\.lock)$") %>%
+      # removes a00000004.gdbtable and a00000004.gdbtablx, a00000004.freelist, 
+      # and timestamps, which seem to change even when the only file operation 
+      # is copy
+      str_subset(pattern = fixed("a00000004.gdbtabl"), negate = TRUE) %>%
+      str_subset(pattern = fixed("a00000004.freelist"), negate = TRUE) %>%
+      str_subset(pattern = fixed("timestamps"), negate = TRUE)
+    
+    full.files <- sapply(files, FUN=function(x) file.path(src, x))
+    hashes <- sapply(full.files, FUN=function(x) digest(x, algo="md5", 
+                                                        file=TRUE))
+    key <- digest(hashes, algo="md5")
+  }
+  return(key)
+}
+
+
+#' Recursive function which returns an ordered table of schema table names 
+#' where tables that are foreign key parents are listed in order before their 
+#' children
+#' 
+#' @param schema A string. The schema to be queried. 
+#' @param level An integer. An internal parameter that the function uses to keep
+#'   track of how many times it has self called.
+#' @param processed.tables A tibble. An internal parameter that the function 
+#'   uses to keep track of which tables have been processed and stored in the 
+#'   return variable.
+#' @param tables A string vector. An internal parameter that the function uses 
+#'   to keep keep track of unprocessed table names. 
+#'
+#' @return A tibble that gives each table in \code{schema} and a proper insert 
+#'   order that will prevent improper foreign key violations.
+#' @export
 insert.order <- function(schema, level = 0, processed.tables = NULL, 
                          tables = NULL){
   # print(level)
@@ -106,81 +198,167 @@ insert.order <- function(schema, level = 0, processed.tables = NULL,
 }
 
 
-#' generates md5hash for access files, ESRI file geodatabases 
-#' and does checks to makes sure things exist with proper extensions
-get.key <- function(src){
-  allowed.exts <- c("mdb", "accdb", "gdb", "sqlite", "db")
-  ext <- file_ext(src)
-  base <- basename(src)
-  dir <- dirname(src)
-  if (str_to_lower(ext) == "gdb" & dir.exists(src)){
-    exists <-  TRUE
-    in.type <- "folder"
-  } else if (str_to_lower(ext) != "gdb" & file.exists(src)){
-    exists <-  TRUE
-    in.type <- "file"
-  } else {
-    exists <- FALSE
-  }
-  if(!exists){
-    stop("Source path does not exist. Quitting...")
-  }
-  if(!(ext %in% allowed.exts)){
-    stop(paste0("Source is not of type (", paste(allowed.exts, collapse = ", "),
-                "). Quitting..."))
-  }
-  cat("Calculating md5 hash...\n")
-  if (in.type == "file"){
-    key <- digest(src, algo="md5", file=TRUE)
-  } else if (in.type == "folder"){
-    files <- list.files(path = src, recursive = TRUE, all.files = TRUE,
-                        full.names = FALSE) %>%
-      # removes anything which ends in .lock
-      str_subset(pattern = ".*(?<!\\.lock)$") %>%
-      # removes a00000004.gdbtable and a00000004.gdbtablx, a00000004.freelist, 
-      # and timestamps, which seem to change even when the only file operation 
-      # is copy
-      str_subset(pattern = fixed("a00000004.gdbtabl"), negate = TRUE) %>%
-      str_subset(pattern = fixed("a00000004.freelist"), negate = TRUE) %>%
-      str_subset(pattern = fixed("timestamps"), negate = TRUE)
-    
-    full.files <- sapply(files, FUN=function(x) file.path(src, x))
-    hashes <- sapply(full.files, FUN=function(x) digest(x, algo="md5", 
-                                                        file=TRUE))
-    key <- digest(hashes, algo="md5")
-  }
-  return(key)
+
+#' Gets column names from a Postgres schema/table.
+#'
+#' @param schema A string. The schema that contains the table to return info 
+#'   about.
+#' @param table A string. The table name to return info about. 
+#'
+#' @return A list of tibbles, one containing column information, and another
+#'   containing constraint information.
+#' @export
+get.dest.info <- function(schema, table){
+  info.sql <- glue(paste(
+    "SELECT column_name, data_type, character_maximum_length ",
+    "  FROM information_schema.columns ",
+    " WHERE table_schema = '{schema}' ",
+    "   AND table_name = '{table}' ", 
+    " ORDER BY ordinal_position; ",
+    sep = "\n"))
+  col.info <-  dbGetQuery(con, info.sql)
+  
+  constraint.sql = glue(paste(
+    "SELECT con.conname, con.contype",
+    "  FROM pg_catalog.pg_constraint con",
+    " INNER JOIN pg_catalog.pg_class rel",
+    "    ON rel.oid = con.conrelid",
+    " INNER JOIN pg_catalog.pg_namespace nsp",
+    "    ON nsp.oid = connamespace",
+    " WHERE nsp.nspname = '{schema}'",
+    "   AND rel.relname = '{table}';",
+    sep = "\n"))
+  constraints <-  dbGetQuery(con, constraint.sql)
+  return(list(col.info = col.info, constraints = constraints))
 }
 
 
-create.sqlite.select <- function(sqlite.con, table, spatial){
-  info <- dbGetQuery(sqlite.con, paste0("PRAGMA table_info(", table, ");"))
-  cols <-  info$name
-  if (spatial == TRUE){
-    cols.new <- cols %>% str_replace("^geom$", "st_astext(geom) geom")
-  } else {
-    cols.new = cols[cols != "geom"]
-  }
-  dt.cols <- !is.na(as.vector(info$type %>% 
-    str_match(regex("(?:timestamp|date)", ignore_case = TRUE))))
-  cols.dt <- ifelse(dt.cols, paste0("datetime(", cols.new, 
-                                    ", 'unixepoch') || '-00'", cols.new), 
-                    cols.new)
-  col.string <-  paste(cols.dt, collapse = ", ")
-  select <- paste0("SELECT ", col.string, "\n  FROM ", table, ";")
-  return(list(sql = select, cols = cols.new))
+
+#' Returns information about field types for imported source data.
+#'
+#' @param tbl A tibble containing the source data.
+#'
+#' @return A tibble containing column information for \code{tbl}.
+#' @export
+get.src.info <- function(tbl){
+  col.names <- as_tibble(list(column_name = colnames(tbl)))
+  src.types <- tbl %>% 
+    dplyr::summarise_all(class) %>% slice(1) %>% 
+    tidyr::gather(variable, class)
+  info <- col.names %>% 
+    left_join(src.types, by=c("column_name" = "variable")) %>%
+    rename(data_type = class)
+  return (info)
 }
 
 
-#' creates the update clause for insert statements
-#' ins.cols is a vector of column
-create.insert <- function(schema, table, named = FALSE, update = FALSE, 
+#' Determines which columns have different types between a data source and 
+#' destination. and 
+#'  type
+#'
+#' @param src.cols A tibble with two fields, column_name (string) and 
+#'   data_type (string), the former containing column names from source tibble
+#'   tables and the latter denoting their R data type (e.g. integer, logical, 
+#'   etc.)
+#' @param dest.cols A tibble with two fields, column_name (string) and 
+#'   data_type (string), the former containing column names from Postgres 
+#'   destination table and the latter denoting their Postgres data type (e.g. 
+#'   character varying, double precision, etc.)
+#'
+#' @return A logical vector with TRUE indicating same column type and FALSE 
+#'   indicating otherwise.
+#' @export
+compare.types <- function(src.cols, dest.cols){
+  type.match <- tibble(ptype = character(), rtype = character()) %>%
+    add_row(ptype = "character varying", rtype = "character") %>%
+    add_row(ptype = "text", rtype = "character") %>%
+    add_row(ptype = "double precision", rtype = "numeric") %>%
+    add_row(ptype = "integer", rtype = "integer") %>%
+    add_row(ptype = "smallint", rtype = "integer") %>%
+    add_row(ptype = "bigint", rtype = "integer") %>%
+    add_row(ptype = "boolean", rtype = "logical") %>%
+    add_row(ptype = "timestamp without time zone", 
+            rtype = "POSIXct, POSIXt, Date") %>%
+    add_row(ptype = "timestamp with time zone", 
+            rtype = "POSIXct, POSIXt, Date") %>%
+    add_row(ptype = "timestamp", rtype = "POSIXct, POSIXt, Date")
+  
+  src.cols <-  src.cols %>% rename(src_type = data_type)
+  dest.cols <-  dest.cols %>% rename(dest_type = data_type)
+  compare <- dest.cols %>% 
+    inner_join(src.cols, by = c("column_name" = "column_name")) %>% 
+    left_join(type.match, by = c("dest_type" = "ptype")) %>% 
+    mutate(matched = str_detect(rtype, src_type)) %>%
+    mutate(matched = ifelse(is.na(matched), FALSE, matched))
+  return (compare)
+}
+
+
+#' Gathers information about both source and destination tables and determines
+#' which fields are matched in name and type.
+#'
+#' @param schema A string. The name of the schema to be queried in the Postgres
+#'   connection.
+#' @param tbl.name A string. The name of the table to retrieve information about
+#'   from the postgres connection.
+#' @param src.data A tibble containing the source data having the name of 
+#'   \code{tbl.name}
+#'
+#' @return A list of vectors containing information about missing columns in the 
+#'   destination that are in the source, missing columns in the source that are 
+#'   in the destination, columns which match in both source and destination, 
+#'   and whether or not those columns need to be CAST during insert.
+#' @export
+get.info <- function(schema, tbl.name, src.data){
+  dest.info <- get.dest.info(schema, tbl.name)
+  src.info <- get.src.info(src.data)
+  cols.src <- src.info$column_name
+  cols.dest <- dest.info$col.info$column_name
+  compare.info <- compare.types(src.cols = src.info, 
+                                dest.cols = dest.info$col.info)
+  import.cols <-  compare.info$column_name
+  cast <- !(compare.info$matched | compare.info$dest_type == "USER-DEFINED")
+  missing.dest <-  setdiff(cols.src, cols.dest)
+  missing.src <- setdiff(cols.dest, cols.src)
+  return(list(import.cols = import.cols, cast = cast, 
+              missing.dest = missing.dest, missing.src = missing.src))
+}
+
+#########################
+## INSERTING functions ##
+#########################
+
+
+#' Will create an INSERT SQL statement for a Postgres table based on the 
+#' contents of the data source.
+#'
+#' @param schema A string. The name of the schema in the destination. 
+#' @param table.name A name of the table in the destination for which to build the INSERT 
+#'   statement
+#' @param named logical. A flag that tells the function to build the SQL based 
+#'   on glue syntax (e.g. {my.parameter}) or parameter position syntax (e.g. $1, 
+#'   $2, etc.) 
+#' @param update logical. A flag that instructs the function to construct an 
+#'   UPSERT statement instead of an INSERT statement.
+#' @param ins.cols A string vector containing the names of columns to use for 
+#'   the insert statement.
+#' @param update.cols A string vector containing the names of columns to UPDATE 
+#'   in the case of an upsert statement.
+#' @param cast A logical vector telling the function whether to encapsulate the
+#'   parameter in the SQL in a CAST function, hopefully mitigating type errors.
+#' @param srid An integer denoting the SRID (EPSG code) to use when inserting 
+#'   geometry data into tables that support PostGIS geometry.
+#'
+#' @return a list containing the built INSERT SQL and the list of columns used
+#'   to build it.
+#' @export
+create.insert <- function(schema, table.name, named = FALSE, update = FALSE, 
                           ins.cols = NULL, update.cols = NULL, cast = NULL,
                           srid = 4326){
   if (is.null(cast)){
     cast <- rep(FALSE, times = length(ins.cols))
   }
-  info <- get.dest.info(schema, table)
+  info <- get.dest.info(schema, table.name)
   # gets the pkey constraint name or first unique constraint name
   # on conflict statement only allows one constraint check
   constraint.name <- (info$constraints %>% filter(contype %in% c("u", "p")) %>% 
@@ -231,32 +409,34 @@ create.insert <- function(schema, table, named = FALSE, update = FALSE,
                         ifelse(geom.col, paste0(", ", srid, ")"), ""))
   paramstring <- params.geom %>% paste(collapse = ", ")
   insert.sql <- glue(paste(
-    "INSERT INTO {schema}.\"{table}\" ({colstring})",
+    "INSERT INTO {schema}.\"{table.name}\" ({colstring})",
     "VALUES ({paramstring}) ",
     "{update.sql};", 
     sep = "\n"))
   return(list(sql = insert.sql, cols = cols))
 }
 
-#' simplify message/log writing
-msg.out <- function(msg, log = NULL, sep = "\n", prnt = TRUE){
-  if (prnt == TRUE){
-    cat(paste0(msg, sep))
-  }
-  if (!is.null(log)){
-    log.file <- file(log, "a", encoding = "UTF-8") 
-    writeLines(msg, log.file, sep = sep)
-    close(log.file) 
-  }
-}
+
 
 #' Used to insert individual rows via apply() family function or iterative loop
+#'
+#' @param row A named list or tibble containing the values to bind to the INSERT
+#'   statement via parameter substitution.
+#' @param stmt A string containing the INSERT statement with named parameters to
+#'   use with glue syntax (e.g. {my.parameter}). 
+#' @param log A string file path location of the log file to write 
+#'   results to.
+#'
+#' @return The number of rows affected by the insert.
+#' @export
 insert.row <- function(row, stmt, log = NULL){
   # print(row)
   sql <- glue_data_sql(.x = row, .con = con, stmt)
   # print(sql)
   affected <- tryCatch({
     a <- dbExecute(con, sql)
+    # cat(paste0("row-wise non-error affected: ", a, "\n"))
+    a
   },
   error = function(e) {
     values = str_match(sql, "VALUES (.+)")[2]
@@ -264,6 +444,7 @@ insert.row <- function(row, stmt, log = NULL){
     msg <- paste0("\nFailed on row: ", values, "\nError: ", e.short)
     msg.out(msg, log, sep = "")
     last.error <<- e
+    # cat(paste0("row-wise ERROR affected: ", 0, "\n"))
     return(0)
   },
   warning = function(w) {
@@ -278,71 +459,162 @@ insert.row <- function(row, stmt, log = NULL){
 }
 
 
-rowwise.insert <- function(update, schema, tbl, tbl.name, cols, cast, log){
-  insert <- create.insert(update = update, schema = schema, table = tbl.name, 
+#' Inserts the source data in a source table into the Postgres destination
+#' using row-wise inserts (one row at a time.)  This is slower than a multi-row
+#' parameter bind, but allows the insert process to capture single row insert 
+#' errors, log them, and continue processing.
+#'
+#' @param update logical. A flag that instructs the function to construct an 
+#'   UPSERT statement instead of an INSERT statement.
+#' @param schema A string. The name of the schema in the destination. 
+#' @param table A tibble containing the source data to be inserted.
+#' @param table.name A name of the table in the destination for which to build 
+#'   the INSERT statement.
+#' @param cols A string vector containing the names of columns to use for 
+#'   the insert statement.
+#' @param cast A logical vector telling the function whether to encapsulate the
+#'   parameter in the SQL in a CAST function, hopefully mitigating type errors.
+#' @param log A string file path location of the log file to write 
+#'   results to.
+#'
+#' @return
+#' @export
+rowwise.insert <- function(update, schema, table, table.name, cols, cast, log){
+  insert <- create.insert(update = update, schema = schema, 
+                          table.name = table.name, 
                           ins.cols = cols, cast = cast, named = TRUE)
   # need to remove spaces in column names to deal with glue_sql_data()
   # inadequacies in this matter
-  tbl <- tbl %>% rename_all(~gsub(" ", "_", .))
+  table <- table %>% rename_all(~gsub(" ", "_", .))
   # pcts = seq(from = 0, to = 1, by = 0.1)
-  tot.rows <- nrow(tbl)
+  tot.rows <- nrow(table)
   # old.status <- 0
   total.affected <- 0
   for (i in 1:tot.rows) {
-    affected = insert.row(row = tbl[i,], stmt = insert$sql, 
+    affected <-  insert.row(row = table[i,], stmt = insert$sql, 
                    log = log)
-    # status <- tail(pcts[which(i/tot.rows >= pcts)], 1)
-    # print(paste(i/tot.rows, status, old.status))
-    # if (status > old.status){
-    #   cat(paste0(status*100, "..."))
-    #   old.status <- status
-    # }
     total.affected <- total.affected + affected
   }
   return(total.affected)
 }
 
 
-dbbind.insert <- function(update, schema, tbl, tbl.name, cols, cast, log, 
+#' This is an alternative row-wise insert function using \code{DBI::dbBind()} 
+#' instead of glue functionality like \code{rowwise.insert()}.
+#' CURRENTLY NOT IMPLEMENTED but kept for reference.
+#'
+#' @param table A tibble containing the source data to be inserted.
+#' @param insert A list constructed via \code{create.insert()}.
+#'
+#' @return The number of rows affected by the insert.
+#' @export
+dbbind.insert.rw <- function(table, insert){
+  rowwise.affected = 0
+  for (i in rownames(table)){
+    row <- table[i,]
+    send.data <- as.list(select(row, insert$cols))
+    names(send.data) <- NULL
+    a <- tryCatch(
+      {
+        send <- dbSendStatement(con, insert$sql)
+        dbBind(send, row)
+        rw.bind.affected <- dbGetRowsAffected(send)
+        dbClearResult(send)
+        # cat(paste0("rowwise bind non-error affected: ", 
+        #            rw.bind.affected, "\n"))
+        rw.bind.affected
+      },
+      error=function(e) {
+        dbClearResult(send)
+        return(0)
+      }
+    )
+    rowwise.affected <- rowwise.affected + a
+  }
+  return(rowwise.affected)
+}
+
+
+#' This is the top-table level inserting function which attempts, be default to 
+#' write source data to the destination in chunks of \code{chunk.size} rows. It
+#' manages errors in the chunk insert by moving to a row-wise insert for that
+#' particular chunk. A smaller \code{chunk.size} will result in slower inserts
+#' for data without foreign key violations (or other errors) but decreasing 
+#' \code{chunk.size} can speed up inserts for data where foreign key issues
+#' are common.
+#'
+#' @param update logical. A flag that instructs the function to construct an 
+#'   UPSERT statement instead of an INSERT statement.
+#' @param schema A string. The name of the schema in the destination.
+#' @param table A tibble containing the source data to be inserted.
+#' @param table.name A name of the table in the destination for which to build 
+#'   the INSERT statement.
+#' @param cols A string vector containing the names of columns to use for 
+#'   the insert statement.
+#' @param cast A logical vector telling the function whether to encapsulate the
+#'   parameter in the SQL in a CAST function, hopefully mitigating type errors.
+#' @param log A string file path location of the log file to write 
+#'   results to.
+#' @param verbose logical. A flag telling the function to be more verbose in 
+#'   its messaging.
+#' @param chunk.size An integer.This tells the function how many rows to 
+#'   attempt to insert at once. Failure on a chunk will cause the function
+#'   to default to row-wise inserts for the entire chunk. 
+#'
+#' @return The number of rows affected by the insert.
+#' @export
+dbbind.insert <- function(update, schema, table, table.name, cols, cast, log, 
                           verbose = FALSE, chunk.size = 1000){
-  insert <- create.insert(update = update, schema = schema, table = tbl.name, 
+  insert <- create.insert(update = update, schema = schema, 
+                          table.name = table.name, 
                           ins.cols = cols, cast = cast, named = FALSE)
+  
   # we need to de-tibble and de-name our data to use positional args
   # with dbBind()
   processed <- 0
   total.affected <- 0
-  tbl.nrow <- nrow(tbl)
+  affected <- NA
+  tbl.nrow <- nrow(table)
   if (verbose == TRUE){
     msg <- paste0("Insert SQL: \n", insert$sql)
     msg.out(msg, log, prnt = FALSE)
   }
   while (processed < tbl.nrow) {
-    cat(paste0(as.integer(round(processed/tbl.nrow*100, 0)), "%..."))
+    if (verbose == TRUE){
+      cat(paste0(processed,"/",tbl.nrow, "..."))
+    } else {
+      cat(paste0(as.integer(round(processed/tbl.nrow*100, 0)), "%..."))
+    }
     end.row <-  processed + chunk.size
-    sub.tbl <- slice(tbl, (processed + 1):(end.row))
+    sub.tbl <- slice(table, (processed + 1):(end.row))
     send.data <- as.list(select(sub.tbl, insert$cols))
     names(send.data) <- NULL
-    send <- dbSendStatement(con, insert$sql)
     affected <- tryCatch(
       {
+        send <- dbSendStatement(con, insert$sql)
         dbBind(send, send.data)
-        affected <- dbGetRowsAffected(send)
+        bind.affected <- dbGetRowsAffected(send)
         dbClearResult(send)
-        affected
+        # cat(paste0("dbBind non-error affected: ", bind.affected, "\n"))
+        bind.affected
       },
       error=function(e) {
         # cat(paste0("\n", e$message))
         cat("\nFailed on dbBind(), attempting rowwise insert...")
+        error.affected <- dbGetRowsAffected(send)
         dbClearResult(send)
-        affected <- rowwise.insert(update = update, schema = schema,
-                                   tbl = sub.tbl, 
-                                   tbl.name = tbl.name,
+        rowwise.affected <- rowwise.insert(update = update, schema = schema,
+                                   table = sub.tbl,
+                                   table.name = table.name,
                                    cols = cols, cast = cast, log = log)
-        return(affected)
+        tot.error.affected <- error.affected + rowwise.affected
+        # cat(paste0("dbbind ERROR affected: ", tot.error.affected, "\n"))
+        return(tot.error.affected)
       }
     )
     processed <- processed + nrow(sub.tbl)
     total.affected <- total.affected + affected
+    rm(affected)
     # for safety
     if (nrow(sub.tbl) == 0)
       break
@@ -351,92 +623,35 @@ dbbind.insert <- function(update, schema, tbl, tbl.name, cols, cast, log,
   return (total.affected)
 }
 
-#' gets column names from postgres schema/table
-get.dest.info <- function(schema, table){
-  info.sql <- glue(paste(
-    "SELECT column_name, data_type, character_maximum_length ",
-    "  FROM information_schema.columns ",
-    " WHERE table_schema = '{schema}' ",
-    "   AND table_name = '{table}' ", 
-    " ORDER BY ordinal_position; ",
-    sep = "\n"))
-  col.info <-  dbGetQuery(con, info.sql)
-  
-  constraint.sql = glue(paste(
-    "SELECT con.conname, con.contype",
-    "  FROM pg_catalog.pg_constraint con",
-    " INNER JOIN pg_catalog.pg_class rel",
-    "    ON rel.oid = con.conrelid",
-    " INNER JOIN pg_catalog.pg_namespace nsp",
-    "    ON nsp.oid = connamespace",
-    " WHERE nsp.nspname = '{schema}'",
-    "   AND rel.relname = '{table}';",
-    sep = "\n"))
-  constraints <-  dbGetQuery(con, constraint.sql)
-  return(list(col.info = col.info, constraints = constraints))
-}
 
-#' gets source data types
-get.src.info <- function(tbl){
-  col.names <- as_tibble(list(column_name = colnames(tbl)))
-  src.types <- tbl %>% 
-    dplyr::summarise_all(class) %>% slice(1) %>% 
-    tidyr::gather(variable, class)
-  info <- col.names %>% 
-    left_join(src.types, by=c("column_name" = "variable")) %>%
-    rename(data_type = class)
-  return (info)
-}
 
-#' determines which columns have different types between source as dest. and 
-#' returns a logical vector with TRUE being same type and FALSE being dif. type
-compare.types <- function(src.cols, dest.cols){
-  type.match <- tibble(ptype = character(), rtype = character()) %>%
-    add_row(ptype = "character varying", rtype = "character") %>%
-    add_row(ptype = "text", rtype = "character") %>%
-    add_row(ptype = "double precision", rtype = "numeric") %>%
-    add_row(ptype = "integer", rtype = "integer") %>%
-    add_row(ptype = "smallint", rtype = "integer") %>%
-    add_row(ptype = "bigint", rtype = "integer") %>%
-    add_row(ptype = "boolean", rtype = "logical") %>%
-    add_row(ptype = "timestamp without time zone", 
-            rtype = "POSIXct, POSIXt, Date") %>%
-    add_row(ptype = "timestamp with time zone", 
-            rtype = "POSIXct, POSIXt, Date") %>%
-    add_row(ptype = "timestamp", rtype = "POSIXct, POSIXt, Date")
-  
-  src.cols <-  src.cols %>% rename(src_type = data_type)
-  dest.cols <-  dest.cols %>% rename(dest_type = data_type)
-  compare <- dest.cols %>% 
-    inner_join(src.cols, by = c("column_name" = "column_name")) %>% 
-    left_join(type.match, by = c("dest_type" = "ptype")) %>% 
-    mutate(matched = str_detect(rtype, src_type)) %>%
-    mutate(matched = ifelse(is.na(matched), FALSE, matched))
-  return (compare)
-}
-
-get.info <- function(schema, tbl.name, src.data){
-  dest.info <- get.dest.info(schema, tbl.name)
-  src.info <- get.src.info(src.data)
-  cols.src <- src.info$column_name
-  cols.dest <- dest.info$col.info$column_name
-  compare.info <- compare.types(src.cols = src.info, 
-                                dest.cols = dest.info$col.info)
-  import.cols <-  compare.info$column_name
-  cast <- !(compare.info$matched | compare.info$dest_type == "USER-DEFINED")
-  missing.dest <-  setdiff(cols.src, cols.dest)
-  missing.src <- setdiff(cols.dest, cols.src)
-  return(list(import.cols = import.cols, cast = cast, 
-              missing.dest = missing.dest, missing.src = missing.src))
-}
-
-#' This function takes import tables as lists and uploads to db.
-#' There was a specific choice made not to use dbBind paramaterization
-#' due to a lack of named parameters in RPostgres or odbc drivers for
-#' postgres. This likely results in slower inserts, but allows more 
-#' flexibility during the insert process and more manageable code. 
-#' Paramaterization is accomplished with glue_data_sql() instead.
-#' Non-named option written but fails with foreign key validation errors
+#' This is the top-level inserting function for all source data. It determines
+#' insert order and constructs parameters needed for the table-level insert 
+#' functions \code{dbbind.insert} and \code{rowwise.insert}
+#'
+#' @param tbls A list of tables produced by \code{get.src.tables()}
+#' @param update logical. A flag that instructs the function to construct an 
+#'   UPSERT statement instead of an INSERT statement.
+#' @param dbkey A string. Serves as a unique key for the database source which
+#'   will identify data in the destination DB as coming from a specific source.
+#' @param desc A string. The description the will be used to describe the source
+#'   database contents which are imported into the Postgres destination.
+#' @param path A string file path pointing to the the source database to import. 
+#' @param hash A string. The md5hash of the database, produced via 
+#'   \code{get.key()}
+#' @param verbose logical. A flag telling the function to be more verbose in 
+#'   its messaging.
+#' @param log A string file path location of the log file to write 
+#'   results to.
+#' @param named logical. A flag that tells the function to defualt to constuct
+#'   the INSERT statement using the glue syntax and insert the data into the 
+#'   database row-wise (one row at a time).
+#' @param chunk.size An integer.This tells the function how many rows to 
+#'   attempt to insert at once. Failure on a chunk will cause the function
+#'   to default to row-wise inserts for the entire chunk.  
+#'
+#' @return Nothing.
+#' @export
 to.db <- function(tbls, update, dbkey, desc, path, hash, verbose = FALSE, 
                   log = NULL, named = FALSE, chunk.size = 1000){
   # tic()
@@ -456,7 +671,10 @@ to.db <- function(tbls, update, dbkey, desc, path, hash, verbose = FALSE,
     table.names <- names(tbls[[schema]])
     order <- insert.order(schema)
     order.source <- order %>% inner_join(as_tibble(list(tblname=table.names)),
-                                         by=c("tblname" = "tblname"))
+                                         by=c("tblname" = "tblname")) %>%
+      mutate(level = ifelse(tblname == "db", -1, level)) %>%
+      arrange(level, tblname)
+    
     
     # loop through source tables and import
     for (tbl in order.source$tblname){
@@ -496,15 +714,15 @@ to.db <- function(tbls, update, dbkey, desc, path, hash, verbose = FALSE,
           msg.out(msg, log, sep = " ")
           if (named == TRUE){
             affected <- rowwise.insert(update = update, schema = schema,
-                                       tbl = current.table, 
-                                       tbl.name = i.tbl,
+                                       table = current.table, 
+                                       table.name = i.tbl,
                                        cols = info$import.cols, log = log, 
                                        cast = info$cast)
           }
           else {
             affected <- dbbind.insert(update = update, schema = schema,
-                                      tbl = current.table, 
-                                      tbl.name = i.tbl,
+                                      table = current.table, 
+                                      table.name = i.tbl,
                                       cols = info$import.cols, log = log,
                                       verbose = verbose, cast = info$cast,
                                       chunk.size = chunk.size)
@@ -512,7 +730,12 @@ to.db <- function(tbls, update, dbkey, desc, path, hash, verbose = FALSE,
           t <- toc(quiet=TRUE)
           # print(affected)
           msg <- paste0(sum(affected), "/", nrow(current.table), 
-                        " rows affected.\nEND ", i.tbl, "\n")
+                        " rows affected.\n")
+          if (i.tbl %in% c("tblSpecies", "tblSpeciesGeneric", "tblEcolSites")){
+            msg <- paste0(msg, "Rows with values divergent from base table ",
+                          "inserted into ", i.tbl, "_delta.\n")
+          }
+          msg <- paste0(msg, "END ", i.tbl, "\n")
           msg.out(msg, log)
         }
       }
@@ -522,8 +745,120 @@ to.db <- function(tbls, update, dbkey, desc, path, hash, verbose = FALSE,
 }
 
 
-#' function retrieves data tables from data source and returns them as a list of
-#' lists
+#' A recursive function which can be used to determine the proper order in which
+#' to refresh materialized views, i.e. materialized views which depend on other
+#' materialized views will be refreshed after the view it depends on is 
+#' refreshed.
+#'
+#' @param done A string vector. An internal parameter which the function uses to
+#'   keep track of which views have already been refreshed.
+#' @param level An integer. An internal parameter which the function uses to 
+#'   keep track of how many times it has been called.
+#'
+#' @return Nothing.
+#' @export
+refresh.views <- function(done = character(0), level = 0){
+  # cat(paste0("level = ", level, "\n"))
+  views <- (dbGetQuery(
+    con, "SELECT relname FROM pg_class WHERE relkind = 'm';"))$relname
+  undone.views <- views[!(views %in% done)]
+  # cat(paste0("undone views: ", paste(undone.views, collapse = ", "), "\n"))
+  if (length(undone.views != 0)){
+    depend.sql <- "
+    SELECT dependent_ns.nspname as dependent_schema,
+           dependent_view.relname as dependent_view, 
+	         source_ns.nspname as source_schema, 
+	         source_table.relname as source_table,
+	         source_table.relkind as source_kind,
+	         COUNT(pg_attribute.attname) as column_n
+      FROM pg_depend 
+      JOIN pg_rewrite ON pg_depend.objid = pg_rewrite.oid 
+      JOIN pg_class as dependent_view ON pg_rewrite.ev_class = dependent_view.oid 
+      JOIN pg_class as source_table ON pg_depend.refobjid = source_table.oid 
+      JOIN pg_attribute ON pg_depend.refobjid = pg_attribute.attrelid 
+       AND pg_depend.refobjsubid = pg_attribute.attnum 
+      JOIN pg_namespace dependent_ns ON dependent_ns.oid = dependent_view.relnamespace
+      JOIN pg_namespace source_ns ON source_ns.oid = source_table.relnamespace
+     WHERE source_table.relkind = 'm'
+       AND dependent_ns.nspname = 'public'
+       AND dependent_view.relname = '{view}'
+       AND pg_attribute.attnum > 0 
+     GROUP BY dependent_ns.nspname, dependent_view.relname, source_ns.nspname, 
+              source_table.relname, source_table.relkind 
+     ORDER BY 1,2;
+    "
+    completed <-  done
+    for (view in undone.views){
+      depends <- (dbGetQuery(con, glue(depend.sql)))$source_table
+      if (all(depends %in% completed)){
+        sql = paste0("REFRESH MATERIALIZED VIEW public.", view, ";")
+        cat(paste0("Refreshing materialized view: public.", view, "...\n"))
+        dbExecute(con, sql)
+        completed = c(completed, view)
+      }
+    }
+    refresh.views(done = completed, level = level + 1)
+  }
+}
+
+
+#####################################
+## SELECTING and reading functions ##
+#####################################
+
+#' Constructs a SELECT statment which can be used to retrieve source data from
+#' A spatially enabled sqlite database by converting table geometry to WKT 
+#' format and numeric DATETIME columns to TIMESTAMP compatible format. 
+#' The function assumes that datetime values are stores numerically in the 
+#' sqlite database because that is the field type sqlite assumes when a table 
+#' CREATE statement uses a data type of TIMESTAMP, DATE, OR DATETIME.
+#'
+#' @param sqlite.con An \code{Rsqlite} connection object. 
+#' @param table A string. The name of the table to build the select statement 
+#'   for.
+#' @param spatial logical. A flag which tells the function to convert geometry 
+#'   columns to WKT format for import.  The geometry must be named "geom" in 
+#'   the source data. 
+#'
+#' @return A list consisting of the constructed SELECT statement and the fields
+#'   used to construct it.
+#' @export
+create.sqlite.select <- function(sqlite.con, table, spatial){
+  info <- dbGetQuery(sqlite.con, paste0("PRAGMA table_info(", table, ");"))
+  cols <-  info$name
+  if (spatial == TRUE){
+    cols.new <- cols %>% str_replace("^geom$", "st_astext(geom) geom")
+  } else {
+    cols.new = cols[cols != "geom"]
+  }
+  dt.cols <- !is.na(as.vector(info$type %>% 
+                                str_match(regex("(?:timestamp|date)", 
+                                                ignore_case = TRUE))))
+  cols.dt <- ifelse(dt.cols, paste0("datetime(", cols.new, 
+                                    ", 'unixepoch') || '-00'", cols.new), 
+                    cols.new)
+  col.string <-  paste(cols.dt, collapse = ", ")
+  select <- paste0("SELECT ", col.string, "\n  FROM ", table, ";")
+  return(list(sql = select, cols = cols.new))
+}
+
+
+#' Retrieves data tables from data source and returns them as a list of tibbles.
+#'
+#' @param path A string file path pointing to the source database. File name
+#'   extensions must be one of (.mdb, .accdb, .sqlite, .db) and folder paths
+#'   must have the extension of (.gdb).
+#' @param md5hash A string. The md5hash of the database, produced via 
+#'   \code{get.key()}
+#' @param key A string. Serves as a unique key for the database source which
+#'   will identify data in the destination DB as coming from a specific source.
+#' @param desc A string. The description the will be used to describe the source
+#'   database contents which are imported into the Postgres destination.
+#'
+#' @return A list of schema names, and within each a list of tibbles containing
+#'   source data. 
+#' @export
+
 get.src.tables <- function(path, md5hash, key, desc = NULL){
   terradat = FALSE
   dima.tbls.sql <- paste0("SELECT table_name FROM information_schema.tables ",
@@ -627,10 +962,24 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
               tables = tables))
 }
 
-#' data in TerrAdat has some specials cases, namely that many of the fields,
-#' including plotkey, linekey etc are too long for DIMA.  We are forced to rekey
-#' or truncate those fields, as one of the goals here is to be able to 
-#' "re-DIMA" the enterprise level data into a blank DIMA if we so chose.
+
+#' Data in TerrAdat has some specials cases, namely that many of the fields,
+#' including plotkey, linekey, etc are too long for DIMA due to some of the 
+#' source data having been converted from another schema type to resemble DIMA 
+#' data. We are forced to rekey or truncate those fields, as one of the goals 
+#' of constructing LLEIA in the manner it is, is to be able to "re-DIMA" the 
+#' enterprise level data into a blank DIMA if we so chose. This function looks
+#' at the source data and performs some checks and conversions if it is found to
+#' be from a TerrAdat source.
+#'
+#' @param imported A list of lists of tibbles, constructed via 
+#'   \code{get.src.tables()}
+#'
+#' @return A processed list of lists of tibbles, which is compatible with the 
+#'   DIMA schema, as well as other data such as database keys found in TerrAdat,
+#'   and other values (source path, md5hash, key, description and table name 
+#'   list)
+#' @export
 process.terradat <-  function(imported){
   tbls <- imported$tables
   cat(paste0("Converting TerrADat data to fit within DIMA schema...\n"))
@@ -737,51 +1086,105 @@ process.terradat <-  function(imported){
               tables = tbls))
 }
 
-refresh.views <- function(done = character(0), level = 0){
-  # cat(paste0("level = ", level, "\n"))
-  views <- (dbGetQuery(
-    con, "SELECT relname FROM pg_class WHERE relkind = 'm';"))$relname
-  undone.views <- views[!(views %in% done)]
-  # cat(paste0("undone views: ", paste(undone.views, collapse = ", "), "\n"))
-  if (length(undone.views != 0)){
-    depend.sql <- "
-    SELECT dependent_ns.nspname as dependent_schema,
-           dependent_view.relname as dependent_view, 
-	         source_ns.nspname as source_schema, 
-	         source_table.relname as source_table,
-	         source_table.relkind as source_kind,
-	         COUNT(pg_attribute.attname) as column_n
-      FROM pg_depend 
-      JOIN pg_rewrite ON pg_depend.objid = pg_rewrite.oid 
-      JOIN pg_class as dependent_view ON pg_rewrite.ev_class = dependent_view.oid 
-      JOIN pg_class as source_table ON pg_depend.refobjid = source_table.oid 
-      JOIN pg_attribute ON pg_depend.refobjid = pg_attribute.attrelid 
-       AND pg_depend.refobjsubid = pg_attribute.attnum 
-      JOIN pg_namespace dependent_ns ON dependent_ns.oid = dependent_view.relnamespace
-      JOIN pg_namespace source_ns ON source_ns.oid = source_table.relnamespace
-     WHERE source_table.relkind = 'm'
-       AND dependent_ns.nspname = 'public'
-       AND dependent_view.relname = '{view}'
-       AND pg_attribute.attnum > 0 
-     GROUP BY dependent_ns.nspname, dependent_view.relname, source_ns.nspname, 
-              source_table.relname, source_table.relkind 
-     ORDER BY 1,2;
-    "
-    completed <-  done
-    for (view in undone.views){
-      depends <- (dbGetQuery(con, glue(depend.sql)))$source_table
-      if (all(depends %in% completed)){
-        sql = paste0("REFRESH MATERIALIZED VIEW public.", view, ";")
-        cat(paste0("Refreshing materialized view: public.", view, "...\n"))
-        dbExecute(con, sql)
-        completed = c(completed, view)
-      }
-    }
-    refresh.views(done = completed, level = level + 1)
+
+#' The main processing function.
+#'
+#' @param dbname A string. The database name to connect to in the postgres 
+#'   instance.
+#' @param user A string. The database user used to connect to the database.
+#' @param password A string. The password used to connect to the database.
+#' @param src.path A string file path pointing to the source database or saved 
+#'   RDS file. File name extensions must be one of (.mdb, .accdb, .sqlite, .db, 
+#'   .rds) and folder paths must have the extension of (.gdb).
+#' @param key A string. Serves as a unique key for the database source which
+#'   will identify data in the destination DB as coming from a specific source.
+#' @param desc A string. The description the will be used to describe the source
+#'   database contents which are imported into the Postgres destination.
+#' @param host A string. The IP address or DNS name which hosts the database. 
+#' @param port An integer. The port which the postgres service monitors for 
+#'   connections.
+#' @param update logical. A flag that instructs the function to construct an 
+#'   UPSERT statement instead of an INSERT statement.
+#' @param log logical. A flag that tells the function to create a log file of 
+#'   the import, saved in the current working directory in the format of 
+#'   import_YYYMMDDHHMMSS.log
+#' @param save.raw A string file path to which to save data imported data from
+#'   \code{src.path} via \code{get.src.tables()}. This file can be used in 
+#'   as a future \code{src.path}. Primarily used for testing purposes.
+#' @param save.processed A string file path to which to save data imported data 
+#'   from \code{src.path} via \code{get.src.tables()} which has been processed 
+#'   via \code{process.terradat()}. This file can be used in 
+#'   as a future \code{src.path}. Primarily used for testing purposes.
+#' @param verbose logical. A flag telling the function to be more verbose in 
+#'   its messaging.
+#' @param chunk.size An integer.This tells the function how many rows to 
+#'   attempt to insert at once. Failure on a chunk will cause the function
+#'   to default to row-wise inserts for the entire chunk. 
+#' @param skip.refresh logical. A flag telling the function to skip refreshing
+#'   materialized views. This can be helpful in speeding up the importing of
+#'   multiple databases.
+#'
+#' @return Nothing.
+#' @export
+main <-  function(dbname, user, password, src.path, key, desc, 
+                  host = "localhost", port = 5432, update = FALSE, log = FALSE, 
+                  save.raw = NULL, save.processed = NULL, verbose = FALSE, 
+                  chunk.size = 1000, skip.refresh = FALSE){
+  con <<- dbConnect(RPostgres::Postgres(), dbname = dbname, 
+                  host = host, port = port, 
+                  user = user, password = password)
+  res <- dbExecute(con, "SET client_min_messages TO WARNING;")
+  if (log == TRUE){
+    log.name <-  paste0("./import_", 
+                      strftime(Sys.time(), format="%Y%m%d%H%M%S"), ".log")
+  } else{
+    log.name <-  NULL
   }
+  # in case the tables have already been saved in RDS format
+  if (str_to_lower(file_ext(src.path)) == "rds"){
+    imported <- readRDS(src.path)
+    key <- imported$key
+    hash <- imported$md5hash
+  # in case a fresh import is needed
+  } else {
+    if (is.null(key)){
+      key <- str_sub(digest(src.path, algo = "md5"), start = -6)
+    }
+    hash <- get.key(src.path)
+    imported <- get.src.tables(path = src.path, md5hash = hash, key = key, 
+                             desc = desc)
+    if (!is.null(save.raw)){
+      cat(paste0("Saving raw tables as ", save.raw), 
+          "\n")
+      saveRDS(imported, save.raw)
+    }
+  }
+  # process the data if it is in terradat format so we can place it into
+  # the dima schema.
+  if (imported$terradat == TRUE & imported$processed == FALSE){
+      processed <- process.terradat(imported = imported)
+      if (!is.null(save.processed)){
+        cat(paste0("Saving processed tables as ", save.processed), 
+            "\n")
+        saveRDS(processed, save.processed)
+      }
+    } else {
+      processed <- imported
+  }
+  to.db(tbls = processed$tables, update = update, dbkey = key, 
+        desc = desc, path = src.path, hash = hash, log = log.name, 
+        verbose = verbose, named = FALSE, 
+        chunk.size = chunk.size)
+  if (skip.refresh == FALSE){
+    refresh.views()
+  }
+  dbDisconnect(con)
+  rm(con, envir = .GlobalEnv)
+  msg.out("\nScript finished.", log = log.name)
 }
 
-main <-  function(args){
+# run only if called from a script.
+if (sys.nframe() == 0) {
   option_list <-  list (
     make_option(opt_str = c("-p", "--port"), default = 5432, type = "integer",
                 help = paste0("The Postgres connection port")),
@@ -821,7 +1224,11 @@ main <-  function(args){
                               "this number of records will be inserted row-",
                               "wise instead, so keeping this number smaller ", 
                               "for databases with many probable constraint and",
-                              " value errors is a good idea."))
+                              " value errors is a good idea.")),
+    make_option(opt_str = c("-r", "--skip_refresh"), action = "store_true", 
+                default = FALSE,
+                help = paste0("Skip refreshing materialized views. This can ",
+                              "save time when uploading multiple databases."))
     
   )
   
@@ -839,71 +1246,19 @@ main <-  function(args){
                             option_list=option_list, prog = NULL, 
                             description = description
   )
-
+  
   args = commandArgs(trailingOnly = TRUE)
   opt = parse_args(opt_parser, positional_arguments = 3, args = args)
   if (is.null(opt$options$password)){
     opt$options$password = getPass()
   }
-  
-
-  con <<- dbConnect(RPostgres::Postgres(), dbname = opt$args[1], 
-                  host = opt$options$host, port = opt$options$port, 
-                  user = opt$args[2], password = opt$options$password)
-  res <- dbExecute(con, "SET client_min_messages TO WARNING;")
-  if (!is.null(opt$options$log)){
-    log.name <-  paste0("./import_", 
-                      strftime(Sys.time(), format="%Y%m%d%H%M%S"), ".log")
-  } else{
-    log.name <-  NULL
-  }
-  
-  src.path <- opt$args[3]
-  # in case the tables have already been saved in RDS format
-  if (str_to_lower(file_ext(src.path)) == "rds"){
-    imported <- readRDS(src.path)
-    key <- imported$key
-    hash <- imported$md5hash
-  # in case a fresh import is needed
-  } else {
-    if (is.null(opt$options$key)){
-      key <- str_sub(digest(src.path, algo = "md5"), start = -6)
-    } else {
-      key <- opt$options$key
-    }
-    hash <- get.key(src.path)
-    imported <- get.src.tables(path = src.path, md5hash = hash, key = key, 
-                             desc = opt$options$desc)
-    if (!is.null(opt$options$save_raw)){
-      cat(paste0("Saving raw tables as ", opt$options$save_raw), 
-          "\n")
-      saveRDS(imported, opt$options$save_raw)
-    }
-  }
-  # process the data if it is in terradat format so we can place it into
-  # the dima schema.
-  if (imported$terradat == TRUE & imported$processed == FALSE){
-      processed <- process.terradat(imported = imported)
-      if (!is.null(opt$options$save_processed)){
-        cat(paste0("Saving processed tables as ", opt$options$save_processed), 
-            "\n")
-        saveRDS(processed, opt$options$save_processed)
-      }
-    } else {
-      processed <- imported
-  }
-  to.db(tbls = processed$tables, update = opt$options$update, dbkey = key, 
-        desc = opt$options$desc, path = src.path, hash = hash, log = log.name, 
-        verbose = opt$options$verbose, named = FALSE, 
-        chunk.size = opt$options$chunk_size)
-  refresh.views()
-  dbDisconnect(con)
-  rm(con, envir = .GlobalEnv)
-  msg.out("\nScript finished.", log = log.name)
-}
-
-# run only if called from a script.
-if (sys.nframe() == 0) {
-  args = commandArgs(trailingOnly = TRUE)
-  main(args)
+  main(dbname = opt$args[1], user = opt$args[2], 
+       password = opt$options$password, 
+       src.path = opt$args[3], key = opt$options$key, desc = opt$options$desc,
+       host = opt$options$host, port = opt$options$port,
+       update = opt$options$update, log = opt$options$log, 
+       save.raw = opt$options$save_raw, 
+       save.processed = opt$options$save_processed, 
+       verbose = opt$options$verbose, chunk.size = opt$options$chunk_size, 
+       skip.refresh = opt$options$skip_refresh)
 }

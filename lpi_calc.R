@@ -12,6 +12,17 @@ for (lib in libraries){
 }
 
 
+#' This function connects to a Postgres instance of the LLEIA database and reads
+#' in relevant tables for Point intercept calculations.
+#'
+#' @param dbname A string. The database name for the postgres connection.
+#' @param host A string. The IP address or DNS name for the postgres connection
+#' @param port An integer. The port for the postres connection.
+#' @param user A string. The user name for the postgres connection
+#' @param password A string. The password for the postgres connection.
+#'
+#' @return A list of tibbles imported from the connection source.
+#' @export
 import.data <- function(dbname, host, port, user, password){
   tic.clearlog()
   con <- dbConnect(RPostgres::Postgres(), dbname = dbname, 
@@ -167,6 +178,23 @@ import.data <- function(dbname, host, port, user, password){
 }
 
 
+#' This function reads in a tab delimited file containing filter definitions for
+#' multiple indicators and returns a tibble version of it.
+#'
+#' @param indicators A string file path which points to a tab delimited file
+#'   (with field names) containing three fields: 1) filter.tbl - this is either 
+#'   "long" or "wide" and indicates which type of point intercept table is used
+#'   in calculation of the indicator. 2) name - this is the name of the 
+#'   indicator. It is recommended for later processing that these name contain
+#'   only alphanumeric characters or underscores. 3) filter.exp - a 
+#'   \code{dplyr::filter()} expression with the first argument = "hits" (e.g. 
+#'   filter(hits, my_field = "some parameter"). Multiple filter expressions can
+#'   by union-ed with the \code{union} operator, and the filter statement can 
+#'   use the (now-deprecated) \code{filter_if()}, \code{filter_at}, and 
+#'   \code{filter_all} as well as the use the \code{across()} operator.
+#'
+#' @return A tibble containing the filter statements from \code{indicators}.
+#' @export
 load.indicators <- function(indicators){
   if (!is.null(indicators)){
     indicator.list <- as_tibble(read.delim(indicators, sep = "\t", 
@@ -180,6 +208,26 @@ load.indicators <- function(indicators){
   return(indicator.list)
 }
 
+#' This function will take a point intercept data data (either wide or long)
+#' and calculate cover, height, and % dead indicators based on the filter 
+#' strings evaluated as an expression on the raw table. 
+#'
+#' @param name A string. The name of the indicator.
+#' @param filter.exp A string. A \code{dpylr::filter()} expression (or union-ed 
+#'   set thereof) which is used to filter the table.
+#' @param calc.type A string. The table type on which to perform the filter 
+#'   expression.
+#' @param hits A tibble. The table to perform the filter on.
+#' @param ptcount A tibble which contains two fields,"reckey" and "pt_count",
+#'   the former a string field containing a unique set of record keys and the 
+#'   latter an integer field containing the number of complete points for that 
+#'   record.
+#'
+#' @return A tibble, with the \code{filter.exp} applied to \code{hits}
+#' @export
+#'
+#' @examples calc.indicators("tree", 'filter(hits, growth_habit_first == 
+#'   "Tree", "long", pintercept.long')
 calc.indicators <- function(name = NULL, filter.exp = NULL, calc.type, hits, 
                             ptcount) {
   if(calc.type == "long") {
@@ -344,6 +392,21 @@ calc.indicators <- function(name = NULL, filter.exp = NULL, calc.type, hits,
 }
 
 
+#' This function will filter out a table based on a string evaluated as an 
+#' expression.
+#'
+#' @param name A string. The name of the indicator.
+#' @param filter.exp A string. A \code{dpylr::filter()} expression (or union-ed 
+#'   set thereof) which is used to filter the table 
+#' @param calc.type A string. The table type on which to perform the filter 
+#'   expression.
+#' @param hits A tibble. The table to perform the filter on.
+#'
+#' @return A tibble, with the \code{filter.exp} applied to \code{hits}
+#' @export
+#'
+#' @examples test.indicators("tree", 'filter(hits, growth_habit_first == 
+#'   "Tree", "long", pintercept.long')
 test.indicators <- function(name, filter.exp, calc.type, hits) {
   # filter by user defined expression(s) to get marks with indicator present for 
   # any cover class
@@ -352,6 +415,19 @@ test.indicators <- function(name, filter.exp, calc.type, hits) {
   return(ind.count.any)
 }
 
+#' This function takes calculated indicators at the survey level (reckey) and 
+#' adds zeros (cover) or NA's (height) for those surveys which do not have 
+#' values for specific indicators and then calculates the average for each
+#' unique plot/survey year.
+#'
+#' @param imported  A list of tibbles produced from \code{import.data()}
+#' @param indicators A tibble produced from \code{calc.indicators()}. These are 
+#'   the calculated indicators at the survey (reckey) level.
+#' @param indicator.list A tibble produced from \code{load.indicators()}
+#'
+#' @return A tibble containing the calculated indicators averaged at the plot 
+#'   level.
+#' @export 
 calc.plot <-  function(imported, indicators, indicator.list = NULL){
   hit.types <- as_tibble(list(hit_type = c("any", "top", "lower", "surface", 
                                            "woody", "herbaceous", "all"),
@@ -407,6 +483,19 @@ calc.plot <-  function(imported, indicators, indicator.list = NULL){
   return(plot.indicators.sum)
 }
 
+#' This function takes an indicator list, and runs \code{calc.indicators()} on
+#' every indicator in the list, then binds the rows together into a final table. 
+#'
+#' @param imported A list of tibbles produced from \code{import.data()}
+#' @param indicator.list A tibble produced from \code{load.indicators()}
+#' @param num.cores The number of cpu cores to use to do the indicator 
+#'   calculation. Optimal number is \code{nrow(indicator.list}).
+#' @param use.mc logical. A flag to tell the function whether or not to use
+#'   multicore processing.
+#'
+#' @return A tibble containing rows for every indicator processed for each 
+#'   unique plotkey and survey year.
+#' @export
 do.indicator.calc <- function(imported, indicator.list = NULL, num.cores = 1, 
                                 use.mc = FALSE){
   tic(msg = "Calculating indicators", quiet = TRUE)
@@ -458,6 +547,19 @@ do.indicator.calc <- function(imported, indicator.list = NULL, num.cores = 1,
   return(plot.indicators)
 }
 
+#' Takes input from a user provided indicator list and exports the filtered data
+#' (either in long or wide form) into individual delimited files in order to
+#' test that the indicator filter string is working as expected.
+#'
+#' @param imported A list of tibbles produced from \code{import.data()}
+#' @param indicator.list A tibble produced from \code{load.indicators()}
+#' @param test.dir A string directory file path in which to save 
+#'   the individual indicator output files.
+#' @param sep A character. The character to use whe writing the delimited 
+#'   outputs.
+#'
+#' @return Nothing
+#' @export
 do.indicator.test <- function(imported, indicator.list, test.dir, sep = ","){
   # get filtered raw lpi data instead
   tic(msg = "Exporting filtered raw data", quiet = TRUE)
@@ -483,6 +585,25 @@ do.indicator.test <- function(imported, indicator.list, test.dir, sep = ","){
   toc(log = TRUE, quiet = TRUE)
 }
 
+#' The main processing function for the module
+#' 
+#' @param dbname A string. The database name to connect to in the postgres 
+#'   instance.
+#' @param host A string. The IP address or DNS name which hosts the database.
+#' @param port An integer. The port which the postgres service monitors for 
+#'   connections.
+#' @param user A string. The database user used to connect to the database.
+#' @param password A string. The password used to connect to the database.
+#' @param indicator.path A string. The file path to a tab delimited file which
+#'   contains indicator definitions. See README for file requirements.
+#' @param test A string. The file path to a directory in which to output a 
+#'   filtered version of the raw data for each indicator, for testing purposes.
+#' @param out.file A string. The file path for the output file. Must have a .rds
+#'   or .csv extension.
+#' @param sep A character which is used to delimit the output file 
+#'   (\code{out.file}) in the case that it is to be in the CSV format.
+#' @return A list containing process time elapsed information.
+#' @export
 main <- function(dbname, host, port, user, password, 
                  indicator.path = NULL, test = NULL, out.file = NULL, 
                  sep = ","){
@@ -531,7 +652,7 @@ main <- function(dbname, host, port, user, password,
 }
 
 
-# run only if called from a script.
+# Run if module is called from Rscript.
 if (sys.nframe() == 0) {
   args = commandArgs(trailingOnly = TRUE)
   option_list = list (
