@@ -288,7 +288,7 @@ if (sys.nframe() == 0) {
     make_option(opt_str = c("-w", "--password"),
                 help = paste0("The password for the user provided.")),
     make_option(opt_str = c("-s", "--schema"), default = "eco",
-                help = paste0("The schema to export (eco, dima, lmf, public"))
+                help = paste0("The schema to export (eco, dima, lmf, public)."))
   )
   
   description <- paste0("Exports the eco schema to a sqlite database. \n",
