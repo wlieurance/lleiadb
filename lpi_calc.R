@@ -654,7 +654,6 @@ main <- function(dbname, host, port, user, password,
 
 # Run if module is called from Rscript.
 if (sys.nframe() == 0) {
-  args = commandArgs(trailingOnly = TRUE)
   option_list = list (
     make_option(opt_str = c("-p", "--port"), default = 5432, type = "integer",
                 help = paste0("The Postgres connection port")),
@@ -688,6 +687,7 @@ if (sys.nframe() == 0) {
                "from the line-point intercept method.\ndbname is the name of ",
                "the database to connect to and user is the database user.")
   )
+  args = commandArgs(trailingOnly = TRUE)
   opt = parse_args(opt_parser, positional_arguments = 2, args = args)
   
   # option checks
