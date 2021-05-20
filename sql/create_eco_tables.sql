@@ -457,12 +457,13 @@ CREATE TABLE eco.plantdensity_class (
     FOREIGN KEY (reckey) REFERENCES eco.plantdensity_meta(reckey) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-DROP TABLE IF EXISTS eco.plantdensity_species CASCADE;
-CREATE TABLE eco.plantdensity_species (
+DROP TABLE IF EXISTS eco.plantdensity_subplot CASCADE;
+CREATE TABLE eco.plantdensity_subplot (
     reckey character varying(20) NOT NULL,
-    species_code character varying(9), 
-    subsize_m2 numeric(6, 1) CHECK (subsize_m2 > 0),
-    PRIMARY KEY (reckey, species_code),
+    subid character varying(15), 
+    subplot integer,
+    subsize_m2 numeric(7, 2) CHECK (subsize_m2 > 0),
+    PRIMARY KEY (reckey, subid),
     FOREIGN KEY (reckey) REFERENCES eco.plantdensity_meta(reckey) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -504,7 +505,7 @@ CREATE TABLE eco.soil_component (
     frac_vcoarse double precision,
     CHECK (coalesce(frac_vfine, 0) + coalesce(frac_fine, 0) + coalesce(frac_med, 0) +
            coalesce(frac_coarse, 0) + coalesce(frac_vcoarse, 0) BETWEEN 0 AND 1),
-    PRIMARY KEY (reckey, seq_no, analysis),
+    PRIMARY KEY (reckey, seq_no, analysis, component),
     FOREIGN KEY (reckey, seq_no) REFERENCES eco.soil(reckey, seq_no) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -516,11 +517,11 @@ CREATE TABLE eco.soil_component (
 DROP TABLE IF EXISTS eco.plantdensity CASCADE;
 CREATE TABLE eco.plantdensity (
     reckey character varying(20) NOT NULL,
-    subplot smallint,
+    subid character varying(15),
     species_code character varying(9), 
     class_no smallint,
     total integer CHECK (total >= 0),
-    PRIMARY KEY (reckey, subplot, species_code, class_no),
-    FOREIGN KEY (reckey, species_code) REFERENCES eco.plantdensity_species(reckey, species_code) ON UPDATE CASCADE ON DELETE CASCADE,
+    PRIMARY KEY (reckey, subid, species_code, class_no),
+    FOREIGN KEY (reckey, subid) REFERENCES eco.plantdensity_subplot(reckey, subid) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY (reckey, class_no) REFERENCES eco.plantdensity_class(reckey, class_no) ON UPDATE CASCADE ON DELETE CASCADE
 );
