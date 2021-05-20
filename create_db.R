@@ -77,8 +77,8 @@ create.pool <- function(dbname, host, port, user, password){
 #' @return Nothing.
 #' @export
 execute.sql <- function(path, params = list()){
-  sql <- sep.sql.stmts(sql.path = path, params = params)
-  for (stmt in sql){
+  sql <- parse.sql(sql.path = path, params = params)
+  for (stmt in sql$noformat){
     # cat(stmt)
     res <- tryCatch(
       expr = {
@@ -102,7 +102,7 @@ execute.sql <- function(path, params = list()){
 #' @return Nothing.
 #' @export
 create.exts <-  function(sql.path){
-  print("PUBLIC: creating extensions...")
+  cat("PUBLIC: creating extensions...\n")
   execute.sql(path = file.path(sql.path, "execute_init.sql"))
 }
 
@@ -116,11 +116,11 @@ create.exts <-  function(sql.path){
 #' @return Nothing.
 #' @export
 create.dima <- function(sql.path){
-  print("DIMA: creating tables...")
+  cat("DIMA: creating tables...\n")
   execute.sql(path = file.path(sql.path, "create_dima_tables.sql"))
-  print("DIMA: inserting base data...")
+  cat("DIMA: inserting base data...\n")
   execute.sql(path = file.path(sql.path, "create_dima_data.sql"))
-  print("DIMA: creating triggers...")
+  cat("DIMA: creating triggers...\n")
   execute.sql(path = file.path(sql.path, "create_dima_triggers.sql"))
 }
 
@@ -134,7 +134,7 @@ create.dima <- function(sql.path){
 #' @return Nothing.
 #' @export
 create.lmf <- function(sql.path){
-  print("LMF: creating tables...")
+  cat("LMF: creating tables...\n")
   execute.sql(path = file.path(sql.path, "create_lmf_tables.sql"))
 }
 
@@ -148,7 +148,7 @@ create.lmf <- function(sql.path){
 #' @return Nothing.
 #' @export
 create.eco <- function(sql.path){
-  print("ECO: creating tables...")
+  cat("ECO: creating tables...\n")
   execute.sql(path = file.path(sql.path, "create_eco_tables.sql"))
 }
 
@@ -162,13 +162,13 @@ create.eco <- function(sql.path){
 #' @return Nothing.
 #' @export
 create.public <- function(sql.path){
-  print("PUBLIC: creating tables...")
+  cat("PUBLIC: creating tables...\n")
   execute.sql(path = file.path(sql.path, "create_public_tables.sql"))
-  print("PUBLIC: inserting base data...")
+  cat("PUBLIC: inserting base data...\n")
   execute.sql(path = file.path(sql.path, "create_public_data.sql"))
-  print("PUBLIC: creating views...")
+  cat("PUBLIC: creating views...\n")
   execute.sql(path = file.path(sql.path, "create_public_views.sql"))
-  print("PUBLIC: executing statements...")
+  cat("PUBLIC: executing statements...\n")
   execute.sql(path = file.path(sql.path, "execute_public_statements.sql"))
 }
 
@@ -181,7 +181,7 @@ create.public <- function(sql.path){
 #' @return Nothing.
 #' @export
 create.spatial <- function(spatial.path){
-  print("PUBLIC: importing spatial features...")
+  cat("PUBLIC: importing spatial features...\n")
   stmt.d = "DROP TABLE IF EXISTS public.timezone CASCADE;"
   stmt.c = paste0("CREATE TABLE public.timezone (tzid VARCHAR(30) PRIMARY KEY, ", 
                 "geom geometry(MULTIPOLYGON, 4326));")
