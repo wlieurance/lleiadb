@@ -47,9 +47,6 @@ CREATE TABLE eco.point (
     slope_percent numeric(4,1),
     slope_length integer,
     aspect integer,
-    apparent_trend character varying(6),
-    grazing_use integer,
-    hayed boolean,
     latitude numeric(10,8) CHECK (latitude BETWEEN -90 AND 90),
     longitude numeric(11,8) CHECK (longitude BETWEEN -180 AND 180),
     elevation_m numeric(7,3) CHECK (elevation_m BETWEEN -413 AND 8848),
@@ -70,6 +67,7 @@ CREATE TABLE eco.disturbance (
     survey_date timestamp with time zone NOT NULL,
     pastpres character varying(9) NOT NULL,
     cultivation boolean,
+    hayed boolean, 
     mowing boolean,
     hay_removal boolean,
     heavy_machinery boolean,
@@ -77,6 +75,7 @@ CREATE TABLE eco.disturbance (
     livestock_tanks boolean,
     livestock_heavy_use boolean,
     livestock_grazing boolean,
+    graze_category integer, 
     insects boolean,
     small_rodents boolean,
     non_rodent_animals boolean,
@@ -111,20 +110,14 @@ CREATE TABLE eco.disturbance (
     FOREIGN KEY (plotkey) REFERENCES eco.point(plotkey) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-DROP TABLE IF EXISTS eco.esfsg_plot CASCADE;
-CREATE TABLE eco.esfsg_plot (
+DROP TABLE IF EXISTS eco.esfsg_meta CASCADE;
+CREATE TABLE eco.esfsg_meta (
     reckey character varying(20) NOT NULL,
     survey_date timestamp with time zone,
-    ecoid_std character varying(20),
-    ecotype character varying(1),
-    econame character varying(255),
-    area_pct double precision CHECK(area_pct BETWEEN 0 AND 1),
-    ecorank integer,
-    esd_state character varying(100),
-    state_community character varying(100),
-    community_desc character varying(255),
+    observer character varying(50),
+    notes text,
     plotkey character varying(20) NOT NULL,
-    PRIMARY KEY (reckey, ecoid_std),
+    PRIMARY KEY (reckey),
     FOREIGN KEY (plotkey) REFERENCES eco.point(plotkey) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -236,17 +229,19 @@ CREATE INDEX IF NOT EXISTS transect_geom_gix ON eco.transect USING gist (geom);
 --
 -- Level 3, references lvl 0,1,2
 --
-DROP TABLE IF EXISTS eco.esfsg_line CASCADE;
-CREATE TABLE eco.esfsg_line (
+DROP TABLE IF EXISTS eco.esfsg CASCADE;
+CREATE TABLE eco.esfsg (
     reckey character varying(20) NOT NULL,
-    survey_date timestamp with time zone,
-    seq_no integer NOT NULL,
-    ecoid_std character varying(10),
-    start_mark double precision,
-    end_mark double precision,
-    linekey character varying(20),
-    PRIMARY KEY (reckey, seq_no),
-    FOREIGN KEY (linekey) REFERENCES eco.transect(linekey) ON UPDATE CASCADE ON DELETE CASCADE
+    ecoid_std character varying(20),
+    ecotype character varying(1),
+    econame character varying(255),
+    area_pct double precision CHECK(area_pct BETWEEN 0 AND 1),
+    ecorank integer,
+    esd_state character varying(100),
+    state_community character varying(100),
+    community_desc TEXT,
+    PRIMARY KEY (reckey, ecoid_std),
+    FOREIGN KEY (reckey) REFERENCES eco.esfsg_meta(reckey) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 DROP TABLE IF EXISTS eco.gap_meta CASCADE;
@@ -270,7 +265,6 @@ CREATE TABLE eco.pintercept_meta (
     reckey character varying(20) PRIMARY KEY,
     survey_date timestamp with time zone NOT NULL,
     observer character varying(50),
-    chklabel character varying(20),
     notes text,
     linekey character varying(20) NOT NULL,
     FOREIGN KEY (linekey) REFERENCES eco.transect(linekey) ON UPDATE CASCADE ON DELETE CASCADE
@@ -302,7 +296,7 @@ CREATE TABLE eco.plantdensity_meta (
 DROP TABLE IF EXISTS eco.production_species CASCADE;
 CREATE TABLE eco.production_species (
     reckey character varying(20) NOT NULL,
-    species_code character varying(9), 
+    species_code character varying(7), 
     subsize_m2 numeric(9,4) CHECK (subsize_m2 > 0), 
     unit_wgt_g double precision CHECK (unit_wgt_g > 0), 
     adjust_airdrywgt double precision CHECK (adjust_airdrywgt BETWEEN 0 AND 1), 
@@ -345,7 +339,7 @@ CREATE TABLE eco.soil (
     depth_lower_cm numeric(5,1) CHECK(depth_lower_cm >= depth_upper_cm),
     
     -- Horizon and Layer Designations, 2-2    
-    horizon_lbl character varying(3), 
+    horizon_lbl character varying(10), 
     
     -- Soil Color, 2-8
     color_hue character varying(6), 
@@ -421,6 +415,18 @@ CREATE TABLE eco.soilstability (
 --
 -- Level 4, references lvl 0,1,2,3
 --
+DROP TABLE IF EXISTS eco.esfsg_detail CASCADE;
+CREATE TABLE eco.esfsg_detail (
+    linekey character varying(20) NOT NULL,
+    reckey character varying(20) NOT NULL,
+    seq_no integer NOT NULL,
+    ecoid_std character varying(10),
+    start_mark double precision,
+    end_mark double precision,
+    PRIMARY KEY (linekey, reckey, seq_no),
+    FOREIGN KEY (linekey) REFERENCES eco.transect(linekey) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY (reckey, ecoid_std) REFERENCES eco.esfsg(reckey, ecoid_std) ON UPDATE CASCADE ON DELETE CASCADE
+);
 
 DROP TABLE IF EXISTS eco.gap CASCADE;
 CREATE TABLE eco.gap (

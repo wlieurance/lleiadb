@@ -81,8 +81,6 @@ SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey,
             WHEN a."SLOPE_ASPECT" = 'W' THEN 270
             WHEN a."SLOPE_ASPECT" = 'NW' THEN 315
             ELSE NULL END aspect, 
-       a."APPARENT_TREND" apparent_trend, 
-	   a."GRAZING_USE" grazing_use, a."HAYED" = 'Y' hayed, 
 	   CASE WHEN b."FIELD_LATITUDE" = 0 THEN NULL ELSE b."FIELD_LATITUDE" END latitude, 
 	   CASE WHEN b."FIELD_LONGITUDE" = 0 THEN NULL 
 	        WHEN b."FIELD_LONGITUDE" > 0 THEN b."FIELD_LONGITUDE" * -1 
@@ -114,9 +112,8 @@ SELECT a.plotkey, a.plotid, a.survey,
        coalesce(b.establish_date, date(a.establish_dt)) establish_date, 
        a.state, a.county, a.mlra, a.own, a.landform_major, 
        a.landform_minor, a.vertical_slope_shape, a.horizontal_slope_shape, 
-	   a.slope_percent, a.slope_length, a.aspect, a.apparent_trend, a.grazing_use, 
-	   a.hayed, a.latitude, a.longitude, a.elevation_m, a.nogps, b.tz, b.geom,
-       a.sitekey
+	   a.slope_percent, a.slope_length, a.aspect, a.latitude, a.longitude, 
+       a.elevation_m, a.nogps, b.tz, b.geom, a.sitekey
   FROM lmf_process0 a
   LEFT JOIN lmf_coords_tz b ON a.plotkey = b.plotkey
 
@@ -209,7 +206,7 @@ SELECT a.plotkey, a.sitekey, a.plotid, a.mlra,
 ), dima_final AS (
 SELECT plotkey, plotid, survey, establish_date, state, county, mlra, NULL own, landform_major, 
        landform_minor, vertical_slope_shape, horizontal_slope_shape, slope_percent, CAST(NULL as integer) slope_length, 
-	   aspect, NULL apparent_trend, CAST(NULL as integer) grazing_use, CAST(NULL as boolean) hayed, latitude, longitude, elevation_m, nogps, tz, geom,
+	   aspect, latitude, longitude, elevation_m, nogps, tz, geom,
        sitekey
   FROM dima_process1
 )
@@ -228,10 +225,11 @@ CREATE MATERIALIZED VIEW public.disturbance AS
 WITH lmf_final AS (
 SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey, 
        b."CAPDATE" AT TIME ZONE 'UTC' survey_date, 
-	   a."PASTPRES" pastpres, a."CULTIVATION" = 'Y' cultivation, 
+	   a."PASTPRES" pastpres, a."CULTIVATION" = 'Y' cultivation, c."HAYED" = 'Y' hayed,
        a."MOWING" = 'Y' mowing, a."HAY_REMOVAL" = 'Y' hay_removal, a."HEAVY_MACHINERY" = 'Y' heavy_machinery, 
 	   a."SEEDBED_PREPARATION" = 'Y' seedbed_preparation, a."LIVESTOCK_TANKS" = 'Y' livestock_tanks, 
-	   a."LIVESTOCK_HEAVY_USE" = 'Y' livestock_heavy_use, a."LIVESTOCK_GRAZING" = 'Y' livestock_grazing, 
+	   a."LIVESTOCK_HEAVY_USE" = 'Y' livestock_heavy_use, a."LIVESTOCK_GRAZING" = 'Y' livestock_grazing,
+       c."GRAZING_USE" graze_category,
 	   a."INSECTS" = 'Y' insects, a."SMALL_RODENTS" = 'Y' small_rodents, a."NON_RODENT_ANIMALS" = 'Y' non_rodent_animals, 
 	   a."WILDLIFE_GRAZING" = 'Y' wildlife_grazing, a."MINING_EQUIPMENT_OPERATIONS" = 'Y' mining_equipment_operations, 
 	   a."RECREATION_FOOT_TRAFFIC" = 'Y' recreation_foot_traffic, a."RECREATION_VEHICLES_BIKES" = 'Y' recreation_vehicles_bikes, 
@@ -245,14 +243,17 @@ SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey,
 	   a."BRUSH_MANAGEMENT_MECHANICAL" = 'Y' brush_management_mechanical, 
 	   a."BRUSH_MANAGEMENT_BIOLOGICAL" = 'Y' brush_management_biological, NULL::boolean other, NULL other_desc, NULL notes
   FROM lmf."DISTURBANCE" a
-  LEFT JOIN lmf."GPS" AS b ON a."SURVEY" = b."SURVEY" AND a."STATE" = b."STATE" AND a."COUNTY" = b."COUNTY" 
-                           AND a."PSU" = b."PSU" AND a."POINT" = b."POINT"
+  LEFT JOIN lmf."GPS" AS b ON concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") =
+                              concat(b."SURVEY", b."STATE", b."COUNTY", b."PSU", b."POINT")
+  LEFT JOIN lmf."POINT" AS c ON concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT", a."PASTPRES") =
+                              concat(c."SURVEY", c."STATE", c."COUNTY", c."PSU", c."POINT", 'cmupres') 
 
 ), dima_final AS (
 SELECT a."PlotKey" plotkey, cast(a."EstablishDate" as timestamp) AT TIME ZONE b.tz survey_date, 
-       NULL pastpres, NULL::boolean cultivation, NULL::boolean mowing, NULL::boolean hay_removal, 
+       NULL pastpres, NULL::boolean cultivation, NULL::boolean hayed, NULL::boolean mowing, NULL::boolean hay_removal, 
 	   NULL::boolean heavy_machinery, NULL::boolean seedbed_preparation, NULL::boolean livestock_tanks, 
-       NULL::boolean livestock_heavy_use, NULL::boolean livestock_grazing, NULL::boolean insects, 
+       NULL::boolean livestock_heavy_use, NULL::boolean livestock_grazing, 
+       NULL::integer graze_category, NULL::boolean insects, 
 	   a."DisturbRodents" small_rodents, a."DisturbMammals" non_rodent_animals, 
 	   NULL::boolean wildlife_grazing, NULL::boolean mining_equipment_operations, 
 	   NULL::boolean recreation_foot_traffic, NULL::boolean recreation_vehicles_bikes, 
@@ -427,7 +428,7 @@ SELECT survey, state, county, psu, point, transect
 ), lmf_final AS (
 SELECT concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.transect, 2)), '1') reckey,
 	   b."CAPDATE" AT TIME ZONE 'UTC' survey_date, 
-       NULL observer, NULL checkboxlabel, NULL notes,
+       NULL observer, NULL notes,
        concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.transect, 2))) linekey
   FROM lmf_group_keys a
   LEFT JOIN lmf."GPS" AS b ON a.survey = b."SURVEY" AND a.state = b."STATE" AND a.county = b."COUNTY" 
@@ -435,7 +436,7 @@ SELECT concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.transec
 
 ), dima_final AS (
 SELECT a."RecKey" reckey, a."FormDate"::timestamp AT TIME ZONE c.tz survey_date, 
-       a."Observer" observer, a."CheckboxLabel" checkboxlabel, a."Notes" notes, a."LineKey" linekey
+       a."Observer" observer, a."Notes" notes, a."LineKey" linekey
   FROM dima."tblLPIHeader" a
   LEFT JOIN dima."tblLines" b ON a."LineKey" = b."LineKey"
   LEFT JOIN public.point c ON b."PlotKey" = c.plotkey
@@ -593,54 +594,59 @@ SELECT * FROM dima_final
  UNION ALL
 SELECT * FROM eco.shrubshape;
 
+
 --
--- esfsg_line
+-- esfsg_meta
 --
-DROP MATERIALIZED VIEW IF EXISTS public.esfsg_line CASCADE;
-CREATE MATERIALIZED VIEW public.esfsg_line AS
+DROP MATERIALIZED VIEW IF EXISTS public.esfsg_meta CASCADE;
+CREATE MATERIALIZED VIEW public.esfsg_meta AS
 WITH lmf_process0 AS (
-SELECT "SURVEY" survey, "STATE" state, "COUNTY" county, "PSU" psu, "POINT" point, "SEQNUM" seq_no, 'nesw' coverage, 
-       CASE WHEN "START_MARK" IS NULL THEN 0 ELSE "START_MARK" END AS start_mark, 
-	   CASE WHEN "END_MARK" IS NULL OR "END_MARK" = 0 THEN 150 ELSE "END_MARK" END AS end_mark, 
-	   "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
-	   "ESFSG_NAME" esfsg_name
-	FROM lmf."ESFSG" WHERE "COVERAGE" = 'all'
- UNION ALL
-SELECT "SURVEY" survey, "STATE" state, "COUNTY" county, "PSU" psu, "POINT" point, "SEQNUM" seq_no, 'nwse' coverage, 
-       CASE WHEN "START_MARK" IS NULL THEN 0 ELSE "START_MARK" END AS start_mark, 
-	   CASE WHEN "END_MARK" IS NULL OR "END_MARK" = 0 THEN 150 ELSE "END_MARK" END AS end_mark, 
-	   "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
-	   "ESFSG_NAME" esfsg_name
-	FROM lmf."ESFSG" WHERE "COVERAGE" = 'all'
- UNION ALL
-SELECT "SURVEY" survey, "STATE" state, "COUNTY" county, "PSU" psu, "POINT" point, "SEQNUM" seq_no, "COVERAGE" coverage, 
-       "START_MARK" start_mark, "END_MARK" end_mark, 
-	   "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
-	   "ESFSG_NAME" esfsg_name
-	FROM lmf."ESFSG" WHERE "COVERAGE" != 'all'
+SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT", '9') reckey,
+       b."CAPDATE" AT TIME ZONE 'UTC' survey_date,
+       concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey
+  FROM lmf."ESFSG" a
+  LEFT JOIN lmf."GPS" b ON concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") = 
+                           concat(b."SURVEY", b."STATE", b."COUNTY", b."PSU", b."POINT")
+
+), lmf_process1 AS (
+SELECT reckey, survey_date, plotkey
+  FROM lmf_process0
+ GROUP BY reckey, survey_date, plotkey
 
 ), lmf_final AS (
-SELECT concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.coverage, 2)), '9') reckey,
-	   b."CAPDATE" AT TIME ZONE 'UTC' survey_date,
-	   a.seq_no,
-	   concat(a.esfsg_mlra, a.esfsg_site, a.esfsg_state) ecoid_std,
-	   a.start_mark, a.end_mark,
-       concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.coverage, 2))) linekey
-  FROM lmf_process0 a
-  LEFT JOIN lmf."GPS" AS b ON a.survey = b."SURVEY" AND a.state = b."STATE" AND a.county = b."COUNTY" 
-                           AND a.psu = b."PSU" AND a.point = b."POINT"
+SELECT reckey, survey_date, NULL observer, NULL notes, plotkey
+  FROM lmf_process1
+
+
+), dima_state AS (
+SELECT "RecKey" reckey, "DateRecorded" date_recorded, "PlotKey" plotkey
+  FROM dima."tblPlotHistory"
+ WHERE "RecType" = 'E' 
+   AND coalesce("ESD_StateWithinEcologicalSite", "ESD_CommunityWithinState", 
+				"ESD_CommunityDescription") IS NOT NULL 
+
+), dima_final AS (
+SELECT coalesce(b.reckey, substring(a."PlotKey" from 1 for 12) || '9999') reckey, 
+       coalesce(b.date_recorded, a."EstablishDate")::timestamp AT TIME ZONE c.tz survey_date,
+       NULL observer, NULL notes, a."PlotKey" plotkey
+  FROM dima."tblPlots" a
+  LEFT JOIN dima_state b ON a."PlotKey" = b.plotkey
+  LEFT JOIN public.point c ON a."PlotKey" = c.plotkey
+  WHERE a."PlotKey" NOT IN ('888888888', '999999999')
 )
 
 SELECT * FROM lmf_final
  UNION ALL
-SELECT * FROM eco.esfsg_line;
+SELECT * FROM dima_final
+ UNION ALL
+SELECT * FROM eco.esfsg_meta;
 
 
 --
--- esfsg_plot
+-- esfsg
 --
-DROP MATERIALIZED VIEW IF EXISTS public.esfsg_plot CASCADE;
-CREATE MATERIALIZED VIEW public.esfsg_plot AS
+DROP MATERIALIZED VIEW IF EXISTS public.esfsg CASCADE;
+CREATE MATERIALIZED VIEW public.esfsg AS
 WITH lmf_plot_eco AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT") plotkey,
 	   concat("ESFSG_MLRA", "ESFSG_SITE", "ESFSG_STATE") ecoid_std, 
@@ -681,23 +687,22 @@ SELECT * FROM lmf_plot_eco_ranked
 
 ), lmf_final AS (
 SELECT concat(a.plotkey, '9') reckey,
-	   c."CAPDATE" AT TIME ZONE 'UTC' survey_date,
 	   a.ecoid_std,
 	   substring(b.ecoid, '^(?:F|R|G?)') ecotype,
 	   a.econame,
 	   a.area_pct, a.ecorank,
-	   NULL esd_state, NULL state_community, NULL communitydesc,
-       a.plotkey
+	   NULL esd_state, NULL state_community, 'ATHCPC: ' || d."APPARENT_TREND" community_desc
   FROM lmf_all_eco a
   LEFT JOIN public.ecosite b ON a.ecoid_std = b.ecoid_std
   LEFT JOIN lmf."GPS" c ON a.plotkey = concat(c."SURVEY", c."STATE", c."COUNTY", c."PSU", c."POINT")
+  LEFT JOIN lmf."POINT" d ON a.plotkey = concat(d."SURVEY", d."STATE", d."COUNTY", d."PSU", d."POINT")
 
 ), dima_state AS (
 SELECT a."PlotKey" plotkey, a."RecKey" reckey,
 	   a."DateRecorded" date_recorded,
        a."ESD_StateWithinEcologicalSite" esd_state, 
        a."ESD_CommunityWithinState" state_community, 
-	   regexp_replace(a."ESD_CommunityDescription", '\s+', ' ') communitydesc
+	   regexp_replace(a."ESD_CommunityDescription", '\s+', ' ') community_desc
   FROM dima."tblPlotHistory" a
  WHERE "RecType" = 'E' 
    AND coalesce("ESD_StateWithinEcologicalSite", "ESD_CommunityWithinState", 
@@ -705,14 +710,12 @@ SELECT a."PlotKey" plotkey, a."RecKey" reckey,
 
 ), dima_final AS (
 SELECT coalesce(b.reckey, substring(a."PlotKey" from 1 for 12) || '9999') reckey, 
-       coalesce(b.date_recorded, a."EstablishDate")::timestamp AT TIME ZONE c.tz survey_date, 
 	   coalesce(substring(trim(a."EcolSite"), '^(?:F|R|G?)(\d{3}[A-z]?[A-z]?\d{3}[A-z]{2})(_*\d*)$'),
 			   trim(a."EcolSite")) ecoid_std,
 	   substring(trim(a."EcolSite"), '^(?:F|R|G?)') ecotype,
 	   NULL econame, 
 	   1 area_pct, 1 ecorank,
-	   b.esd_state, b.state_community, b.communitydesc,
-       a."PlotKey" plotkey
+	   b.esd_state, b.state_community, b.community_desc
   FROM dima."tblPlots" a
   LEFT JOIN dima_state b ON a."PlotKey" = b.plotkey
   LEFT JOIN public.point c ON a."PlotKey" = c.plotkey
@@ -723,7 +726,51 @@ SELECT * FROM lmf_final
   UNION ALL
 SELECT * FROM dima_final
  UNION ALL
-SELECT * FROM eco.esfsg_plot;
+SELECT * FROM eco.esfsg;
+
+
+
+--
+-- esfsg_detail
+--
+DROP MATERIALIZED VIEW IF EXISTS public.esfsg_detail CASCADE;
+CREATE MATERIALIZED VIEW public.esfsg_detail AS
+WITH lmf_process0 AS (
+SELECT "SURVEY" survey, "STATE" state, "COUNTY" county, "PSU" psu, "POINT" point, "SEQNUM" seq_no, 'nesw' coverage, 
+       CASE WHEN "START_MARK" IS NULL THEN 0 ELSE "START_MARK" END AS start_mark, 
+	   CASE WHEN "END_MARK" IS NULL OR "END_MARK" = 0 THEN 150 ELSE "END_MARK" END AS end_mark, 
+	   "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
+	   "ESFSG_NAME" esfsg_name
+	FROM lmf."ESFSG" WHERE "COVERAGE" = 'all'
+ UNION ALL
+SELECT "SURVEY" survey, "STATE" state, "COUNTY" county, "PSU" psu, "POINT" point, "SEQNUM" seq_no, 'nwse' coverage, 
+       CASE WHEN "START_MARK" IS NULL THEN 0 ELSE "START_MARK" END AS start_mark, 
+	   CASE WHEN "END_MARK" IS NULL OR "END_MARK" = 0 THEN 150 ELSE "END_MARK" END AS end_mark, 
+	   "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
+	   "ESFSG_NAME" esfsg_name
+	FROM lmf."ESFSG" WHERE "COVERAGE" = 'all'
+ UNION ALL
+SELECT "SURVEY" survey, "STATE" state, "COUNTY" county, "PSU" psu, "POINT" point, "SEQNUM" seq_no, "COVERAGE" coverage, 
+       "START_MARK" start_mark, "END_MARK" end_mark, 
+	   "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
+	   "ESFSG_NAME" esfsg_name
+	FROM lmf."ESFSG" WHERE "COVERAGE" != 'all'
+
+), lmf_final AS (
+SELECT concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.coverage, 2))) linekey,
+       concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.coverage, 2)), '9') reckey,
+	   a.seq_no,
+	   concat(a.esfsg_mlra, a.esfsg_site, a.esfsg_state) ecoid_std,
+	   a.start_mark, a.end_mark
+  FROM lmf_process0 a
+  LEFT JOIN lmf."GPS" AS b ON a.survey = b."SURVEY" AND a.state = b."STATE" AND a.county = b."COUNTY" 
+                           AND a.psu = b."PSU" AND a.point = b."POINT"
+)
+
+SELECT * FROM lmf_final
+ UNION ALL
+SELECT * FROM eco.esfsg_detail;
+
 
 --
 -- plantcensus_meta
