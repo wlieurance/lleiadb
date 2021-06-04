@@ -24,7 +24,10 @@ The following software will be needed to use this project.  Note that versions u
 
 1. A running [Postgres](https://www.postgresql.org/) installation >= 13 either locally or remotely, with
 2. [PostGIS](https://postgis.net/) >= 2.5 installed.
-3. [R](https://www.r-project.org/) >= 4.0 installed
+3. [R](https://www.r-project.org/) >= 4.0 installed.
+4. [Microsoft Access Database Engine](https://www.microsoft.com/en-us/download/details.aspx?id=54920) (optional), for connecting R to MS Access databases.
+
+**Please note that your R version (32 vs. 64 bit) must match your Access Database Engine version.**
 
 Additionally the path to your bin folder within your R installation directory will need to be in your system's PATH in order to run Rscript globally from the command line. Depending on your installation, this may have been done by default.
 
