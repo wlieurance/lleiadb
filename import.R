@@ -4,9 +4,6 @@ libraries = c("optparse", "dplyr", "tibble", "digest", "tictoc", "DBI", "pool",
               "stringr", "glue")
 
 for (lib in libraries){
-  if(lib %in% rownames(installed.packages()) == FALSE) {
-    install.packages(lib)
-  }
   suppressMessages(library(lib, character.only = TRUE))
 }
 vdigest <- Vectorize(digest)

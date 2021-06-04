@@ -1,13 +1,11 @@
 #!/usr/bin/env Rscript
 
-libraries = c("RPostgres", "dplyr", "tidyr", "dbplyr", "glue", "getPass", 
-              "parallel", "stringi", "stringr", "doParallel", "tictoc", 
-              "optparse", "readr", "lubridate", "tools")
+libraries = c("dbplyr", "doParallel", "dplyr", "getPass", "glue", 
+              "lubridate", "optparse", "parallel", "readr", 
+              "RPostgres", "stringi", "stringr", "tictoc", "tidyr", 
+              "tools")
 
 for (lib in libraries){
-  if(lib %in% rownames(installed.packages()) == FALSE) {
-    install.packages(lib)
-  }
   suppressMessages(library(lib, character.only = TRUE))
 }
 

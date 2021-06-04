@@ -1,6 +1,7 @@
-suppressMessages(library(stringr))
-suppressMessages(library(readr))
-suppressMessages(library(crayon))
+libraries = c("crayon", "readr", "stringr")
+for (lib in libraries){
+  suppressMessages(library(lib, character.only = TRUE))
+}
 
 #' cleans and separates multiple statements sql files into vectors of statements,
 #' extreme basic use. WILL STILL FAIL in may scenarios, primary revolving around

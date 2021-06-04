@@ -1,12 +1,9 @@
 #!/usr/bin/env Rscript
 
-libraries = c("DBI", "pool", "RPostgres", "getPass", "optparse", "readr", 
-              "stringr", "sf", "dplyr")
+libraries = c("DBI", "dplyr", "getPass", "optparse", "pool", 
+              "readr", "RPostgres", "sf", "stringr")
 
 for (lib in libraries){
-  if(lib %in% rownames(installed.packages()) == FALSE) {
-    install.packages(lib)
-  }
   suppressMessages(library(lib, character.only = TRUE))
 }
 
