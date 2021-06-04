@@ -6,15 +6,17 @@ files = c("create_db.R", "export.R", "import.R", "lpi_calc.R", "lpi_convert.R",
 # find which packages we are currently using.
 all.libs <-  character()
 for (f in files){
+  # print(f)
   src <- readChar(f, file.info(f)$size)
-  lib.match <- regexpr(pattern = "(libraries\\s+=\\s+c\\([^\\)]+\\))", 
+  lib.match <- gregexpr(pattern = "libraries\\s+=\\s+c\\(([^\\)]+)\\)", 
                      src, perl = T)
   if (lib.match != -1) {
-    lib.txt <- substr(src, lib.match, 
-                      lib.match + attr(lib.match, "match.length"))
-    eval(parse(text = lib.txt))
-    all.libs <-  c(all.libs, libraries)
-    rm("libraries")
+    lib.txt <- substr(src, attr(lib.match[[1]], "capture.start"), 
+                      attr(lib.match[[1]], "capture.start") + 
+                        attr(lib.match[[1]], "capture.length") - 1)
+    lib.cleaned <- gsub('"|\\s+', "", lib.txt)
+    lib.split <- strsplit(lib.cleaned, ",", fixed = TRUE)[[1]]
+    all.libs <-  c(all.libs, lib.split)
   } else {
     cat(paste0("Error: could not parse libraries in file ", f))
   }
