@@ -3409,7 +3409,7 @@ CREATE TABLE dima."tblGapDetail" (
   "GapStart" VARCHAR(50) DEFAULT E'0', 
   "GapEnd" VARCHAR(50) DEFAULT E'0', 
   "Gap" VARCHAR(50) DEFAULT E'0', 
-  PRIMARY KEY ("RecKey", "SeqNo"),
+  PRIMARY KEY ("RecKey", "RecType", "GapStart"),
   FOREIGN KEY ("RecKey") REFERENCES dima."tblGapHeader"("RecKey") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
