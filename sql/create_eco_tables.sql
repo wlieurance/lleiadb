@@ -490,7 +490,7 @@ DROP TABLE IF EXISTS eco.shrubshape CASCADE;
 CREATE TABLE eco.shrubshape (
     reckey character varying(20) NOT NULL, 
     mark numeric(4,1) NOT NULL,
-    species_code character varying(9), 
+    species_code character varying(7), 
     shape character varying(1),
     PRIMARY KEY (reckey, mark),
     FOREIGN KEY (reckey) REFERENCES eco.pintercept_meta(reckey) ON UPDATE CASCADE ON DELETE CASCADE
@@ -524,7 +524,7 @@ DROP TABLE IF EXISTS eco.plantdensity CASCADE;
 CREATE TABLE eco.plantdensity (
     reckey character varying(20) NOT NULL,
     subid character varying(15),
-    species_code character varying(9), 
+    species_code character varying(7), 
     class_no smallint,
     total integer CHECK (total >= 0),
     PRIMARY KEY (reckey, subid, species_code, class_no),
