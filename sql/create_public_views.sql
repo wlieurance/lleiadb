@@ -995,17 +995,18 @@ SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT") plotkey,
 
 ), lmf_final AS (
 SELECT a.reckey, b."CAPDATE" AT TIME ZONE 'UTC' survey_date, NULL observer,
-       2 subplot_no, NULL notes, NULL species_searched, a.linekey
+       2 subplot_no, NULL notes, 'all' species_searched, a.linekey
   FROM lmf_process0 a
   LEFT JOIN lmf."GPS" b ON a.plotkey = concat(b."SURVEY", b."STATE", b."COUNTY", b."PSU", b."POINT")
 
 ), dima_final AS (
 SELECT a."RecKey" reckey, a."FormDate"::timestamp AT TIME ZONE c.tz survey_date, 
        a."Observer" obsrever, a."numQuadrats" subplot_no, 
-       a."Notes" notes, a."SpeciesSearchedFor" species_searched, a."LineKey" linekey
+       a."Notes" notes, coalesce(d."DensityList", a."SpeciesSearchedFor") species_searched, a."LineKey" linekey
   FROM dima."tblPlantDenHeader" a
   LEFT JOIN dima."tblLines" b ON a."LineKey" = b."LineKey"
   LEFT JOIN public.point c ON b."PlotKey" = c.plotkey
+  LEFT JOIN dima."tblPlots" d ON  b."PlotKey" = d."PlotKey"
 )
 
 SELECT * FROM lmf_final
