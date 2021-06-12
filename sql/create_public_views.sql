@@ -1927,36 +1927,6 @@ SELECT * FROM plant_fam;
 COMMENT ON VIEW public.plant_mod IS 'creates a version of the ''plant'' table with first growth habit and duration extracted and family codes added';
 
 --
--- plant_discrepencies
---
-DROP VIEW IF EXISTS public.plant_discrepencies CASCADE;
-CREATE VIEW public.plant_discrepencies AS
-WITH gh_compare AS (
-SELECT a.accepted_symbol, a.scientific_name, a.family, trim(split_part(a.growth_habit, ',', 1)) AS growth_habit_first, 
-       CASE WHEN c."GrowthHabitSub" = 'Sub-Shrub' THEN 'Subshrub'
-            WHEN c."GrowthHabitSub" = 'Sedge' THEN 'Graminoid' 
-            ELSE c."GrowthHabitSub" END AS growth_habit_dima,
-       a.growth_habit, trim(split_part(a.duration, ',', 1)) AS duration_first, a.duration, b."Duration" AS duration_dima
-  FROM public.plant AS a
- INNER JOIN dima."tblSpecies" AS b ON a.accepted_symbol = b."SpeciesCode"
- INNER JOIN dima."tblSpeciesGrowthHabit" AS c ON b."GrowthHabitCode" = c."Code"),
-
-code_count AS (
-SELECT a.hit, b.common_name, b.scientific_name, b.family, count(a.hit) AS n
-  FROM public.pintercept AS a
- INNER JOIN public.plant AS b ON a.hit = b.accepted_symbol
- GROUP BY a.hit, b.common_name, b.scientific_name, b.family)
-
-SELECT a.*, b.n 
-  FROM gh_compare AS a
- INNER JOIN code_count AS b ON a.accepted_symbol = b.hit
- WHERE a.growth_habit_first != a.growth_habit_dima AND
-       a.growth_habit_dima != 'Succulent'
- ORDER BY b.n DESC;
-COMMENT ON VIEW public.plant_discrepencies IS 'compares growth habit and duration differences between dima."tblSpecies" and public.plant';
-
-
---
 -- method_species_regex
 --
 DROP VIEW IF EXISTS public.method_species_regex CASCADE;
@@ -2042,7 +2012,7 @@ COMMENT ON VIEW public.plant_regex IS 'unions plant_mod and method_species_regex
 
 
 --
--- pintercept
+-- pintercept_plot
 --
 DROP VIEW IF EXISTS public.pintercept_plot CASCADE;
 CREATE VIEW public.pintercept_plot AS
@@ -2122,10 +2092,11 @@ SELECT plotkey, survey_year, hit, hit_type,
 ), pi_final AS (
 -- joins calculations to the plant table for additional indicator data
 SELECT a.plotkey, a.survey_year, a.hit, 
-       b.scientific_name, b.common_name, b.duration_first duration, b.growth_habit_first growth_habit,
        case when a.hit_type = 'g' then 'growth habit'
             when a.hit_type = 'l' then 'canopy'
             else NULL end hit_type, 
+       b.scientific_name, b.common_name, b.family, b.duration_first duration, 
+       b.growth_habit_first growth_habit,
        a.hit_n, a.hit_pct, a.hit_pct_sd,
        a.dead_n, a.dead_pct, a.dead_pct_sd,
        a.height_n, a.height_cm, a.height_sd
@@ -2298,9 +2269,10 @@ SELECT a.plotkey, date_part('year', b.survey_date) survey_year,
   GROUP BY a.plotkey, survey_year, c.species_code
 
 ), joined AS (
-SELECT a.plotkey, a.survey_year, a.species_code, a.rec_n, a.notes,
+SELECT a.plotkey, a.survey_year, a.species_code,
+       b.code_type, b.scientific_name, b.common_name, b.family,
        b.duration_first duration, b.growth_habit_first growth_habit,
-       b.code_type, b.scientific_name, b.common_name, b.family
+       a.rec_n, a.notes
   FROM sr_plot a
   LEFT JOIN public.plant_regex b ON a.species_code = b.accepted_symbol
 )
@@ -2407,9 +2379,10 @@ SELECT plotkey, survey_year, class_no, class_lbl, species_code,
 
 ), plot_joined AS (
 -- joins plot summary with plant level data
-SELECT a.plotkey, a.survey_year, a.class_no, a.species_code,
-       b.scientific_name, b.common_name, b.family, a.rec_n, 
-       a.density_ha_mean, a.density_ha_sd
+SELECT a.plotkey, a.survey_year, a.class_no, a.class_lbl, a.species_code,
+       b.scientific_name, b.common_name, b.family, b.duration_first duration, 
+       b.growth_habit_first growth_habit,
+       a.rec_n, a.density_ha_mean, a.density_ha_sd
   FROM rec_plot_grouped a
   LEFT JOIN public.plant_regex b ON a.species_code = b.accepted_symbol
 )
