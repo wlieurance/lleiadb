@@ -1,4 +1,5 @@
 # Landscape-Level Ecological Inventory and Assessment (LLEIA) Database
+
 ## Purpose
 This project was initiated in order to facilitate the storage and manipulation of ecological monitoring data collected in shrublands and grasslands by various federal, state, and private entities in the United States.
 
@@ -20,11 +21,11 @@ This project also provides a number of data manipulation scripts to summarize ra
 3. Vegetation height
 
 ## Prerequisites
-The following software will be needed to use this project.  Note that versions used during development are listed, and while prior versions may work, they have not been tested.
+The following software will be needed to use this project. Note that versions used during development are listed, and while prior versions may work, they have not been tested.
 
-1. A running [Postgres](https://www.postgresql.org/) installation >= 13 either locally or remotely, with
-2. [PostGIS](https://postgis.net/) >= 2.5 installed.
-3. [R](https://www.r-project.org/) >= 4.0 installed.
+1. A running [Postgres](https://www.postgresql.org/) installation either locally or remotely, with
+2. [PostGIS](https://postgis.net/) installed.
+3. [R](https://www.r-project.org/) installed.
 4. [Microsoft Access Database Engine](https://www.microsoft.com/en-us/download/details.aspx?id=54920) (optional), for connecting R to MS Access databases.
 
 **Please note that your R version (32 vs. 64 bit) must match your Access Database Engine version.**
@@ -35,7 +36,7 @@ Various R libraries are also needed, which are listed at the beginning of each s
 ```
 Rscript install_libs.R
 ```
-to install them all from the command line. In the case if a library loading error, manual intervention may be necessary with **install.packages("package")** or **install_github("user/package")** via the R command line (note **install_github** requires the *devtools* library). Some R library dependencies may require downloading if building R libraries from source. Pay attention to the build error messages to determine which dependencies need to be installed on your system.
+to install them all from the command line. In the case of a library loading error, manual intervention may be necessary with **install.packages("package")** or **install_github("user/package")** via the R command line (note **install_github** requires the *devtools* library). Some R library dependencies may require downloading if building R libraries from source. Pay attention to the build error messages to determine which dependencies need to be installed on your system.
 
 ## Installation
 
@@ -45,7 +46,7 @@ git clone https://github.com/wlieurance/lleiadb.git
 ```
 
 ## Usage
-Functionality is provided via command line usage of Rscript, located in the *bin* sub-folder of your R installation.  In Linux this is typically your shell (**Bash**, **Zsh**, etc.), for Mac this is likely **Zsh** (Applications -> Utilities -> Terminal), and for MS Windows this is typically **PowerShell.exe** or **CMD.exe** (Search -> PowerShell).
+Functionality is provided via command line usage of Rscript, located in the *bin* sub-folder of your R installation. In Linux this is typically your shell (**Bash**, **Zsh**, etc.), for Mac this is likely **Zsh** (Applications -> Utilities -> Terminal), and for MS Windows this is typically **PowerShell.exe** or **CMD.exe** (Search -> PowerShell).
 
 ### Database Creation
 Database creation is accomplished through the *create_db.R* script. The command line arguments and options which this script can accept can be seen by running:
@@ -82,22 +83,39 @@ Example usage:
 Rscript export.R --schema eco database_name database_user /path/to/export_database.sqlite
 ```
 
-If the schema contains spatial data (currently only the *eco* schema) a SpatiaLite database will be created, otherwise a standard SQLite database will be created.  The will export an entire schema.
+If the schema contains spatial data (currently only the *eco* schema) a SpatiaLite database will be created, otherwise a standard SQLite database will be created. The will export an entire schema.
 
 ### Accessing Data
-After data have been imported, the can be viewed according to their individual schema in the Postgres instance.  For instance, if a DIMA database was imported, its data will be located in the **dima**
-schema.  Data can be tied back to its database of import using the *db* table available in each schema.  In both the lmf and eco schemas, the db table is tied to specific sites in the site-level table, that is organization is db -> site_table (eco) -> plot_table -> line_table (eco)-> my_table and deleting a db record will cascade to other records in this way.
+After data have been imported, the can be viewed according to their individual schema in LLEIA. For instance, if a DIMA database was imported, its data will be located in the *dima* schema. Data can be tied back to its database of import using the *db* table available in each schema. Removing or updating a record from a db table will cascade that update/delete throughout the rest of the database (mostly). This provides a convenient way to remove data contained in one source database if a user needs to.
 
-The dima schema operates differently (experimentally) in which site, line and plot keys from loaded data are kept track of in special tables called db_site, db_plot, and db_line (shim tables). These shim tables may contain duplicate site/plot/line keys tied to specific database, and utilize triggers to control the deletion of the main records in tblSites, tblPlots, and tblLines (collective tables) when a specific key is no longer found in a table shim table.  Moreover, individual header tables (e.g. tblLPIHeader, tblGapHeader, etc.) are directly tied to the shim tables, allowing users to delete or update data from specific database sources without deleting or altering the data in the collective tables, which may be shared across multiple DIMA databases.
+The dima schema operates differently (experimentally) in which site, line and plot keys from loaded data are kept track of in special tables called db_site, db_plot, and db_line (shim tables). These shim tables may contain duplicate site/plot/line keys tied to specific database, and utilize triggers to control the deletion of the main records in tblSites, tblPlots, and tblLines (collective tables) when a specific key is no longer found in a table shim table. Moreover, individual header tables (e.g. tblLPIHeader, tblGapHeader, etc.) are directly tied to the shim tables, allowing users to delete or update data from specific database sources without deleting or altering the data in the collective tables, which may be shared across multiple DIMA databases.
 
-This design decision was made due to the nature of DIMA as a primary collection database, where multiple individual DIMAs may share the collective table keys.  Users may want to delete or update date from a specific database that shares the same collective keys as other DIMA databases. The shim tables allow this to happen.
+This design decision was made due to the nature of DIMA as a primary collection database, where multiple individual DIMAs may share the collective table keys. Users may want to delete or update date from a specific database that shares the same collective keys as other DIMA databases. The shim tables allow this to happen.
 
-Additionally, the dima schema has special tables (tblSpecies, tblSpeciesGeneric, tblEcolSites), which may have similar data across multiple DIMAs. These tables are initially populated at the time of The Postgres DB creation and all subsequent data is then stored in tablename_delta versions of these tables, where the specific database is for the data is tracked in the table, and any day that differs significantly from the base table is inserted here.  This, in theory allows a specific version of these tables to be queried based on the source database.  This may be helpful, for instance, if two DIMAs have different names and/or growth habits for species, different names for ecological site codes, or different identifying data stored for generic species codes.
+Additionally, the dima schema has special tables (tblSpecies, tblSpeciesGeneric, tblEcolSites), which may have similar data across multiple DIMAs. These tables are initially populated at the time of LLEIA creation, and all subsequent data (within specific criteria)is then stored in tablename_delta versions of these tables. This  setup allows for a specific version of these tables to be reconstructed for each source database, while limiting duplicate records t the extent possible. This may be helpful, for instance, if two DIMAs have different names and/or growth habits for species, different names for ecological site codes, or different identifying data stored for generic species codes.
 
-For viewing all data from all schemas simultaneously, materialized views have been created in the public schema which transform data from the dima and lmf schemas into the eco schema format and stores them along with eco schema data into a single table for viewing.  This allows users to process any data from any data source with the same algorithm, regardless of its schema source.  This is the primary way data are intended to be accessed in LLEIA, though there are many individual tables in the dima schema which have no counterpart in either the lmf or eco schemas, for which users will have to access the dima schema directly. Geometry and timezone data from the dima and lmf schemas are also extracted for these materialized views, allowing the geometry of certain tables to be plotted with software relevant to PostGIS geometry (e.g. GIS software, R plotting, etc.)
+For viewing all data from all schemas simultaneously, materialized views have been created in the public schema which transform data from the dima and lmf schemas into the eco schema format and stores them along with eco schema data into a single table for viewing. This allows users to process any data from any data source with the same algorithm, regardless of its schema source. This is the primary way data are intended to be accessed in LLEIA, though there are many individual tables in the dima schema which have no counterpart in either the lmf or eco schemas, for which users will have to access the dima schema directly. Geometry and timezone data from the dima and lmf schemas are also extracted for these materialized views, allowing the geometry of certain tables to be plotted with software relevant to PostGIS geometry (e.g. GIS software, R plotting, etc.)
 
 ### Calculating Indicators
-Plot level indicators are in active development, though some plot level methods are available as views in the public schema. All methods in the public schema are slated to eventually have plot level tables created for easy use drag-and-drop use in GIS applications. Currently one method, point intercept, is processed exclusively via R script (as opposed to natively with SQL) due to its complicated, multilayered nature. Users can export point intercept data by running:
+Indicator calculations at the plot/year level are available via native Postgres views and via Rscript. Summary at the plot and year level allows for multiple method instances to be calculated separately in the case of plot revisits, and it also allows transects that may have been collected at different days of the year to be aggregated into the same temporal group. The downside to this sort of aggregation is the loss of precise visit dates in the output data. For more date specific information, please consult the *public.method_meta* materialized views which contain the **survey_date** data.
+
+#### Postgres Views
+The following methodologies are currently calculated at the plot/year/species_code level as PostgreSQL views.
+- Gap intercept: **public.gap_plot**
+- Line-point intercept: **public.pintercept_plot**
+- Species richness / plant census: **public.plantcensus_plot**
+- Plant density: **public.plantdensity_plot**
+- Annual production: **public.production_plot**
+- Shrub shape: **public.shrubshape_plot**
+- Soil aggregate stability: **public.soilstability_plot**
+
+The following methodologies are given to convert long data to a wide format:
+- Interpreting Indicators of Rangeland Health (IIRH): **public.rangehealth_plot**
+
+#### R Scripts
+While SQL based views can provide quick and convenient access to species level data, a more customizable approach is achieved through R scripting. Currently, only the line-point intercept methodology has a script based calculator. This script calculator allows the user to specify custom indicators for output and gives them for multiple "hit types" (i.e. top, basal, any, etc.)
+
+Users can export line-point intercept data by running:
 
 ```
 Rscript lpi_calc.R -h
@@ -120,6 +138,29 @@ Rscript lpi_convert.R  --cover "indicator_name1, any; indicator_name2, top;" dat
 ```
 
 Running this script will produce a spatial feature with one line per plot/survey_year easily viewed by applications which prefer wide format data (e.g. GIS applications). Each indicator mean and standard deviation are given their own field (wide format). Indicator string examples can be found in the **examples** sub-folder. The format of the output file will depend on the extension chosen and is guessed by *st_write()* in R's *sf* library and will depend on driver availability on a user's individual system. Common choices would be ESRI shapefile (.shp), OGC geopackage (.gpkg), or SpatiaLite (.sqlite). Indicator strings are constructed in the format of *indicator_name1, hit_type1; indicator_name2, hit_type2*. This string is parsed to select the appropriate fields for pivoting the data wider.
+
+## Database Structure and Documentation
+Metadata documenting the database is available as an [xml file](/metadata/lleiadb_metadata_iso19110-2016.xml) in [ISO 19110:2016](https://www.iso.org/standard/57303.html) format. The metadata documents the *eco* and *public* schemas primarily, as neither the *dima* nor the *lmf* schema are maintained by the author. For more information regarding these schemas, please contact [Ericha Courtright](ericha@nmsu.edu) at [ARS Jornada](https://jornada.nmsu.edu/) and [Emily Kachergis](ekachergis@blm.gov) at the [DOI Bureau of Land Management](https://www.blm.gov/services/national-operations-center) respectively.
+
+Of the four schema in the database, each houses a different category of data.
+
+### dima
+Houses data natively found in Jornada's Database for Inventory, Monitoring & Assessment (currently version 5.5). This is distributed by the Jornada as an Microsoft Access database and can be downloaded [here](https://jornada.nmsu.edu/monit-assess/dima/download).
+
+### lmf
+Houses data collected via the NRI Grazing Land schema, collected via the NRCS's CASI Windows Mobile application. NRI Grazing Land data that are collected on BLM land are jointly managed by the BLM and NRCS and are referred to as Landscape Monitoring Framework data.
+
+### eco
+The custom LLEIA schema. This schema was developed in order to store data not otherwise already found in a schema, and to handle data conversion from both LMF and DIMA databases. 
+
+### public
+This schema houses tables from other data sources, such as state and county data or NRCS PLANTS data. It also houses a set of materialized views which mirror the naming of tables in the *eco* schema. These materialized views follow the design of the *eco* schema, and contain data from all the other three schemas, converting as necessary for the *dima* and *lmf* schemas. These materialized views are designed to be an easy way to view data from all three data sources at once, and users can reference the *eco* schema metadata for a reference to what fields and data these materialized views contain.
+
+This schema also contains a number of other views which source their data from the public schema, including a number of view which calculate method indicators at the plot/year/species level (for those methods that have plant species).
+
+### Entity Relationship Diagram
+
+For a complete reference on what table and field relationships exist in the database, the user is encouraged to reference the SQL directly in  [sql](/sql) folder. A somewhat simplified ERD is also made available in vector form [here](/metadata/lleia_erd_simple.svg).
 
 
 ## Meta
