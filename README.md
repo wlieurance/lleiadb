@@ -11,7 +11,7 @@ This project allows users to create an spatially enabled enterprise database (Po
 ### Database Functionality
 1. Spatially enabled PostGIS database.
 2. Robust design with appropriate primary/foreign keys as a check against orphaned records and other quality control issues.
-3. Imported data is tied to specific database keys, which can be deleted from the database to cause the deletion of associated import records, giving the user direct control of database content.
+3. Imported data are tied to specific database keys, which can be deleted from the database to cause the deletion of associated import records, giving the user direct control of database content.
 4. Custom views to quickly give access to common data needs.
 
 ### Additional Project Features
@@ -21,16 +21,13 @@ This project also provides a number of data manipulation scripts to summarize ra
 3. Vegetation height
 
 ## Prerequisites
-The following software will be needed to use this project. Note that versions used during development are listed, and while prior versions may work, they have not been tested.
+The following software will be needed to use this project.
 
-1. A running [Postgres](https://www.postgresql.org/) installation either locally or remotely, with
-2. [PostGIS](https://postgis.net/) installed.
-3. [R](https://www.r-project.org/) installed.
-4. [Microsoft Access Database Engine](https://www.microsoft.com/en-us/download/details.aspx?id=54920) (optional), for connecting R to MS Access databases.
-
-**Please note that your R version (32 vs. 64 bit) must match your Access Database Engine version.**
-
-Additionally the path to your bin folder within your R installation directory will need to be in your system's PATH in order to run Rscript globally from the command line. Depending on your installation, this may have been done by default.
+1. [PostgreSQL](https://www.postgresql.org/) installed (locally or remotely) with superuser access to the database.
+2. [PostGIS](https://postgis.net/) installed along with the PostgreSQL installation.
+3. [R](https://www.r-project.org/) installed. Additionally the path to your bin folder within your R installation directory will need to be in your system's PATH in order to run Rscript globally from the command line. Depending on your installation, this may have been done by default.
+4. [Microsoft Access Database Engine](https://www.microsoft.com/en-us/download/details.aspx?id=54920). Optional. For importing MS Access databases into PostgreSQL. **Please note that your R version (32 vs. 64 bit) must match your Access Database Engine version.**
+5. [SpatiaLite](http://www.gaia-gis.it/gaia-sins/) libraries ([libspatialite](https://www.gaia-gis.it/fossil/libspatialite/index)). Optional. Specifically needed is the *mod_spatialite.dll* or *mod_spatialite.so* library compiled with its location in your system's PATH. This is only necessary when importing or exporting to and from SpatiaLite databases.
 
 Various R libraries are also needed, which are listed at the beginning of each script. Users can run
 ```
@@ -83,34 +80,38 @@ Example usage:
 Rscript export.R --schema eco database_name database_user /path/to/export_database.sqlite
 ```
 
-If the schema contains spatial data (currently only the *eco* schema) a SpatiaLite database will be created, otherwise a standard SQLite database will be created. The will export an entire schema.
+If the schema contains spatial data (currently only the *eco* schema), a SpatiaLite database will be created, otherwise a standard SQLite database will be created. The will export an entire schema.
 
 ### Accessing Data
-After data have been imported, the can be viewed according to their individual schema in LLEIA. For instance, if a DIMA database was imported, its data will be located in the *dima* schema. Data can be tied back to its database of import using the *db* table available in each schema. Removing or updating a record from a db table will cascade that update/delete throughout the rest of the database (mostly). This provides a convenient way to remove data contained in one source database if a user needs to.
+After data have been imported, they can be viewed within their individual schema in LLEIA. For instance, if a DIMA database was imported, its data will be located in the *dima* schema, within the same table name as the source. Data can be referenced back to their database of origin using the *db* table available in each schema. Removing or updating a record from a *db* table will cascade that update/delete throughout the rest of the database (mostly). This provides a convenient way to remove data contained in one source database if a user needs to.
 
-The dima schema operates differently (experimentally) in which site, line and plot keys from loaded data are kept track of in special tables called db_site, db_plot, and db_line (shim tables). These shim tables may contain duplicate site/plot/line keys tied to specific database, and utilize triggers to control the deletion of the main records in tblSites, tblPlots, and tblLines (collective tables) when a specific key is no longer found in a table shim table. Moreover, individual header tables (e.g. tblLPIHeader, tblGapHeader, etc.) are directly tied to the shim tables, allowing users to delete or update data from specific database sources without deleting or altering the data in the collective tables, which may be shared across multiple DIMA databases.
+#### dima 
+The dima schema operates differently (experimentally) in which site, line and plot keys from loaded data are kept track of in special tables called db_site, db_plot, and db_line (shim tables). These shim tables may contain duplicate site/plot/line keys tied to specific database, and utilize triggers to control the deletion of the main records in tblSites, tblPlots, and tblLines (collective tables) when a specific key is no longer found in a table shim table. Moreover, individual header tables (e.g. tblLPIHeader, tblGapHeader, etc.) are directly tied to the shim tables, allowing users to delete or update data from specific database sources without deleting or altering the data in the collective tables, which may be shared across multiple DIMA imports.
 
-This design decision was made due to the nature of DIMA as a primary collection database, where multiple individual DIMAs may share the collective table keys. Users may want to delete or update date from a specific database that shares the same collective keys as other DIMA databases. The shim tables allow this to happen.
+This design decision was made due to the nature of DIMA as a primary collection database, where multiple individual DIMAs may share the collective table keys. Users may want to delete or update date from a specific database that shares the same collective keys as other DIMA databases. The shim tables allow this functionality.
 
-Additionally, the dima schema has special tables (tblSpecies, tblSpeciesGeneric, tblEcolSites), which may have similar data across multiple DIMAs. These tables are initially populated at the time of LLEIA creation, and all subsequent data (within specific criteria)is then stored in tablename_delta versions of these tables. This  setup allows for a specific version of these tables to be reconstructed for each source database, while limiting duplicate records t the extent possible. This may be helpful, for instance, if two DIMAs have different names and/or growth habits for species, different names for ecological site codes, or different identifying data stored for generic species codes.
+Additionally, the dima schema has special tables (tblSpecies, tblSpeciesGeneric, tblEcolSites), which may have similar data across multiple DIMAs. These tables are initially populated at the time of LLEIA creation, and all subsequent data (within specific criteria) are then stored in tablename_delta versions of these tables. This setup allows for a specific version of these tables to be reconstructed for each source database, while limiting duplicate records to the extent possible. This may be helpful, for instance, if two DIMAs have different names and/or growth habits for species, different names for ecological site codes, or different identifying data stored for generic species codes.
 
+#### public 
 For viewing all data from all schemas simultaneously, materialized views have been created in the public schema which transform data from the dima and lmf schemas into the eco schema format and stores them along with eco schema data into a single table for viewing. This allows users to process any data from any data source with the same algorithm, regardless of its schema source. This is the primary way data are intended to be accessed in LLEIA, though there are many individual tables in the dima schema which have no counterpart in either the lmf or eco schemas, for which users will have to access the dima schema directly. Geometry and timezone data from the dima and lmf schemas are also extracted for these materialized views, allowing the geometry of certain tables to be plotted with software relevant to PostGIS geometry (e.g. GIS software, R plotting, etc.)
 
 ### Calculating Indicators
 Indicator calculations at the plot/year level are available via native Postgres views and via Rscript. Summary at the plot and year level allows for multiple method instances to be calculated separately in the case of plot revisits, and it also allows transects that may have been collected at different days of the year to be aggregated into the same temporal group. The downside to this sort of aggregation is the loss of precise visit dates in the output data. For more date specific information, please consult the *public.method_meta* materialized views which contain the **survey_date** data.
 
 #### Postgres Views
-The following methodologies are currently calculated at the plot/year/species_code level as PostgreSQL views.
-- Gap intercept: **public.gap_plot**
-- Line-point intercept: **public.pintercept_plot**
-- Species richness / plant census: **public.plantcensus_plot**
-- Plant density: **public.plantdensity_plot**
-- Annual production: **public.production_plot**
-- Shrub shape: **public.shrubshape_plot**
-- Soil aggregate stability: **public.soilstability_plot**
+The following methodologies are currently calculated as PostgreSQL views.
 
-The following methodologies are given to convert long data to a wide format:
-- Interpreting Indicators of Rangeland Health (IIRH): **public.rangehealth_plot**
+| Method Name                                   | View Name                 | Summary Level         |
+| :-------------------------------------------- | :------------------------ | :-------------------- |
+| Gap intercept                                 | public.gap_plot           | plot, year            |
+| Line-point intercept                          | public.pintercept_plot    | plot, year, species   |
+| Species richness/plant census                 | public.plantcensus_plot   | plot, year, species   |
+| Plant density                                 | public.plantdensity_plot  | plot, year, species   |
+| Annual production                             | public.production_plot    | plot, year, species   |
+| Shrub shape                                   | public.shrubshape_plot    | plot, year, species   |
+| Soil aggregate stability                      | public.soilstability_plot | plot, year, veg. type |
+| Interpreting Indicators of Rangeland Health   | public.rangehealth_plot   | record (long to wide) |
+
 
 #### R Scripts
 While SQL based views can provide quick and convenient access to species level data, a more customizable approach is achieved through R scripting. Currently, only the line-point intercept methodology has a script based calculator. This script calculator allows the user to specify custom indicators for output and gives them for multiple "hit types" (i.e. top, basal, any, etc.)
@@ -125,7 +126,7 @@ Example usage:
 Rscript lpi_calc.R --outfile "path/to/outfile.csv" --indicators "path/to/indicator/definitions.txt" database_name database_user
 ```
 
-This script calculates indicator-level data at the unique plot and survey year level for each indicator in the indicators definitions file to a delimited or RDS file. A call to this script without the indicator definitions file will result in species level data being exported, where each species code is its own indicator. Users can construct their own indicators by using [dplyr filter](https://dplyr.tidyverse.org/reference/filter.html) strings. Example indicator files can be found in the **indicators** sub-folder and examples of the **hits** tables that can be used are in the **example** sub-folder. Further information about what type of data each specific field name may contain can be found in the *pintercept* and *plant* subsections of the database metadata file.
+This script calculates indicator-level data at the unique plot and survey year level for each indicator in the indicators definitions file to a delimited or RDS file. A call to this script without the indicator definitions file will result in species level data being exported, where each species code is its own indicator. Users can construct their own indicators by using [dplyr filter](https://dplyr.tidyverse.org/reference/filter.html) strings. Example indicator files can be found in the **indicators** sub-folder and examples of the **hits** tables that can be used are in the **example** sub-folder. Further information about what types of data each specific field name may contain can be found in the *pintercept* and *plant* subsections of the database metadata file.
 
 Further simplification and widening of the data produced via the lpi_calc module can be produced by running:  
 
