@@ -119,6 +119,8 @@ create.dima <- function(sql.path){
   execute.sql(path = file.path(sql.path, "create_dima_data.sql"))
   cat("DIMA: creating triggers...\n")
   execute.sql(path = file.path(sql.path, "create_dima_triggers.sql"))
+  cat("DIMA: commenting...\n")
+  execute.sql(path = file.path(sql.path, "create_dima_comments.sql"))
 }
 
 
@@ -133,6 +135,8 @@ create.dima <- function(sql.path){
 create.lmf <- function(sql.path){
   cat("LMF: creating tables...\n")
   execute.sql(path = file.path(sql.path, "create_lmf_tables.sql"))
+  cat("LMF: commenting...\n")
+  execute.sql(path = file.path(sql.path, "create_lmf_comments.sql"))
 }
 
 
