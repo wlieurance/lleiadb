@@ -1,47 +1,72 @@
 --
+-- db
+--
+DROP MATERIALIZED VIEW IF EXISTS public.db CASCADE; 
+CREATE MATERIALIZED VIEW public.db AS 
+SELECT *, 'dima' schema_id FROM dima.db
+ UNION ALL
+SELECT *, 'lmf' schema_id FROM lmf.db
+ UNION ALL 
+SELECT *, 'eco' schema_id FROM eco.db;
+
+--
 -- site
 --
 DROP MATERIALIZED VIEW IF EXISTS public.site CASCADE; 
 CREATE MATERIALIZED VIEW public.site AS 
-WITH lmf_rname AS (
+WITH lmf_db_rn AS (
+-- using this row number setup, dbkey will end up being first dbkey
+-- in lmf.db that point is found in
+SELECT *, row_number() over() rn 
+  FROM lmf.db
+ 
+), lmf_rname AS (
 SELECT b.dbkey, b.description source, lpad(CAST(a."STATE" AS VARCHAR), 2, '0') || lpad(CAST(a."COUNTY" AS VARCHAR), 2, '0') || a."PSU" AS sitekey,
        CASE WHEN a."OWN" = '9' THEN 'BLM' ELSE a."OWN" END AS own,
-	   a."PSU" AS siteid
+	   a."PSU" AS siteid, b.rn
   FROM lmf."POINT" AS a
- LEFT JOIN lmf.db  AS b ON a.dbkey = b.dbkey
+ LEFT JOIN lmf_db_rn  AS b ON a.dbkey = b.dbkey
 
 ), lmf_rgroup AS (
-SELECT sitekey, siteid, own, source
+SELECT sitekey, siteid, own, source, min(rn) rn
   FROM lmf_rname
  GROUP BY sitekey, siteid, own, source
 
 ), lmf_rgroup2 AS (
-SELECT sitekey, siteid, source, string_agg(own, ', ') AS ownership
+SELECT sitekey, siteid, source, string_agg(own, ', ') AS ownership, min(rn) rn
   FROM lmf_rgroup
  GROUP BY siteid, sitekey, source
 
 ), lmf_final AS (
-SELECT sitekey, siteid, NULL AS site_name, ownership, source, 'lmf' AS source_type, NULL contact_name, NULL AS notes
-  FROM lmf_rgroup2
+SELECT a.sitekey, a.siteid, NULL AS site_name, a.ownership, a.source, 'lmf' AS source_type, NULL contact_name, NULL AS notes, b.dbkey
+  FROM lmf_rgroup2 a
+ INNER JOIN lmf_db_rn b ON a.rn = b.rn
 
-), dima_first_dbkey AS (
-SELECT min(dbkey) dbkey, "SiteKey"
+), dima_db_site_rn AS (
+-- using this row number setup, dbkey will end up being first dbkey
+-- in dima.db_site that site is found in
+SELECT *, row_number() over() rn 
   FROM dima.db_site
+ 
+), dima_first_dbkey AS (
+SELECT min(rn) rn, "SiteKey"
+  FROM dima_db_site_rn
  GROUP BY "SiteKey"
 
 ), dima_rname AS (
-SELECT b.dbkey, c.description source, a."SiteKey" sitekey, a."SiteID" siteid, a."SiteName" site_name, a."Notes" notes, a."Ownership" ownership, 
-       a."ContactName" contact_name, 'dima' source_type
+SELECT d.description source, a."SiteKey" sitekey, a."SiteID" siteid, a."SiteName" site_name, a."Notes" notes, a."Ownership" ownership, 
+       a."ContactName" contact_name, 'dima' source_type, c.dbkey
   FROM dima."tblSites" a
   LEFT JOIN dima_first_dbkey b ON a."SiteKey" = b."SiteKey"
-  LEFT JOIN dima.db c ON b.dbkey = c.dbkey 
+  LEFT JOIN dima_db_site_rn c ON b.rn = c.rn
+  LEFT JOIN dima.db d ON c.dbkey = d.dbkey
 
 ), dima_final AS (
-SELECT sitekey, siteid, site_name, ownership, source, source_type, contact_name, notes
+SELECT sitekey, siteid, site_name, ownership, source, source_type, contact_name, notes, dbkey
   FROM dima_rname
 
 ), eco_final AS (
-SELECT sitekey, siteid, site_name, ownership, source, source_type, contact_name, notes
+SELECT sitekey, siteid, site_name, ownership, source, source_type, contact_name, notes, dbkey
   FROM eco.site
 )
 
