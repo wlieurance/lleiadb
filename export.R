@@ -57,13 +57,16 @@ convert.sqlite <- function(sql){
   }
   
   sql.new <- sql %>% 
-    str_replace_all(regex("eco\\.", ignore_case = TRUE), "") %>%
-    str_replace_all(regex("CREATE SCHEMA IF NOT EXISTS eco;", 
+    str_replace_all(
+      regex(paste0("(\\s+(?:FROM|JOIN|VIEW|TABLE|EXISTS|REFERENCES|ON|INTO)",
+                   "\\s+)[A-Za-z_\\d]+\\."), 
+            ignore_case = TRUE), "\\1") %>%
+    str_replace_all(regex("CREATE SCHEMA IF NOT EXISTS [A-Za-z]+;", 
                           ignore_case = TRUE), "") %>%
     str_replace_all(regex("(DROP TABLE IF EXISTS [a-z_A-Z\\.]+)\\s+CASCADE;", 
                       ignore_case = TRUE), 
                 "\\1;") %>%
-    str_replace_all(regex("geom geometry\\(.+", ignore_case = TRUE), "") %>%
+    str_replace_all(regex(",\\s+geom geometry\\([^\\)]+\\)", ignore_case = TRUE), "") %>%
     str_replace_all(regex("CREATE INDEX .*? USING gist .*?;", 
                           ignore_case = TRUE), 
                 "") %>%
@@ -73,7 +76,7 @@ convert.sqlite <- function(sql){
 
 
 #' Loads CREATE TABLE statements from a file, separates them, converts them to
-#' SQlite statements, executes thema nd adds spatial metadata and columns if
+#' SQlite statements, executes them and adds spatial metadata and columns if
 #' necessary
 #' 
 #' @param con An RSQLite database connection.
@@ -90,7 +93,7 @@ create.sqlite <- function(con, spatial, sql.path){
     cat("Intializing spatial metadata...\n")
     res <- dbExecute(con, "SELECT InitSpatialMetadata(1);")
   }
-  sql <- sep.sql.stmts(sql.path = sql.path)
+  sql <- parse.sql.simple(sql.path = sql.path)
   new.sql <- lapply(sql, FUN=convert.sqlite)
   for (s in new.sql){
     stmt <-  s$sql
