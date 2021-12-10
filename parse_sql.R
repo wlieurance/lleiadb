@@ -201,7 +201,7 @@ get.state <- function(sql.path, params = list()){
 #' Takes a character and a state and assigns a color and style to the character
 #' using the crayon package.
 #'
-#' @param my.chars A character string contaiing the text to format.
+#' @param my.chars A character string containing the text to format.
 #' @param my.state A named logical vector containing state information for 
 #'   \code{my.chars}.
 #'

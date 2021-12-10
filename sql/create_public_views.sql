@@ -23,7 +23,7 @@ SELECT *, row_number() over() rn
 ), lmf_rname AS (
 SELECT b.dbkey, b.description source, lpad(CAST(a."STATE" AS VARCHAR), 2, '0') || lpad(CAST(a."COUNTY" AS VARCHAR), 2, '0') || a."PSU" AS sitekey,
        CASE WHEN a."OWN" = '9' THEN 'BLM' ELSE a."OWN" END AS own,
-	   a."PSU" AS siteid, b.rn
+       a."PSU" AS siteid, b.rn
   FROM lmf."POINT" AS a
  LEFT JOIN lmf_db_rn  AS b ON a.dbkey = b.dbkey
 
@@ -84,20 +84,20 @@ CREATE MATERIALIZED VIEW public.point AS
 WITH lmf_process0 AS (
 SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey, 
        concat(lpad(CAST(a."STATE" AS VARCHAR), 2, '0'), lpad(CAST(a."COUNTY" AS VARCHAR), 2, '0'), a."PSU") sitekey, 
-	   CAST(a."POINT" AS VARCHAR) plotid,
-	   a."SURVEY" survey, 
-	   c."CAPDATE" AT TIME ZONE 'UTC' establish_dt, 
-	   lpad(CAST(a."STATE" AS VARCHAR), 2, '0') state, 
-	   lpad(CAST(a."COUNTY" AS VARCHAR), 2, '0') county, 
-	   a."MLRA" mlra, 
-	   CASE WHEN a."OWN" = '9' THEN 'BLM' ELSE a."OWN" END own, 
-	   NULL landform_major, 
-	   NULL landform_minor, 
+       CAST(a."POINT" AS VARCHAR) plotid,
+       a."SURVEY" survey, 
+       c."CAPDATE" AT TIME ZONE 'UTC' establish_dt, 
+       lpad(CAST(a."STATE" AS VARCHAR), 2, '0') state, 
+       lpad(CAST(a."COUNTY" AS VARCHAR), 2, '0') county, 
+       a."MLRA" mlra, 
+       CASE WHEN a."OWN" = '9' THEN 'BLM' ELSE a."OWN" END own, 
+       NULL landform_major, 
+       NULL landform_minor, 
        a."VERTICAL_SLOPE_SHAPE" vertical_slope_shape, 
-	   a."HORIZONTAL_SLOPE_SHAPE" horizontal_slope_shape, 
-	   a."SLOPE_PERCENT" slope_percent, 
+       a."HORIZONTAL_SLOPE_SHAPE" horizontal_slope_shape, 
+       a."SLOPE_PERCENT" slope_percent, 
        a."SLOPE_LENGTH" slope_length, 
-	   CASE WHEN a."SLOPE_ASPECT" = 'N' THEN 0
+       CASE WHEN a."SLOPE_ASPECT" = 'N' THEN 0
             WHEN a."SLOPE_ASPECT" = 'NE' THEN 45
             WHEN a."SLOPE_ASPECT" = 'E' THEN 90
             WHEN a."SLOPE_ASPECT" = 'SE' THEN 135
@@ -106,12 +106,12 @@ SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey,
             WHEN a."SLOPE_ASPECT" = 'W' THEN 270
             WHEN a."SLOPE_ASPECT" = 'NW' THEN 315
             ELSE NULL END aspect, 
-	   CASE WHEN b."FIELD_LATITUDE" = 0 THEN NULL ELSE b."FIELD_LATITUDE" END latitude, 
-	   CASE WHEN b."FIELD_LONGITUDE" = 0 THEN NULL 
-	        WHEN b."FIELD_LONGITUDE" > 0 THEN b."FIELD_LONGITUDE" * -1 
-			ELSE b."FIELD_LONGITUDE" END longitude, 
-	   CASE WHEN c."ELEVATION" = 0 THEN NULL ELSE round(cast(c."ELEVATION"/3.28084 as numeric),1) END elevation_m, 
-	   c."NOGPS" nogps
+       CASE WHEN b."FIELD_LATITUDE" = 0 THEN NULL ELSE b."FIELD_LATITUDE" END latitude, 
+       CASE WHEN b."FIELD_LONGITUDE" = 0 THEN NULL 
+            WHEN b."FIELD_LONGITUDE" > 0 THEN b."FIELD_LONGITUDE" * -1 
+            ELSE b."FIELD_LONGITUDE" END longitude, 
+       CASE WHEN c."ELEVATION" = 0 THEN NULL ELSE round(cast(c."ELEVATION"/3.28084 as numeric),1) END elevation_m, 
+       c."NOGPS" nogps
   FROM lmf."POINT" AS a
   LEFT JOIN lmf."POINTCOORDINATES" AS b ON a."SURVEY" = b."SURVEY" AND a."STATE" = b."STATE" AND a."COUNTY" = b."COUNTY" 
                            AND a."PSU" = b."PSU" AND a."POINT" = b."POINT"
@@ -137,7 +137,7 @@ SELECT a.plotkey, a.plotid, a.survey,
        coalesce(b.establish_date, date(a.establish_dt)) establish_date, 
        a.state, a.county, a.mlra, a.own, a.landform_major, 
        a.landform_minor, a.vertical_slope_shape, a.horizontal_slope_shape, 
-	   a.slope_percent, a.slope_length, a.aspect, a.latitude, a.longitude, 
+       a.slope_percent, a.slope_length, a.aspect, a.latitude, a.longitude, 
        a.elevation_m, a.nogps, b.tz, b.geom, a.sitekey
   FROM lmf_process0 a
   LEFT JOIN lmf_coords_tz b ON a.plotkey = b.plotkey
@@ -145,26 +145,26 @@ SELECT a.plotkey, a.plotid, a.survey,
 ), dima_process0 AS (
 SELECT a."PlotKey" plotkey, a."SiteKey" sitekey, a."PlotID" plotid, 
        a."EstablishDate" establish_date, extract(year from a."EstablishDate") survey,
-	   cast(substring(a."EcolSite", '[RrFf]*(\d{3})') as integer) || substring(a."EcolSite", '[RrFf]*\d{3}([^X]{0,1})') mlra,
+       cast(substring(a."EcolSite", '[RrFf]*(\d{3})') as integer) || substring(a."EcolSite", '[RrFf]*\d{3}([^X]{0,1})') mlra,
        b.statefp state, c.countyfp county, 
-	   regexp_replace(a."LandscapeType", '\*+', '') landform_major, 
-	   CASE WHEN trim(a."LandscapeTypeSecondary") = '' THEN NULL
-	        ELSE a."LandscapeTypeSecondary" END landform_minor, 
+       regexp_replace(a."LandscapeType", '\*+', '') landform_major, 
+       CASE WHEN trim(a."LandscapeTypeSecondary") = '' THEN NULL
+            ELSE a."LandscapeTypeSecondary" END landform_minor, 
        CASE WHEN substring(a."ESD_SlopeShape" from 1 for 1) = 'C' THEN 'concave' 
             WHEN substring(a."ESD_SlopeShape" from 1 for 1) = 'V' THEN 'convex' 
             WHEN substring(a."ESD_SlopeShape" from 1 for 1) = 'L' THEN 'linear' 
             ELSE NULL END vertical_slope_shape, 
-	   CASE WHEN substring(a."ESD_SlopeShape" from 2 for 1) = 'C' THEN 'concave' 
-		    WHEN substring(a."ESD_SlopeShape" from 2 for 1) = 'V' THEN 'convex' 
-		    WHEN substring(a."ESD_SlopeShape" from 2 for 1) = 'L' THEN 'linear' 
-		    ELSE NULL END horizontal_slope_shape, 
+       CASE WHEN substring(a."ESD_SlopeShape" from 2 for 1) = 'C' THEN 'concave' 
+            WHEN substring(a."ESD_SlopeShape" from 2 for 1) = 'V' THEN 'convex' 
+            WHEN substring(a."ESD_SlopeShape" from 2 for 1) = 'L' THEN 'linear' 
+            ELSE NULL END horizontal_slope_shape, 
        a."Slope" slope_percent, 
-	   CASE WHEN a."Aspect" = '-1' THEN NULL
-	        ELSE cast(round(cast((regexp_match(a."Aspect", '\d+\.*\d*'))[1] AS double precision)) AS integer) END aspect, 
-	   a."Longitude" longitude, a."Latitude" latitude,
-	   CASE WHEN "ElevationType" = 1 THEN "Elevation"
-	        WHEN "ElevationType" = 2 THEN "Elevation" / 3.281
-	        ELSE 0 END elevation_m
+       CASE WHEN a."Aspect" = '-1' THEN NULL
+            ELSE cast(round(cast((regexp_match(a."Aspect", '\d+\.*\d*'))[1] AS double precision)) AS integer) END aspect, 
+       a."Longitude" longitude, a."Latitude" latitude,
+       CASE WHEN "ElevationType" = 1 THEN "Elevation"
+            WHEN "ElevationType" = 2 THEN "Elevation" / 3.281
+            ELSE 0 END elevation_m
   FROM dima."tblPlots" a
   LEFT JOIN public.state b ON a."State" = b.stusps
   LEFT JOIN public.county c ON b.statefp = c.statefp AND a."County" = c.name
@@ -172,47 +172,62 @@ SELECT a."PlotKey" plotkey, a."SiteKey" sitekey, a."PlotID" plotid,
 
 ), dima_coords0 AS (
 SELECT "PlotKey" plotkey, 
-	   CASE WHEN ("Easting" IS NULL OR "Easting" = 0) AND 
-	             ("Longitude" IS NOT NULL AND "Longitude" != 0) THEN "Longitude"
-	        ELSE "Easting" END easting, 
-	   CASE WHEN ("Northing" IS NULL OR "Northing" = 0) AND 
-	             ("Latitude" IS NOT NULL AND "Latitude" != 0) THEN "Latitude" 
-	        ELSE "Northing" END northing, 
-	   "GPSCoordSys" gpscoordsys, "Datum" datum, "Zone" zone_str,
+       CASE WHEN ("Easting" IS NULL OR "Easting" = 0) AND 
+                 ("Longitude" IS NOT NULL AND "Longitude" != 0) THEN "Longitude"
+            ELSE "Easting" END easting, 
+       CASE WHEN ("Northing" IS NULL OR "Northing" = 0) AND 
+                 ("Latitude" IS NOT NULL AND "Latitude" != 0) THEN "Latitude" 
+            ELSE "Northing" END northing, 
+       "GPSCoordSys" gpscoordsys, "Datum" datum, "Zone" zone_str,
        substring("Zone", '\d{2}') zone_num, 
-	   CASE WHEN "ElevationType" = 1 THEN "Elevation"
-	        WHEN "ElevationType" = 2 THEN "Elevation" / 3.281
-	        ELSE 0 END elevation_m
+       CASE WHEN "Elevation" IS NULL THEN 0
+            WHEN "ElevationType" = 1 THEN "Elevation"
+            WHEN "ElevationType" = 2 THEN "Elevation" / 3.281
+            ELSE 0 END elevation_m
   FROM dima."tblPlots"
 
 ), dima_coords1 AS (
 SELECT plotkey, easting, northing, gpscoordsys, datum, zone_num, round(cast(elevation_m as numeric), 1) elevation_m,
-	   CASE WHEN easting BETWEEN -180 AND 180 AND northing BETWEEN -90 AND 90 THEN True
-	        ELSE False END AS valid_latlong
+       CASE WHEN easting BETWEEN -180 AND 180 AND northing BETWEEN -90 AND 90 THEN True
+            ELSE False END AS valid_latlong
   FROM dima_coords0
  WHERE easting IS NOT NULL AND easting != 0 AND northing IS NOT NULL AND northing != 0
 
 ), dima_coords2 AS (
 SELECT plotkey, 
-	   CASE WHEN easting > 0 AND valid_latlong = True THEN easting * -1
-	        ELSE easting END easting, 
-	   northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
+       CASE WHEN easting > 0 AND valid_latlong = True THEN easting * -1
+            ELSE easting END easting, 
+       northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
        CASE WHEN datum ~ 'WGS\s*84' AND valid_latlong = True THEN 4326
-	        WHEN datum ~ 'NAD\s*83' AND valid_latlong = True THEN 4269
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong = True THEN 4269
             WHEN datum ~ 'WGS\s*84' AND valid_latlong = False THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
-			WHEN datum ~ 'NAD\s*83' AND valid_latlong = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
-			ELSE NULL END srid
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
+            ELSE NULL END srid
   FROM dima_coords1
 
 ), dima_coords3 AS (
-SELECT plotkey, elevation_m,
-       ST_Transform(ST_SetSRID(ST_MakePoint(easting, northing, elevation_m), srid), 4326) AS geom
-  FROM dima_coords2 
- WHERE srid IS NOT NULL
+SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong, srid,
+       CASE WHEN srid::text LIKE '326%' THEN 4326
+            WHEN srid::text LIKE '269%' THEN 4269
+            ELSE srid END pre_srid, 
+       ST_SetSRID(ST_MakePoint(easting, northing, elevation_m), srid) AS geom
+  FROM dima_coords2 a
+WHERE srid IS NOT NULL
+    
+), dima_coords4 AS (
+SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong, pre_srid, srid, 
+       ST_Transform(geom, pre_srid) AS geom
+  FROM dima_coords3
+ WHERE geom IS NOT NULL 
+    
+), dima_coords5 AS (
+SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong, srid, pre_srid,
+       ST_Transform(geom, 4326) AS geom
+  FROM dima_coords4
 
 ), dima_coords_tz AS (
 SELECT a.plotkey, b.tzid tz, st_x(a.geom) longitude, st_y(a.geom) latitude, elevation_m, 'Successful' nogps, a.geom
-  FROM dima_coords3 a
+  FROM dima_coords5 a
   LEFT JOIN public.timezone b ON ST_Intersects(a.geom, b.geom)
 
 ), dima_process1 AS (
@@ -220,18 +235,18 @@ SELECT a.plotkey, a.sitekey, a.plotid, a.mlra,
        a.establish_date, a.survey, b.tz, 
        a.state, a.county, a.landform_major, a.landform_minor, 
        a.vertical_slope_shape, a.horizontal_slope_shape, a.slope_percent, a.aspect, 
-	   coalesce(b.nogps, 'No GPS') nogps,
-	   coalesce(b.longitude, a.longitude) longitude, 
-	   coalesce(b.latitude, a.latitude) latitude, 
-	   coalesce(b.elevation_m, a.elevation_m) elevation_m,
-	   b.geom
+       coalesce(b.nogps, 'No GPS') nogps,
+       coalesce(b.longitude, a.longitude) longitude, 
+       coalesce(b.latitude, a.latitude) latitude, 
+       coalesce(b.elevation_m, a.elevation_m) elevation_m,
+       b.geom
   FROM dima_process0 a
   LEFT JOIN dima_coords_tz b ON a.plotkey = b.plotkey
-	
+    
 ), dima_final AS (
 SELECT plotkey, plotid, survey, establish_date, state, county, mlra, NULL own, landform_major, 
        landform_minor, vertical_slope_shape, horizontal_slope_shape, slope_percent, CAST(NULL as integer) slope_length, 
-	   aspect, latitude, longitude, elevation_m, nogps, tz, geom,
+       aspect, latitude, longitude, elevation_m, nogps, tz, geom,
        sitekey
   FROM dima_process1
 )
@@ -250,23 +265,23 @@ CREATE MATERIALIZED VIEW public.disturbance AS
 WITH lmf_final AS (
 SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey, 
        b."CAPDATE" AT TIME ZONE 'UTC' survey_date, 
-	   a."PASTPRES" pastpres, a."CULTIVATION" = 'Y' cultivation, c."HAYED" = 'Y' hayed,
+       a."PASTPRES" pastpres, a."CULTIVATION" = 'Y' cultivation, c."HAYED" = 'Y' hayed,
        a."MOWING" = 'Y' mowing, a."HAY_REMOVAL" = 'Y' hay_removal, a."HEAVY_MACHINERY" = 'Y' heavy_machinery, 
-	   a."SEEDBED_PREPARATION" = 'Y' seedbed_preparation, a."LIVESTOCK_TANKS" = 'Y' livestock_tanks, 
-	   a."LIVESTOCK_HEAVY_USE" = 'Y' livestock_heavy_use, a."LIVESTOCK_GRAZING" = 'Y' livestock_grazing,
+       a."SEEDBED_PREPARATION" = 'Y' seedbed_preparation, a."LIVESTOCK_TANKS" = 'Y' livestock_tanks, 
+       a."LIVESTOCK_HEAVY_USE" = 'Y' livestock_heavy_use, a."LIVESTOCK_GRAZING" = 'Y' livestock_grazing,
        c."GRAZING_USE" graze_category,
-	   a."INSECTS" = 'Y' insects, a."SMALL_RODENTS" = 'Y' small_rodents, a."NON_RODENT_ANIMALS" = 'Y' non_rodent_animals, 
-	   a."WILDLIFE_GRAZING" = 'Y' wildlife_grazing, a."MINING_EQUIPMENT_OPERATIONS" = 'Y' mining_equipment_operations, 
-	   a."RECREATION_FOOT_TRAFFIC" = 'Y' recreation_foot_traffic, a."RECREATION_VEHICLES_BIKES" = 'Y' recreation_vehicles_bikes, 
-	   a."LIVESTOCK_WALKWAYS" = 'Y' livestock_walkways, a."ROADS_DIRT" = 'Y' roads_dirt, a."ROADS_GRAVEL" = 'Y' roads_gravel, 
-	   a."ROADS_PAVED" = 'Y' roads_paved, a."DRAINAGE" = 'Y' drainage, a."UNDERGROUND_UTILITIES" = 'Y' underground_utilities, 
-	   a."OVERHEAD_TRANSMISSION_LINES" = 'Y' overhead_transmission_lines, a."CONSTRUCTION" = 'Y' construction, 
-	   a."WATER_PONDING" = 'Y' water_ponding, a."SOIL_DEPOSITION_WATER" = 'Y' soil_deposition_water, 
-	   a."SOIL_DEPOSITION_WIND" = 'Y' soil_deposition_wind, a."WATER" = 'Y' water, a."WIND" = 'Y' wind, 
-	   a."TRANSPORTED_FILL" = 'Y' transported_fill, a."WILDFIRE" = 'Y' wildfire, a."PRESCRIBED_FIRE" = 'Y' prescribed_fire, 
-	   a."FIRE_FIGHTING_OPERATIONS" = 'Y' fire_fighting_operations, a."BRUSH_MANAGEMENT_CHEMICAL" = 'Y' brush_management_chemical, 
-	   a."BRUSH_MANAGEMENT_MECHANICAL" = 'Y' brush_management_mechanical, 
-	   a."BRUSH_MANAGEMENT_BIOLOGICAL" = 'Y' brush_management_biological, NULL::boolean other, NULL other_desc, NULL notes
+       a."INSECTS" = 'Y' insects, a."SMALL_RODENTS" = 'Y' small_rodents, a."NON_RODENT_ANIMALS" = 'Y' non_rodent_animals, 
+       a."WILDLIFE_GRAZING" = 'Y' wildlife_grazing, a."MINING_EQUIPMENT_OPERATIONS" = 'Y' mining_equipment_operations, 
+       a."RECREATION_FOOT_TRAFFIC" = 'Y' recreation_foot_traffic, a."RECREATION_VEHICLES_BIKES" = 'Y' recreation_vehicles_bikes, 
+       a."LIVESTOCK_WALKWAYS" = 'Y' livestock_walkways, a."ROADS_DIRT" = 'Y' roads_dirt, a."ROADS_GRAVEL" = 'Y' roads_gravel, 
+       a."ROADS_PAVED" = 'Y' roads_paved, a."DRAINAGE" = 'Y' drainage, a."UNDERGROUND_UTILITIES" = 'Y' underground_utilities, 
+       a."OVERHEAD_TRANSMISSION_LINES" = 'Y' overhead_transmission_lines, a."CONSTRUCTION" = 'Y' construction, 
+       a."WATER_PONDING" = 'Y' water_ponding, a."SOIL_DEPOSITION_WATER" = 'Y' soil_deposition_water, 
+       a."SOIL_DEPOSITION_WIND" = 'Y' soil_deposition_wind, a."WATER" = 'Y' water, a."WIND" = 'Y' wind, 
+       a."TRANSPORTED_FILL" = 'Y' transported_fill, a."WILDFIRE" = 'Y' wildfire, a."PRESCRIBED_FIRE" = 'Y' prescribed_fire, 
+       a."FIRE_FIGHTING_OPERATIONS" = 'Y' fire_fighting_operations, a."BRUSH_MANAGEMENT_CHEMICAL" = 'Y' brush_management_chemical, 
+       a."BRUSH_MANAGEMENT_MECHANICAL" = 'Y' brush_management_mechanical, 
+       a."BRUSH_MANAGEMENT_BIOLOGICAL" = 'Y' brush_management_biological, NULL::boolean other, NULL other_desc, NULL notes
   FROM lmf."DISTURBANCE" a
   LEFT JOIN lmf."GPS" AS b ON concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") =
                               concat(b."SURVEY", b."STATE", b."COUNTY", b."PSU", b."POINT")
@@ -276,22 +291,22 @@ SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey,
 ), dima_final AS (
 SELECT a."PlotKey" plotkey, cast(a."EstablishDate" as timestamp) AT TIME ZONE b.tz survey_date, 
        NULL pastpres, NULL::boolean cultivation, NULL::boolean hayed, NULL::boolean mowing, NULL::boolean hay_removal, 
-	   NULL::boolean heavy_machinery, NULL::boolean seedbed_preparation, NULL::boolean livestock_tanks, 
+       NULL::boolean heavy_machinery, NULL::boolean seedbed_preparation, NULL::boolean livestock_tanks, 
        NULL::boolean livestock_heavy_use, NULL::boolean livestock_grazing, 
        NULL::integer graze_category, NULL::boolean insects, 
-	   a."DisturbRodents" small_rodents, a."DisturbMammals" non_rodent_animals, 
-	   NULL::boolean wildlife_grazing, NULL::boolean mining_equipment_operations, 
-	   NULL::boolean recreation_foot_traffic, NULL::boolean recreation_vehicles_bikes, 
-	   NULL::boolean livestock_walkways, NULL::boolean roads_dirt, NULL::boolean roads_gravel, 
-	   NULL::boolean roads_paved, NULL::boolean drainage, 
-	   a."DisturbUndgroundUtils" underground_utilities, 
-	   a."DisturbOverhdTransLines" overhead_transmission_lines, 
-	   NULL::boolean construction, NULL::boolean water_ponding, a."DisturbWaterSoilDep" soil_deposition_water, 
-	   a."DisturbWindSoilDep" soil_deposition_wind, a."DisturbWater" water, a."DisturbWind" wind, 
-	   NULL::boolean transported_fill, a."DisturbWildfire" wildfire, NULL::boolean prescribed_fire, 
-	   NULL::boolean fire_fighting_operations, NULL::boolean brush_management_chemical, 
-	   NULL::boolean brush_management_mechanical, NULL::boolean brush_management_biological, 
-	   a."DisturbOther" other, a."DisturbOtherDesc" other_desc, NULL notes
+       a."DisturbRodents" small_rodents, a."DisturbMammals" non_rodent_animals, 
+       NULL::boolean wildlife_grazing, NULL::boolean mining_equipment_operations, 
+       NULL::boolean recreation_foot_traffic, NULL::boolean recreation_vehicles_bikes, 
+       NULL::boolean livestock_walkways, NULL::boolean roads_dirt, NULL::boolean roads_gravel, 
+       NULL::boolean roads_paved, NULL::boolean drainage, 
+       a."DisturbUndgroundUtils" underground_utilities, 
+       a."DisturbOverhdTransLines" overhead_transmission_lines, 
+       NULL::boolean construction, NULL::boolean water_ponding, a."DisturbWaterSoilDep" soil_deposition_water, 
+       a."DisturbWindSoilDep" soil_deposition_wind, a."DisturbWater" water, a."DisturbWind" wind, 
+       NULL::boolean transported_fill, a."DisturbWildfire" wildfire, NULL::boolean prescribed_fire, 
+       NULL::boolean fire_fighting_operations, NULL::boolean brush_management_chemical, 
+       NULL::boolean brush_management_mechanical, NULL::boolean brush_management_biological, 
+       a."DisturbOther" other, a."DisturbOtherDesc" other_desc, NULL notes
   FROM dima."tblPlots" a
   LEFT JOIN public.point b ON a."PlotKey" = b.plotkey
  WHERE a."PlotKey" NOT IN ('888888888', '999999999')
@@ -323,16 +338,16 @@ SELECT survey, state, county, psu, point, transect
 
 ), lmf_final AS (
 SELECT concat(survey, state, county, psu, point, upper(right(transect, 2))) linekey,
-	   b."CAPDATE" AT TIME ZONE 'UTC' establish_date,
-	   transect lineid,
-	   CASE WHEN transect = 'nwse' THEN 135
-	        WHEN transect = 'nesw' THEN 225
-			ELSE NULL END azimuth, 
-	   'magnetic' azimuth_type, 150 transect_length, 'ft' transect_units,
-	   NULL::double precision latitude_start, NULL::double precision longitude_start, 
-	   NULL::double precision elevation_start, NULL::double precision latitude_end, 
-	   NULL::double precision longitude_end, NULL::double precision elevation_end, 
-	   NULL::geometry geom, concat(survey, state, county, psu, point) plotkey
+       b."CAPDATE" AT TIME ZONE 'UTC' establish_date,
+       transect lineid,
+       CASE WHEN transect = 'nwse' THEN 135
+            WHEN transect = 'nesw' THEN 225
+            ELSE NULL END azimuth, 
+       'magnetic' azimuth_type, 150 transect_length, 'ft' transect_units,
+       NULL::double precision latitude_start, NULL::double precision longitude_start, 
+       NULL::double precision elevation_start, NULL::double precision latitude_end, 
+       NULL::double precision longitude_end, NULL::double precision elevation_end, 
+       NULL::geometry geom, concat(survey, state, county, psu, point) plotkey
   FROM lmf_group_keys a
   LEFT JOIN lmf."GPS" AS b ON a.survey = b."SURVEY" AND a.state = b."STATE" AND a.county = b."COUNTY" 
                            AND a.psu = b."PSU" AND a.point = b."POINT"
@@ -345,79 +360,105 @@ SELECT "LineKey" linekey, min("FormDate") formdate, min("Measure") measure, min(
 
 ), dima_process0 AS (
 SELECT a."PlotKey" plotkey, a."LineKey" linekey, a."LineID" lineid, a."Azimuth" azimuth, 
-	   CASE WHEN a."NorthType" = 1 THEN 'magnetic'
-	        WHEN a."NorthType" = 2 THEN 'true'
-			ELSE NULL END azimuth_type, 
-	   a."NorthingStart" northing_start,
-	   a."EastingStart" easting_start,  
-	   CASE WHEN a."ElevationType" = 1 THEN round(a."ElevationStart"::numeric, 1)
-	        WHEN a."ElevationType" = 2 THEN round(a."ElevationStart"::numeric / 3.281, 1)
-			ELSE NULL END elevation_start_m, 
-	   a."NorthingEnd" northing_end,
-	   a."EastingEnd" easting_end,  
-	   CASE WHEN a."ElevationType" = 1 THEN round(a."ElevationEnd"::numeric, 1)
-	        WHEN a."ElevationType" = 2 THEN round(a."ElevationEnd"::numeric / 3.281, 1)
-			ELSE NULL END elevation_end_m,
-	   CASE WHEN b.formdate IS NOT NULL THEN b.formdate::timestamp AT TIME ZONE c.tz
-	        ELSE c.establish_date::timestamp AT TIME ZONE c.tz END establish_date, 
-	   CASE WHEN b.measure = 1 THEN 'm' 
-	        WHEN b.measure = 2 THEN 'ft'
-			ELSE NULL END transect_units, b.linelengthamount transect_length
+       CASE WHEN a."NorthType" = 1 THEN 'magnetic'
+            WHEN a."NorthType" = 2 THEN 'true'
+            ELSE NULL END azimuth_type, 
+       a."NorthingStart" northing_start,
+       a."EastingStart" easting_start,  
+       CASE WHEN a."ElevationType" = 1 THEN round(a."ElevationStart"::numeric, 1)
+            WHEN a."ElevationType" = 2 THEN round(a."ElevationStart"::numeric / 3.281, 1)
+            ELSE NULL END elevation_start_m, 
+       a."NorthingEnd" northing_end,
+       a."EastingEnd" easting_end,  
+       CASE WHEN a."ElevationType" = 1 THEN round(a."ElevationEnd"::numeric, 1)
+            WHEN a."ElevationType" = 2 THEN round(a."ElevationEnd"::numeric / 3.281, 1)
+            ELSE NULL END elevation_end_m,
+       CASE WHEN b.formdate IS NOT NULL THEN b.formdate::timestamp AT TIME ZONE c.tz
+            ELSE c.establish_date::timestamp AT TIME ZONE c.tz END establish_date, 
+       CASE WHEN b.measure = 1 THEN 'm' 
+            WHEN b.measure = 2 THEN 'ft'
+            ELSE NULL END transect_units, b.linelengthamount transect_length
   FROM dima."tblLines" a
   LEFT JOIN dima_lpi_line b ON a."LineKey" = b.linekey
   LEFT JOIN public.point c ON a."PlotKey" = c.plotkey
 
 ), dima_coords0 AS (
 SELECT a.linekey, a.easting_start, a.northing_start, a.elevation_start_m,
-	   a.easting_end, a.northing_end, a.elevation_end_m,
-	   b."GPSCoordSys" gpscoordsys, b."Datum" datum, b."Zone" zone_str,
+       a.easting_end, a.northing_end, a.elevation_end_m,
+       b."GPSCoordSys" gpscoordsys, b."Datum" datum, b."Zone" zone_str,
        (regexp_match(b."Zone", '\d{2}'))[1] zone_num 
   FROM dima_process0 a
   LEFT JOIN dima."tblPlots" b ON a.plotkey = b."PlotKey"
 
 ), dima_coords1 AS (
 SELECT *,
-	   CASE WHEN easting_start BETWEEN -180 AND 180 AND northing_start BETWEEN -90 AND 90 THEN True
-	        ELSE False END AS valid_latlong_start,
-	   CASE WHEN easting_end BETWEEN -180 AND 180 AND northing_end BETWEEN -90 AND 90 THEN True
-	        ELSE False END AS valid_latlong_end
+       CASE WHEN easting_start BETWEEN -180 AND 180 AND northing_start BETWEEN -90 AND 90 THEN True
+            ELSE False END AS valid_latlong_start,
+       CASE WHEN easting_end BETWEEN -180 AND 180 AND northing_end BETWEEN -90 AND 90 THEN True
+            ELSE False END AS valid_latlong_end
   FROM dima_coords0
  WHERE (easting_start IS NOT NULL AND easting_start != 0 AND northing_start IS NOT NULL AND northing_start != 0) OR
-	   (easting_end IS NOT NULL AND easting_end != 0 AND northing_end IS NOT NULL AND northing_end != 0)
+       (easting_end IS NOT NULL AND easting_end != 0 AND northing_end IS NOT NULL AND northing_end != 0)
 
 ), dima_coords2 AS (
 SELECT linekey, 
-	   CASE WHEN easting_start > 0 AND valid_latlong_start = True THEN easting_start * -1
-	        ELSE easting_start END easting_start,
-	  northing_start, elevation_start_m, valid_latlong_start,
-	   CASE WHEN easting_end > 0 AND valid_latlong_end = True THEN easting_end * -1
-	        ELSE easting_end END easting_end, 
-	   northing_end, elevation_end_m, valid_latlong_end, gpscoordsys, datum, zone_num,
+       CASE WHEN easting_start > 0 AND valid_latlong_start = True THEN easting_start * -1
+            ELSE easting_start END easting_start,
+      northing_start, elevation_start_m, valid_latlong_start,
+       CASE WHEN easting_end > 0 AND valid_latlong_end = True THEN easting_end * -1
+            ELSE easting_end END easting_end, 
+       northing_end, elevation_end_m, valid_latlong_end, gpscoordsys, datum, zone_num,
        CASE WHEN datum ~ 'WGS\s*84' AND valid_latlong_start = True THEN 4326
-	        WHEN datum ~ 'NAD\s*83' AND valid_latlong_start = True THEN 4269
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong_start = True THEN 4269
             WHEN datum ~ 'WGS\s*84' AND valid_latlong_start = False THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
-			WHEN datum ~ 'NAD\s*83' AND valid_latlong_start = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
-			ELSE NULL END srid_start,
-	   CASE WHEN datum ~ 'WGS\s*84' AND valid_latlong_end = True THEN 4326
-	        WHEN datum ~ 'NAD\s*83' AND valid_latlong_end = True THEN 4269
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong_start = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
+            ELSE NULL END srid_start,
+       CASE WHEN datum ~ 'WGS\s*84' AND valid_latlong_end = True THEN 4326
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong_end = True THEN 4269
             WHEN datum ~ 'WGS\s*84' AND valid_latlong_end = False THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
-			WHEN datum ~ 'NAD\s*83' AND valid_latlong_end = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
-			ELSE NULL END srid_end
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong_end = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
+            ELSE NULL END srid_end
   FROM dima_coords1
 
 ), dima_coords3 AS (
-SELECT linekey, elevation_start_m, elevation_end_m,
-       ST_Transform(ST_SetSRID(ST_MakePoint(easting_start, northing_start, elevation_start_m), srid_start), 4326) AS geom_start,
-	   ST_Transform(ST_SetSRID(ST_MakePoint(easting_end, northing_end, elevation_end_m), srid_end), 4326) AS geom_end
+SELECT linekey,  gpscoordsys, datum, zone_num,
+       easting_start, northing_start, elevation_start_m, valid_latlong_start, 
+       CASE WHEN srid_start::text LIKE '326%' THEN 4326
+            WHEN srid_start::text LIKE '269%' THEN 4269
+            ELSE srid_start END pre_srid_start, srid_start,
+       easting_end, northing_end, elevation_end_m, valid_latlong_end,
+       CASE WHEN srid_end::text LIKE '326%' THEN 4326
+            WHEN srid_end::text LIKE '269%' THEN 4269
+            ELSE srid_end END pre_srid_end, srid_end, 
+       ST_SetSRID(ST_MakePoint(easting_start, northing_start, elevation_start_m), srid_start) geom_start,
+       ST_SetSRID(ST_MakePoint(easting_end, northing_end, elevation_end_m), srid_end) geom_end
   FROM dima_coords2 
  WHERE srid_start IS NOT NULL and srid_end IS NOT NULL
 
+), dima_coords4 AS (
+SELECT linekey,  gpscoordsys, datum, zone_num,
+       easting_start, northing_start, elevation_start_m, valid_latlong_start, pre_srid_start, srid_start,
+       easting_end, northing_end, elevation_end_m, valid_latlong_end, pre_srid_end, srid_end,
+       ST_Transform(geom_start, pre_srid_start) AS geom_start,
+       ST_Transform(geom_end, pre_srid_end) AS geom_end
+  FROM dima_coords3
+ WHERE geom_start IS NOT NULL and geom_end IS NOT NULL
+        
+
+), dima_coords5 AS (
+SELECT linekey,  gpscoordsys, datum, zone_num,
+       easting_start, northing_start, elevation_start_m, valid_latlong_start, pre_srid_start, srid_start,
+       easting_end, northing_end, elevation_end_m, valid_latlong_end, pre_srid_end, srid_end,
+       ST_Transform(geom_start, 4326) AS geom_start,
+       ST_Transform(geom_end, 4326) AS geom_end
+  FROM dima_coords4
+ 
 ), dima_coords_line AS (
 SELECT linekey, 
-	   st_x(geom_start) longitude_start, st_y(geom_start) latitude_start, elevation_start_m,
-	   st_x(geom_end) longitude_end, st_y(geom_end) latitude_end, elevation_end_m,
-	   st_makeline(geom_start, geom_end) geom
-  FROM dima_coords3
+       st_x(geom_start) longitude_start, st_y(geom_start) latitude_start, elevation_start_m,
+       st_x(geom_end) longitude_end, st_y(geom_end) latitude_end, elevation_end_m,
+       st_makeline(geom_start, geom_end) geom
+  FROM dima_coords5
   
 ), dima_final AS (
 SELECT a.linekey, a.establish_date, a.lineid, a.azimuth, a.azimuth_type, a.transect_length, a.transect_units, 
@@ -452,7 +493,7 @@ SELECT survey, state, county, psu, point, transect
 
 ), lmf_final AS (
 SELECT concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.transect, 2)), '1') reckey,
-	   b."CAPDATE" AT TIME ZONE 'UTC' survey_date, 
+       b."CAPDATE" AT TIME ZONE 'UTC' survey_date, 
        NULL observer, NULL notes,
        concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.transect, 2))) linekey
   FROM lmf_group_keys a
@@ -480,24 +521,24 @@ DROP MATERIALIZED VIEW IF EXISTS public.pintercept CASCADE;
 CREATE MATERIALIZED VIEW public.pintercept AS
 WITH lmf_pi_process0 AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", upper(right("TRANSECT", 2)), '1') reckey,
-	   "MARK" mark, "HIT1" hit1, "HIT2" hit2, "HIT3" hit3, "HIT4" hit4, "HIT5" hit5, "HIT6" hit6,
-	   CASE WHEN "BASAL" = 'None' AND "NONSOIL" = '' THEN 'S' 
-	        WHEN "BASAL" = 'None' AND "NONSOIL" != '' THEN "NONSOIL"
-			WHEN "NONSOIL" = 'W' THEN "NONSOIL" 
-			WHEN trim("BASAL") = '' THEN NULL 
-			ELSE "BASAL" END hit7
+       "MARK" mark, "HIT1" hit1, "HIT2" hit2, "HIT3" hit3, "HIT4" hit4, "HIT5" hit5, "HIT6" hit6,
+       CASE WHEN "BASAL" = 'None' AND "NONSOIL" = '' THEN 'S' 
+            WHEN "BASAL" = 'None' AND "NONSOIL" != '' THEN "NONSOIL"
+            WHEN "NONSOIL" = 'W' THEN "NONSOIL" 
+            WHEN trim("BASAL") = '' THEN NULL 
+            ELSE "BASAL" END hit7
   FROM lmf."PINTERCEPT"
 
 ), lmf_pi_process1 AS (
 SELECT reckey, mark,
        unnest(array[1, 2, 3, 4, 5, 6, 9]) AS hit_order,
-	   -- l = layer
-	   unnest(array['l', 'l', 'l', 'l', 'l', 'l', 'l']) hit_type,
-	   -- t = top, l = lower, s = surface
+       -- l = layer
+       unnest(array['l', 'l', 'l', 'l', 'l', 'l', 'l']) hit_type,
+       -- t = top, l = lower, s = surface
        unnest(array['t', 'l', 'l', 'l', 'l', 'l', 's']) hit_sub,
        unnest(array[hit1, hit2, hit3, hit4, hit5, hit6, hit7]) AS hit
   FROM lmf_pi_process0
-	
+    
 ), lmf_pi_final AS (
 SELECT reckey, mark, hit_order, hit_type, hit_sub, trim(hit) hit, NULL::numeric height_cm, NULL::boolean dead
   FROM lmf_pi_process1
@@ -506,76 +547,76 @@ SELECT reckey, mark, hit_order, hit_type, hit_sub, trim(hit) hit, NULL::numeric 
 ), lmf_ph_process0 AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", upper(right("TRANSECT", 2)), '1') reckey,
        "DISTANCE" mark, 
-	   nullif(trim("HPLANT"), '') hplant, 
-	   cast(substring("HEIGHT", '\d+\.{0,1}\d*') AS numeric(6, 1)) hheight,
-	   substring("HEIGHT", '[^\d\s\.]+') hunits,
-	   nullif(trim("WPLANT"), '') wplant, 
-	   cast(substring("WHEIGHT", '\d+\.{0,1}\d*') AS numeric(6, 1)) wheight,
-	   substring("WHEIGHT", '[^\d\s\.]+') wunits
+       nullif(trim("HPLANT"), '') hplant, 
+       cast(substring("HEIGHT", '\d+\.{0,1}\d*') AS numeric(6, 1)) hheight,
+       substring("HEIGHT", '[^\d\s\.]+') hunits,
+       nullif(trim("WPLANT"), '') wplant, 
+       cast(substring("WHEIGHT", '\d+\.{0,1}\d*') AS numeric(6, 1)) wheight,
+       substring("WHEIGHT", '[^\d\s\.]+') wunits
   FROM lmf."PASTUREHEIGHTS"
 
 ), lmf_ph_process1 AS (
 SELECT reckey, mark,
-	   -- g = growth habit
+       -- g = growth habit
        unnest(ARRAY['g', 'g']) AS hit_type,
-	   -- w = woody, h = 'herbaceous'
+       -- w = woody, h = 'herbaceous'
        unnest(ARRAY['w', 'h']) AS hit_sub,
-	   unnest(ARRAY[1, 2]) AS hit_order,
+       unnest(ARRAY[1, 2]) AS hit_order,
        unnest(ARRAY[wplant, hplant]) AS hit,
        unnest(ARRAY[wheight, hheight]) AS height,
-	   unnest(ARRAY[wunits, hunits]) AS units
+       unnest(ARRAY[wunits, hunits]) AS units
   FROM lmf_ph_process0
 
 ), lmf_ph_final AS (
 SELECT reckey, mark, hit_order, hit_type, hit_sub, hit, 
        CASE WHEN units = 'in' THEN round(height * 2.54, 1)
-	        WHEN units = 'ft' THEN round(height * 30.48, 1)
-			ELSE height END height_cm,
-	   NULL::boolean chk
+            WHEN units = 'ft' THEN round(height * 30.48, 1)
+            ELSE height END height_cm,
+       NULL::boolean chk
   FROM lmf_ph_process1
 
 ), dima_nonchk (code) AS (
 VALUES 
 (''), ('BR'), ('BY'), ('CB'), ('CY'), ('D'), ('DS'), ('EL'), ('GR'), ('L'), 
 ('NL'), ('R'), ('S'), ('ST'), ('WA'), ('WL'), ('None')
-	
+    
 ), dima_process0 AS (
 SELECT "RecKey" reckey, "PointLoc" mark,
         unnest(array[1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3]) hit_order,
-		-- l = canopy layer, g = growth habit
-		unnest(array['l', 'l', 'l', 'l', 'l', 'l', 'l', 'l', 
-					 'l', 'g', 'g', 'g']) hit_type,
-		-- t = top, l = lower, s = surface, w = woody, h = herbaceous
-		unnest(array['t', 'l', 'l', 'l', 'l', 'l', 'l', 'l', 
-					 's', 'w', 'h', 'h']) hit_sub,
+        -- l = canopy layer, g = growth habit
+        unnest(array['l', 'l', 'l', 'l', 'l', 'l', 'l', 'l', 
+                     'l', 'g', 'g', 'g']) hit_type,
+        -- t = top, l = lower, s = surface, w = woody, h = herbaceous
+        unnest(array['t', 'l', 'l', 'l', 'l', 'l', 'l', 'l', 
+                     's', 'w', 'h', 'h']) hit_sub,
         unnest(array["TopCanopy", "Lower1", "Lower2", "Lower3", "Lower4", 
-					 "Lower5", "Lower6", "Lower7", "SoilSurface", "SpeciesWoody", 
-					 "SpeciesHerbaceous", "SpeciesLowerHerb"]) hit,
-		unnest(array["ChkboxTop", "ChkboxLower1", "ChkboxLower2", "ChkboxLower3", "ChkboxLower4",
-					 "ChkboxLower5", "ChkboxLower6", "ChkboxLower7", "ChkboxSoil", "ChkboxWoody", 
-					 "ChkboxHerbaceous", "ChkboxLowerHerb"]) chk,
-		unnest(array["HeightTop", "HeightLower1", "HeightLower2", "HeightLower3", "HeightLower4", 
-					 "HeightLower5", "HeightLower6", "HeightLower7", "HeightSurface", "HeightWoody", 
-					 "HeightHerbaceous", "HeightLowerHerb"]) height
-	FROM dima."tblLPIDetail"
+                     "Lower5", "Lower6", "Lower7", "SoilSurface", "SpeciesWoody", 
+                     "SpeciesHerbaceous", "SpeciesLowerHerb"]) hit,
+        unnest(array["ChkboxTop", "ChkboxLower1", "ChkboxLower2", "ChkboxLower3", "ChkboxLower4",
+                     "ChkboxLower5", "ChkboxLower6", "ChkboxLower7", "ChkboxSoil", "ChkboxWoody", 
+                     "ChkboxHerbaceous", "ChkboxLowerHerb"]) chk,
+        unnest(array["HeightTop", "HeightLower1", "HeightLower2", "HeightLower3", "HeightLower4", 
+                     "HeightLower5", "HeightLower6", "HeightLower7", "HeightSurface", "HeightWoody", 
+                     "HeightHerbaceous", "HeightLowerHerb"]) height
+    FROM dima."tblLPIDetail"
 
 ), dima_process1 AS (
 SELECT reckey, mark, hit_order, hit_type, hit_sub, 
        nullif(trim(hit), '') hit, 
-	   CASE WHEN hit IN (SELECT code FROM dima_nonchk) THEN NULL ELSE chk END chk, 
-	   cast(substring(height, '\d+\.{0,1}\d*') as numeric(6, 1)) height_num
+       CASE WHEN hit IN (SELECT code FROM dima_nonchk) THEN NULL ELSE chk END chk, 
+       cast(substring(height, '\d+\.{0,1}\d*') as numeric(6, 1)) height_num
   FROM dima_process0
-	
+    
 ), dima_final AS (
 SELECT a.reckey, a.mark, a.hit_order, a.hit_type, a.hit_sub, a.hit,
-	   CASE WHEN b."HeightUOM" = 'in' THEN round(height_num * 2.54, 1)
-	        ELSE round(height_num, 1) END height_cm,
-	   -- takes headers with checkbox labels of dead or residual and converts the remaining to NULL
-	   -- also assumes that NULL or blank values mean 'dead' as is the most common usage. 
-	   CASE WHEN trim(b."CheckboxLabel") = '' OR 
-	             b."CheckboxLabel" IS NULL OR 
-	             substring(lower(b."CheckboxLabel"), 'dead|residual') IS NOT NULL THEN a.chk
-	        ELSE NULL END dead
+       CASE WHEN b."HeightUOM" = 'in' THEN round(height_num * 2.54, 1)
+            ELSE round(height_num, 1) END height_cm,
+       -- takes headers with checkbox labels of dead or residual and converts the remaining to NULL
+       -- also assumes that NULL or blank values mean 'dead' as is the most common usage. 
+       CASE WHEN trim(b."CheckboxLabel") = '' OR 
+                 b."CheckboxLabel" IS NULL OR 
+                 substring(lower(b."CheckboxLabel"), 'dead|residual') IS NOT NULL THEN a.chk
+            ELSE NULL END dead
   FROM dima_process1 a
   LEFT JOIN dima."tblLPIHeader" b ON a.reckey = b."RecKey"
  WHERE a.hit IS NOT NULL OR a.height_num IS NOT NULL
@@ -596,19 +637,19 @@ CREATE MATERIALIZED VIEW public.shrubshape AS
 WITH lmf_final AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", upper(right("TRANSECT", 2)), '1') reckey,
        "MARK" mark,
-	   nullif(trim("SAGEBRUSH_SPP"), '') species_code,
-	   CASE WHEN "SAGEBRUSH_SHAPE" = 0 THEN NULL
-	        WHEN "SAGEBRUSH_SHAPE" = 1 THEN 'C' 
-			WHEN "SAGEBRUSH_SHAPE" = 2 THEN 'S' 
-			WHEN "SAGEBRUSH_SHAPE" = 3 THEN 'M' 
-			ELSE NULL END shape
+       nullif(trim("SAGEBRUSH_SPP"), '') species_code,
+       CASE WHEN "SAGEBRUSH_SHAPE" = 0 THEN NULL
+            WHEN "SAGEBRUSH_SHAPE" = 1 THEN 'C' 
+            WHEN "SAGEBRUSH_SHAPE" = 2 THEN 'S' 
+            WHEN "SAGEBRUSH_SHAPE" = 3 THEN 'M' 
+            ELSE NULL END shape
   FROM lmf."PINTERCEPT"
   WHERE "SAGEBRUSH_SHAPE" != 0 AND "SAGEBRUSH_SHAPE" IS NOT NULL
 
 ), dima_final AS (
 SELECT "RecKey" reckey, "PointLoc" mark,
        NULL species_code, 
-	   nullif(trim("ShrubShape"), '') shape
+       nullif(trim("ShrubShape"), '') shape
   FROM dima."tblLPIDetail" 
  WHERE nullif(trim("ShrubShape"), '') IS NOT NULL
 )
@@ -648,7 +689,7 @@ SELECT "RecKey" reckey, "DateRecorded" date_recorded, "PlotKey" plotkey
   FROM dima."tblPlotHistory"
  WHERE "RecType" = 'E' 
    AND coalesce("ESD_StateWithinEcologicalSite", "ESD_CommunityWithinState", 
-				"ESD_CommunityDescription") IS NOT NULL 
+                "ESD_CommunityDescription") IS NOT NULL 
 
 ), dima_final AS (
 SELECT coalesce(b.reckey, substring(a."PlotKey" from 1 for 12) || '9999') reckey, 
@@ -674,17 +715,17 @@ DROP MATERIALIZED VIEW IF EXISTS public.esfsg CASCADE;
 CREATE MATERIALIZED VIEW public.esfsg AS
 WITH lmf_plot_eco AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT") plotkey,
-	   concat("ESFSG_MLRA", "ESFSG_SITE", "ESFSG_STATE") ecoid_std, 
-	   CASE WHEN trim("ESFSG_NAME") = '' THEN NULL ELSE trim("ESFSG_NAME") END econame,
-	   1 area_pct, 1 ecorank
+       concat("ESFSG_MLRA", "ESFSG_SITE", "ESFSG_STATE") ecoid_std, 
+       CASE WHEN trim("ESFSG_NAME") = '' THEN NULL ELSE trim("ESFSG_NAME") END econame,
+       1 area_pct, 1 ecorank
   FROM lmf."ESFSG"
   WHERE "COVERAGE" = 'all'
 
 ), lmf_line_eco AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT") plotkey, "COVERAGE" transect,
-	   concat("ESFSG_MLRA", "ESFSG_SITE", "ESFSG_STATE") ecoid_std,
-	   "END_MARK" - "START_MARK" eco_length,
-	   CASE WHEN trim("ESFSG_NAME") = '' THEN NULL ELSE trim("ESFSG_NAME") END econame
+       concat("ESFSG_MLRA", "ESFSG_SITE", "ESFSG_STATE") ecoid_std,
+       "END_MARK" - "START_MARK" eco_length,
+       CASE WHEN trim("ESFSG_NAME") = '' THEN NULL ELSE trim("ESFSG_NAME") END econame
   FROM lmf."ESFSG"
   WHERE "COVERAGE" != 'all'
 
@@ -700,7 +741,7 @@ SELECT plotkey, sum(eco_length) transect_sum, min(econame) econame
 
 ), lmf_plot_eco_ranked AS (
 SELECT a.plotkey, a.ecoid_std, a.econame, 
-	   round(a.eco_length::numeric/b.transect_sum, 3) area_pct,
+       round(a.eco_length::numeric/b.transect_sum, 3) area_pct,
        row_number() over(partition by a.plotkey order by a.eco_length desc) AS ecorank
   FROM lmf_line_eco_sum a
   INNER JOIN lmf_plot_eco_sum b ON a.plotkey = b.plotkey
@@ -712,11 +753,11 @@ SELECT * FROM lmf_plot_eco_ranked
 
 ), lmf_final AS (
 SELECT concat(a.plotkey, '9') reckey,
-	   a.ecoid_std,
-	   substring(b.ecoid, '^(?:F|R|G?)') ecotype,
-	   a.econame,
-	   a.area_pct, a.ecorank,
-	   NULL esd_state, NULL state_community, 'ATHCPC: ' || d."APPARENT_TREND" community_desc
+       a.ecoid_std,
+       substring(b.ecoid, '^(?:F|R|G?)') ecotype,
+       a.econame,
+       a.area_pct, a.ecorank,
+       NULL esd_state, NULL state_community, 'ATHCPC: ' || d."APPARENT_TREND" community_desc
   FROM lmf_all_eco a
   LEFT JOIN public.ecosite b ON a.ecoid_std = b.ecoid_std
   LEFT JOIN lmf."GPS" c ON a.plotkey = concat(c."SURVEY", c."STATE", c."COUNTY", c."PSU", c."POINT")
@@ -724,23 +765,23 @@ SELECT concat(a.plotkey, '9') reckey,
 
 ), dima_state AS (
 SELECT a."PlotKey" plotkey, a."RecKey" reckey,
-	   a."DateRecorded" date_recorded,
+       a."DateRecorded" date_recorded,
        a."ESD_StateWithinEcologicalSite" esd_state, 
        a."ESD_CommunityWithinState" state_community, 
-	   regexp_replace(a."ESD_CommunityDescription", '\s+', ' ') community_desc
+       regexp_replace(a."ESD_CommunityDescription", '\s+', ' ') community_desc
   FROM dima."tblPlotHistory" a
  WHERE "RecType" = 'E' 
    AND coalesce("ESD_StateWithinEcologicalSite", "ESD_CommunityWithinState", 
-				"ESD_CommunityDescription") IS NOT NULL 
+                "ESD_CommunityDescription") IS NOT NULL 
 
 ), dima_final AS (
 SELECT coalesce(b.reckey, substring(a."PlotKey" from 1 for 12) || '9999') reckey, 
-	   coalesce(substring(trim(a."EcolSite"), '^(?:F|R|G?)(\d{3}[A-z]?[A-z]?\d{3}[A-z]{2})(_*\d*)$'),
-			   trim(a."EcolSite")) ecoid_std,
-	   substring(trim(a."EcolSite"), '^(?:F|R|G?)') ecotype,
-	   NULL econame, 
-	   1 area_pct, 1 ecorank,
-	   b.esd_state, b.state_community, b.community_desc
+       coalesce(substring(trim(a."EcolSite"), '^(?:F|R|G?)(\d{3}[A-z]?[A-z]?\d{3}[A-z]{2})(_*\d*)$'),
+               trim(a."EcolSite")) ecoid_std,
+       substring(trim(a."EcolSite"), '^(?:F|R|G?)') ecotype,
+       NULL econame, 
+       1 area_pct, 1 ecorank,
+       b.esd_state, b.state_community, b.community_desc
   FROM dima."tblPlots" a
   LEFT JOIN dima_state b ON a."PlotKey" = b.plotkey
   LEFT JOIN public.point c ON a."PlotKey" = c.plotkey
@@ -763,30 +804,30 @@ CREATE MATERIALIZED VIEW public.esfsg_detail AS
 WITH lmf_process0 AS (
 SELECT "SURVEY" survey, "STATE" state, "COUNTY" county, "PSU" psu, "POINT" point, "SEQNUM" seq_no, 'nesw' coverage, 
        CASE WHEN "START_MARK" IS NULL THEN 0 ELSE "START_MARK" END AS start_mark, 
-	   CASE WHEN "END_MARK" IS NULL OR "END_MARK" = 0 THEN 150 ELSE "END_MARK" END AS end_mark, 
-	   "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
-	   "ESFSG_NAME" esfsg_name
-	FROM lmf."ESFSG" WHERE "COVERAGE" = 'all'
+       CASE WHEN "END_MARK" IS NULL OR "END_MARK" = 0 THEN 150 ELSE "END_MARK" END AS end_mark, 
+       "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
+       "ESFSG_NAME" esfsg_name
+    FROM lmf."ESFSG" WHERE "COVERAGE" = 'all'
  UNION ALL
 SELECT "SURVEY" survey, "STATE" state, "COUNTY" county, "PSU" psu, "POINT" point, "SEQNUM" seq_no, 'nwse' coverage, 
        CASE WHEN "START_MARK" IS NULL THEN 0 ELSE "START_MARK" END AS start_mark, 
-	   CASE WHEN "END_MARK" IS NULL OR "END_MARK" = 0 THEN 150 ELSE "END_MARK" END AS end_mark, 
-	   "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
-	   "ESFSG_NAME" esfsg_name
-	FROM lmf."ESFSG" WHERE "COVERAGE" = 'all'
+       CASE WHEN "END_MARK" IS NULL OR "END_MARK" = 0 THEN 150 ELSE "END_MARK" END AS end_mark, 
+       "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
+       "ESFSG_NAME" esfsg_name
+    FROM lmf."ESFSG" WHERE "COVERAGE" = 'all'
  UNION ALL
 SELECT "SURVEY" survey, "STATE" state, "COUNTY" county, "PSU" psu, "POINT" point, "SEQNUM" seq_no, "COVERAGE" coverage, 
        "START_MARK" start_mark, "END_MARK" end_mark, 
-	   "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
-	   "ESFSG_NAME" esfsg_name
-	FROM lmf."ESFSG" WHERE "COVERAGE" != 'all'
+       "ESFSG_STATE" esfsg_state, "ESFSG_MLRA" esfsg_mlra, "ESFSG_SITE" esfsg_site, 
+       "ESFSG_NAME" esfsg_name
+    FROM lmf."ESFSG" WHERE "COVERAGE" != 'all'
 
 ), lmf_final AS (
 SELECT concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.coverage, 2))) linekey,
        concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.coverage, 2)), '9') reckey,
-	   a.seq_no,
-	   concat(a.esfsg_mlra, a.esfsg_site, a.esfsg_state) ecoid_std,
-	   a.start_mark, a.end_mark
+       a.seq_no,
+       concat(a.esfsg_mlra, a.esfsg_site, a.esfsg_state) ecoid_std,
+       a.start_mark, a.end_mark
   FROM lmf_process0 a
   LEFT JOIN lmf."GPS" AS b ON a.survey = b."SURVEY" AND a.state = b."STATE" AND a.county = b."COUNTY" 
                            AND a.psu = b."PSU" AND a.point = b."POINT"
@@ -804,13 +845,13 @@ DROP MATERIALIZED VIEW IF EXISTS public.plantcensus_meta CASCADE;
 CREATE MATERIALIZED VIEW public.plantcensus_meta AS
 WITH lmf_process0 AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", '2') reckey,
-	   concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT") plotkey
+       concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT") plotkey
   FROM lmf."PLANTCENSUS"
  GROUP BY "SURVEY", "STATE", "COUNTY", "PSU", "POINT"
 
 ), lmf_final AS  (
 SELECT reckey, b."CAPDATE" AT TIME ZONE 'UTC' survey_date, NULL observer,
-	   1641.6 survey_size_m2, NULL notes, plotkey       
+       1641.6 survey_size_m2, NULL notes, plotkey       
   FROM lmf_process0 a
   LEFT JOIN lmf."GPS" b ON a.plotkey = concat(b."SURVEY", b."STATE", b."COUNTY", b."PSU", b."POINT")  
 
@@ -818,12 +859,12 @@ SELECT reckey, b."CAPDATE" AT TIME ZONE 'UTC' survey_date, NULL observer,
 SELECT a."RecKey" reckey,  
        "FormDate"::timestamp AT TIME ZONE d.tz survey_date, a."Observer" observer,
        CAST(a."SpecRich1Container"::integer * a."SpecRich1Area" +  
-	   a."SpecRich2Container"::integer * a."SpecRich2Area" + 
-	   a."SpecRich3Container"::integer * a."SpecRich3Area" + 
-	   a."SpecRich4Container"::integer * a."SpecRich4Area" + 
-	   a."SpecRich5Container"::integer * a."SpecRich5Area" + 
-	   a."SpecRich6Container"::integer * a."SpecRich6Area" AS numeric(6,1)) survey_size_m2, 
-	   a."Notes" notes, c."PlotKey" plotkey
+       a."SpecRich2Container"::integer * a."SpecRich2Area" + 
+       a."SpecRich3Container"::integer * a."SpecRich3Area" + 
+       a."SpecRich4Container"::integer * a."SpecRich4Area" + 
+       a."SpecRich5Container"::integer * a."SpecRich5Area" + 
+       a."SpecRich6Container"::integer * a."SpecRich6Area" AS numeric(6,1)) survey_size_m2, 
+       a."Notes" notes, c."PlotKey" plotkey
   FROM dima."tblSpecRichHeader" a
   LEFT JOIN dima."tblLines" b ON a."LineKey" = b."LineKey"
   LEFT JOIN dima."tblPlots" c ON b."PlotKey" = c."PlotKey"
@@ -845,13 +886,13 @@ CREATE MATERIALIZED VIEW public.plantcensus AS
 WITH lmf_final AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", '2') reckey, 
        "SEQNUM" seq_no, "CPLANT" species_code, NULL notes
-	FROM lmf."PLANTCENSUS"
+    FROM lmf."PLANTCENSUS"
 
 ), dima_process0 AS (
 SELECT "RecKey" reckey, "subPlotID" subplotid,  
           unnest(regexp_split_to_array(
-	      CASE WHEN trim("SpeciesList") = '' THEN NULL ELSE trim("SpeciesList") END,
-	      ';')) species_code
+          CASE WHEN trim("SpeciesList") = '' THEN NULL ELSE trim("SpeciesList") END,
+          ';')) species_code
   FROM dima."tblSpecRichDetail" 
 
 ), dima_process1 AS (
@@ -900,14 +941,14 @@ WITH dima_subplot0 AS (
 SELECT "RecKey" reckey, "numSubPlots" subplot_no, 
        unnest(array[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 , 16, 17, 18, 19, 20]) subplot,
        unnest(regexp_split_to_array(rtrim("SubPlotLocs", ';'), ';')) subloc, 
-	   unnest(array["SubPlot1Exp", "SubPlot2Exp", "SubPlot3Exp", "SubPlot4Exp", "SubPlot5Exp", 
-					"SubPlot6Exp", "SubPlot7Exp", "SubPlot8Exp", "SubPlot9Exp", "SubPlot10Exp", 
-					"SubPlot11Exp", "SubPlot12Exp", "SubPlot13Exp", "SubPlot14Exp", "SubPlot15Exp", 
-					"SubPlot16Exp", "SubPlot17Exp", "SubPlot18Exp", "SubPlot19Exp", "SubPlot20Exp"]) expanded, 
-	   unnest(array["SubPlot1NotSamp", "SubPlot2NotSamp", "SubPlot3NotSamp", "SubPlot4NotSamp", "SubPlot5NotSamp", 
-					"SubPlot6NotSamp", "SubPlot7NotSamp", "SubPlot8NotSamp", "SubPlot9NotSamp", "SubPlot10NotSamp", 
-					"SubPlot11NotSamp", "SubPlot12NotSamp", "SubPlot13NotSamp", "SubPlot14NotSamp", "SubPlot15NotSamp", 
-					"SubPlot16NotSamp", "SubPlot17NotSamp", "SubPlot18NotSamp", "SubPlot19NotSamp", "SubPlot20NotSamp"]) not_sampled
+       unnest(array["SubPlot1Exp", "SubPlot2Exp", "SubPlot3Exp", "SubPlot4Exp", "SubPlot5Exp", 
+                    "SubPlot6Exp", "SubPlot7Exp", "SubPlot8Exp", "SubPlot9Exp", "SubPlot10Exp", 
+                    "SubPlot11Exp", "SubPlot12Exp", "SubPlot13Exp", "SubPlot14Exp", "SubPlot15Exp", 
+                    "SubPlot16Exp", "SubPlot17Exp", "SubPlot18Exp", "SubPlot19Exp", "SubPlot20Exp"]) expanded, 
+       unnest(array["SubPlot1NotSamp", "SubPlot2NotSamp", "SubPlot3NotSamp", "SubPlot4NotSamp", "SubPlot5NotSamp", 
+                    "SubPlot6NotSamp", "SubPlot7NotSamp", "SubPlot8NotSamp", "SubPlot9NotSamp", "SubPlot10NotSamp", 
+                    "SubPlot11NotSamp", "SubPlot12NotSamp", "SubPlot13NotSamp", "SubPlot14NotSamp", "SubPlot15NotSamp", 
+                    "SubPlot16NotSamp", "SubPlot17NotSamp", "SubPlot18NotSamp", "SubPlot19NotSamp", "SubPlot20NotSamp"]) not_sampled
   FROM dima."tblPlantProdHeader"
 
 -- gets rid of subplots that don't actually exists 
@@ -930,18 +971,18 @@ CREATE MATERIALIZED VIEW public.production_species AS
 WITH dima_species0 AS (
 SELECT "RecKey" reckey, "SpeciesCode" species_code,
         CASE WHEN "SubPlotUOM" = 'sq. ft' THEN round("SubPlotSize"::numeric /10.764, 4) 
-		     WHEN "SubPlotUOM" = 'ac' THEN round("SubPlotSize"::numeric * 4046.86, 4)
-			 ELSE "SubPlotSize" END subsize_m2, 
-	    CASE WHEN "WtUnitWt" = 0 THEN 1 ELSE "WtUnitWt" END unit_wgt,
-	    "WtMeas" wgt_measure,
-	    "ADWAdj"::double precision adjust_airdrywgt, "UtilAdj"::double precision adjust_utilization, 
-	    "GwthAdj"::double precision adjust_growth, "WthrAdj"::double precision adjust_climate
+             WHEN "SubPlotUOM" = 'ac' THEN round("SubPlotSize"::numeric * 4046.86, 4)
+             ELSE "SubPlotSize" END subsize_m2, 
+        CASE WHEN "WtUnitWt" = 0 THEN 1 ELSE "WtUnitWt" END unit_wgt,
+        "WtMeas" wgt_measure,
+        "ADWAdj"::double precision adjust_airdrywgt, "UtilAdj"::double precision adjust_utilization, 
+        "GwthAdj"::double precision adjust_growth, "WthrAdj"::double precision adjust_climate
   FROM dima."tblPlantProdDetail"
 
 ), dima_species1 AS (
 SELECT reckey, species_code, subsize_m2, 
-	   CASE WHEN wgt_measure = 'lb' THEN round(unit_wgt::numeric * 453.592, 1)
-		    ELSE unit_wgt END unit_wgt_g,   
+       CASE WHEN wgt_measure = 'lb' THEN round(unit_wgt::numeric * 453.592, 1)
+            ELSE unit_wgt END unit_wgt_g,   
        adjust_airdrywgt, adjust_utilization, adjust_growth, adjust_climate
   FROM dima_species0
 
@@ -954,7 +995,7 @@ SELECT reckey, species_code, subsize_m2,
 -- the data management issue.  In these rare instances, mean values are used.
 SELECT reckey, species_code, avg(subsize_m2) subsize_m2, avg(unit_wgt_g) unit_wgt_g, 
        avg(adjust_airdrywgt) adjust_airdrywgt, avg(adjust_utilization) adjust_utilization, 
-	   avg(adjust_growth) adjust_growth, avg(adjust_climate) adjust_climate
+       avg(adjust_growth) adjust_growth, avg(adjust_climate) adjust_climate
   FROM dima_species1
  GROUP BY reckey, species_code
 ) 
@@ -972,33 +1013,33 @@ WITH dima_detail0 AS (
 SELECT "RecKey" reckey, "SpeciesCode" species_code, "WtMeas" measure_units,
        unnest(array[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 , 16, 17, 18, 19, 20]) subplot,
        unnest(array["Sub1Wt", "Sub2Wt", "Sub3Wt", "Sub4Wt", "Sub5Wt", 
-					"Sub6Wt", "Sub7Wt", "Sub8Wt", "Sub9Wt", "Sub10Wt", 
-					"Sub11Wt", "Sub12Wt", "Sub13Wt", "Sub14Wt", "Sub15Wt", 
-					"Sub16Wt", "Sub17Wt", "Sub18Wt", "Sub19Wt", "Sub20Wt"]) units, 
-	   unnest(array["Sub1Clip", "Sub2Clip", "Sub3Clip", "Sub4Clip", "Sub5Clip", 
-					"Sub6Clip", "Sub7Clip", "Sub8Clip", "Sub9Clip", "Sub10Clip", 
-					"Sub11Clip", "Sub12Clip", "Sub13Clip", "Sub14Clip", "Sub15Clip", 
-					"Sub16Clip", "Sub17Clip", "Sub18Clip", "Sub19Clip", "Sub20Clip"]) clipped, 
-	   unnest(array["ClipWt1", "ClipWt2", "ClipWt3", "ClipWt4", "ClipWt5", 
-					"ClipWt6", "ClipWt7", "ClipWt8", "ClipWt9", "ClipWt10", 
-					"ClipWt11", "ClipWt12", "ClipWt13", "ClipWt14", "ClipWt15", 
-					"ClipWt16", "ClipWt17", "ClipWt18", "ClipWt19", "ClipWt20"]) clipped_wgt
-	FROM dima."tblPlantProdDetail"
+                    "Sub6Wt", "Sub7Wt", "Sub8Wt", "Sub9Wt", "Sub10Wt", 
+                    "Sub11Wt", "Sub12Wt", "Sub13Wt", "Sub14Wt", "Sub15Wt", 
+                    "Sub16Wt", "Sub17Wt", "Sub18Wt", "Sub19Wt", "Sub20Wt"]) units, 
+       unnest(array["Sub1Clip", "Sub2Clip", "Sub3Clip", "Sub4Clip", "Sub5Clip", 
+                    "Sub6Clip", "Sub7Clip", "Sub8Clip", "Sub9Clip", "Sub10Clip", 
+                    "Sub11Clip", "Sub12Clip", "Sub13Clip", "Sub14Clip", "Sub15Clip", 
+                    "Sub16Clip", "Sub17Clip", "Sub18Clip", "Sub19Clip", "Sub20Clip"]) clipped, 
+       unnest(array["ClipWt1", "ClipWt2", "ClipWt3", "ClipWt4", "ClipWt5", 
+                    "ClipWt6", "ClipWt7", "ClipWt8", "ClipWt9", "ClipWt10", 
+                    "ClipWt11", "ClipWt12", "ClipWt13", "ClipWt14", "ClipWt15", 
+                    "ClipWt16", "ClipWt17", "ClipWt18", "ClipWt19", "ClipWt20"]) clipped_wgt
+    FROM dima."tblPlantProdDetail"
 
 ), dima_detail1 AS (
 SELECT a.reckey, a.species_code, a.subplot, a.units,
-	   cast((regexp_match(a.units, '[\d\.]+'))[1] AS double precision) units_dbl,
-	   (regexp_match(a.units, 'T'))[1] trace,
-	   CASE WHEN a.clipped_wgt = 0 THEN NULL
+       cast((regexp_match(a.units, '[\d\.]+'))[1] AS double precision) units_dbl,
+       (regexp_match(a.units, 'T'))[1] trace,
+       CASE WHEN a.clipped_wgt = 0 THEN NULL
             WHEN measure_units = 'lb' THEN round(a.clipped_wgt::numeric * 453.592, 2) 
-			ELSE a.clipped_wgt END clipped_wgt_g
+            ELSE a.clipped_wgt END clipped_wgt_g
   FROM dima_detail0 a
   LEFT JOIN dima."tblPlantProdHeader" b ON a.reckey = b."RecKey"
  WHERE a.subplot <= b."numSubPlots" AND a.units IS NOT NULL
 
 ), dima_final AS (
 SELECT reckey, species_code, subplot, coalesce(units_dbl, 0) units, 
-	   coalesce(trace = 'T', False) trace, clipped_wgt_g
+       coalesce(trace = 'T', False) trace, clipped_wgt_g
   FROM dima_detail1
 )
 
@@ -1013,8 +1054,8 @@ DROP MATERIALIZED VIEW IF EXISTS public.plantdensity_meta CASCADE;
 CREATE MATERIALIZED VIEW public.plantdensity_meta AS
 WITH lmf_process0 AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT") plotkey,
-	   concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", 'SE7') reckey,
-	   concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", 'SE') linekey
+       concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", 'SE7') reckey,
+       concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", 'SE') linekey
   FROM lmf."PLANTCENSUS"
  GROUP BY "SURVEY", "STATE", "COUNTY", "PSU", "POINT"
 
@@ -1054,8 +1095,8 @@ SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", 'SE7') reckey, 1 clas
 SELECT "PlotKey" plotkey, 
        unnest(array[1, 2, 3, 4, 5, 6, 7, 8, 9]) class_no,
        unnest(array["PlantDenClass1", "PlantDenClass2", "PlantDenClass3", "PlantDenClass4", 
-					"PlantDenClass5", "PlantDenClass6", "PlantDenClass7", "PlantDenClass8", 
-					"PlantDenClass9"]) class_lbl
+                    "PlantDenClass5", "PlantDenClass6", "PlantDenClass7", "PlantDenClass8", 
+                    "PlantDenClass9"]) class_lbl
   FROM dima."tblPlotFormDefaults"
 
 ), dima_final AS (
@@ -1159,7 +1200,7 @@ SELECT "RecKey" reckey,
        "SpeciesCode" species_code, 
        unnest(array[1, 2, 3, 4, 5, 6, 7, 8, 9]) class_no,
        unnest(array["Class1total", "Class2total", "Class3total", "Class4total", "Class5total", "Class6total", "Class7total", "Class8total", "Class9total"]) total, 
-	   unnest(array["Class1density", "Class2density", "Class3density", "Class4density", "Class5density", "Class6density", "Class7density", "Class8density", "Class9density"]) density
+       unnest(array["Class1density", "Class2density", "Class3density", "Class4density", "Class5density", "Class6density", "Class7density", "Class8density", "Class9density"]) density
   FROM dima."tblPlantDenDetail"
 
 ), dima_final AS (
@@ -1196,9 +1237,9 @@ SELECT linekey, basal_gaps = 'Y' basal_gaps, canopy_gaps = 'Y' canopy_gaps,
 
 ), lmf_process0 AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT") plotkey,
-	   concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", upper(right("TRANSECT", 2))) linekey,
+       concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", upper(right("TRANSECT", 2))) linekey,
        concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", upper(right("TRANSECT", 2)), '3') reckey,
-	   "GAP_TYPE" gap_type
+       "GAP_TYPE" gap_type
   FROM lmf."GINTERCEPT"
  GROUP BY plotkey, linekey, reckey, gap_type
 
@@ -1208,11 +1249,11 @@ SELECT plotkey, linekey, reckey, string_agg(gap_type, ';' ORDER BY gap_type) gap
  GROUP BY plotkey, linekey, reckey
    
 ), lmf_final AS (
-SELECT a.reckey,	   
+SELECT a.reckey,       
        b."CAPDATE" AT TIME ZONE 'UTC' survey_date, NULL observer,
-	   30::double precision gapmin_cm, a.gap_types,
-	   CASE WHEN substring(gap_types FROM 'canopy') IS NOT NULL THEN 'perennial;annual'  
-			ELSE 'perennial' END canopy_stops_gap,
+       30::double precision gapmin_cm, a.gap_types,
+       CASE WHEN substring(gap_types FROM 'canopy') IS NOT NULL THEN 'perennial;annual'  
+            ELSE 'perennial' END canopy_stops_gap,
        CASE WHEN substring(gap_types FROM 'canopy') IS NULL THEN NULL
             ELSE NOT c.canopy_gaps END canopy_no_gap, 
        CASE WHEN substring(gap_types FROM 'basal') IS NOT NULL THEN 'perennial'
@@ -1228,34 +1269,34 @@ SELECT a.reckey,
 SELECT a."LineKey" linekey, a."RecKey" reckey, 
        a."FormDate"::timestamp AT TIME ZONE c.tz survey_date, 
        a."Observer" observer,
-	   CASE WHEN "Measure" = 2 THEN round("GapMin"::numeric * 30.48)
-	        ELSE "GapMin" END gapmin_cm, 
-	   CASE WHEN "GapData" = '1' THEN 'basal;canopy'
-	        WHEN "GapData" = '2' THEN 'canopy'
-			WHEN "GapData" = '3' THEN 'basal'
-			ELSE NULL END gap_types, 
-	   array_to_string(array[CASE WHEN "PerennialsCanopy" = True THEN 'perennial' ELSE NULL END, 
-			 CASE WHEN "AnnualGrassesCanopy" = True AND "AnnualForbsCanopy" = True THEN 'annual' ELSE NULL END,
-			 CASE WHEN "AnnualGrassesCanopy" = True AND "AnnualForbsCanopy" = False THEN 'annual grass' ELSE NULL END,   
-			 CASE WHEN "AnnualGrassesCanopy" = False AND "AnnualForbsCanopy" = True THEN 'annual forb' ELSE NULL END,
-			 CASE WHEN "OtherCanopy" = True THEN 'other' ELSE NULL END], ';') canopy_stops_gap, 
-	   "NoCanopyGaps" canopy_no_gap, 
-	   array_to_string(array[CASE WHEN "PerennialsBasal" = True THEN 'perennial' ELSE NULL END, 
-			 CASE WHEN "AnnualGrassesBasal" = True AND "AnnualForbsBasal" = True THEN 'annual' ELSE NULL END,
-			 CASE WHEN "AnnualGrassesBasal" = True AND "AnnualForbsBasal" = False THEN 'annual grass' ELSE NULL END,   
-			 CASE WHEN "AnnualGrassesBasal" = False AND "AnnualForbsBasal" = True THEN 'annual forb' ELSE NULL END,
-			 CASE WHEN "OtherBasal" = True THEN 'other' ELSE NULL END], ';') basal_stops_gap,
-			 "NoBasalGaps" basal_no_gap, "Notes" notes
+       CASE WHEN "Measure" = 2 THEN round("GapMin"::numeric * 30.48)
+            ELSE "GapMin" END gapmin_cm, 
+       CASE WHEN "GapData" = '1' THEN 'basal;canopy'
+            WHEN "GapData" = '2' THEN 'canopy'
+            WHEN "GapData" = '3' THEN 'basal'
+            ELSE NULL END gap_types, 
+       array_to_string(array[CASE WHEN "PerennialsCanopy" = True THEN 'perennial' ELSE NULL END, 
+             CASE WHEN "AnnualGrassesCanopy" = True AND "AnnualForbsCanopy" = True THEN 'annual' ELSE NULL END,
+             CASE WHEN "AnnualGrassesCanopy" = True AND "AnnualForbsCanopy" = False THEN 'annual grass' ELSE NULL END,   
+             CASE WHEN "AnnualGrassesCanopy" = False AND "AnnualForbsCanopy" = True THEN 'annual forb' ELSE NULL END,
+             CASE WHEN "OtherCanopy" = True THEN 'other' ELSE NULL END], ';') canopy_stops_gap, 
+       "NoCanopyGaps" canopy_no_gap, 
+       array_to_string(array[CASE WHEN "PerennialsBasal" = True THEN 'perennial' ELSE NULL END, 
+             CASE WHEN "AnnualGrassesBasal" = True AND "AnnualForbsBasal" = True THEN 'annual' ELSE NULL END,
+             CASE WHEN "AnnualGrassesBasal" = True AND "AnnualForbsBasal" = False THEN 'annual grass' ELSE NULL END,   
+             CASE WHEN "AnnualGrassesBasal" = False AND "AnnualForbsBasal" = True THEN 'annual forb' ELSE NULL END,
+             CASE WHEN "OtherBasal" = True THEN 'other' ELSE NULL END], ';') basal_stops_gap,
+             "NoBasalGaps" basal_no_gap, "Notes" notes
   FROM dima."tblGapHeader" a
   LEFT JOIN dima."tblLines" b ON a."LineKey" = b."LineKey"
   LEFT JOIN public.point c ON b."PlotKey" = c.plotkey
 
 ), dima_final AS (
 SELECT reckey, survey_date, observer, gapmin_cm, gap_types, 
-	   CASE WHEN canopy_stops_gap = '' THEN NULL ELSE canopy_stops_gap END canopy_stops_gap,
-	   canopy_no_gap, 
-	   CASE WHEN basal_stops_gap = '' THEN NULL ELSE basal_stops_gap END basal_stops_gap,
-	   basal_no_gap, notes, linekey
+       CASE WHEN canopy_stops_gap = '' THEN NULL ELSE canopy_stops_gap END canopy_stops_gap,
+       canopy_no_gap, 
+       CASE WHEN basal_stops_gap = '' THEN NULL ELSE basal_stops_gap END basal_stops_gap,
+       basal_no_gap, notes, linekey
   FROM dima_process0
 )
 
@@ -1278,14 +1319,14 @@ SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", upper(right("TRANSECT
             WHEN "GAP_TYPE" = 'basal' THEN 'B'
             ELSE NULL END AS rectype, 
        "SEQNUM" seqno, 
-	   round("START_GAP"::numeric * 30.48, 0) gap_start_cm,
-	   round("END_GAP"::numeric * 30.48, 0) gap_end_cm
+       round("START_GAP"::numeric * 30.48, 0) gap_start_cm,
+       round("END_GAP"::numeric * 30.48, 0) gap_end_cm
   FROM lmf."GINTERCEPT"
 
 ), dima_final AS (
 SELECT "RecKey" reckey, "RecType" rectype, "SeqNo" seqno, 
-	    ((regexp_match("GapStart", '[\d\.]+'))[1])::double precision gap_start_cm, 
-	    ((regexp_match("GapEnd", '[\d\.]+'))[1])::double precision gap_end_cm
+        ((regexp_match("GapStart", '[\d\.]+'))[1])::double precision gap_start_cm, 
+        ((regexp_match("GapEnd", '[\d\.]+'))[1])::double precision gap_end_cm
   FROM dima."tblGapDetail"
 )
 
@@ -1305,11 +1346,11 @@ WITH lmf_final AS (
 SELECT substring(md5(concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT", a."PTSECTION", a."PTNOTE")) for 16) reckey, 
        b."CAPDATE" AT TIME ZONE 'UTC' note_date, NULL recorder,
        a."PTSECTION" note_type, a."PTNOTE" note,
-	   concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey
+       concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey
   FROM lmf."PTNOTE" a
   LEFT JOIN lmf."GPS" b ON concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") = 
                            concat(b."SURVEY", b."STATE", b."COUNTY", b."PSU", b."POINT")
-	
+    
 ), dima_final AS (
 SELECT a."CommentID" reckey, a."NoteDate"::timestamp AT TIME ZONE b.tz note_date, 
        a."Recorder" recorder, NULL note_type, a."Note" note, a."PlotKey" plotkey
@@ -1353,9 +1394,9 @@ SELECT plotkey, ecoid_std
 ), lmf_final AS (
 SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT", '4') reckey,
        b."CAPDATE" AT TIME ZONE 'UTC' survey_date, NULL observer,
-	   c.ecoid_std, NULL refsheet_src, NULL::date refsheet_datepub, NULL refsheet_author,
-	   NULL::date refsheet_dategot, 'preponderance of evidence' indicator_wgt_method,
-	   NULL weight_src, NULL rep_criteria, NULL composition_base,
+       c.ecoid_std, NULL refsheet_src, NULL::date refsheet_datepub, NULL refsheet_author,
+       NULL::date refsheet_dategot, 'preponderance of evidence' indicator_wgt_method,
+       NULL weight_src, NULL rep_criteria, NULL composition_base,
        concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey
   FROM lmf."RANGEHEALTH" a
   LEFT JOIN lmf."GPS" b ON concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") = 
@@ -1365,27 +1406,27 @@ SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT", '4') reckey
 ), dima_final AS (
 SELECT a."RecKey" reckey, 
        a."FormDate"::timestamp AT TIME ZONE b.tz survey_date, a."Observer" observer,
-	   coalesce(substring(trim(a."EcolSite"), '^(?:F|R|G?)(\d{3}[A-z]?[A-z]?\d{3}[A-z]{2})(_*\d*)$'), 
-				trim(a."EcolSite")) ecoid_std, 
-	   CASE WHEN a."RefSheetType" = 1 THEN 'new'
-	        WHEN a."RefSheetType" = 2 THEN 'nrcs'
-			WHEN a."RefSheetType" = 3 THEN 'other'
-			ELSE NULL END refsheet_src, 
-			a."RefSheetDate" refsheet_datepub, 
-			a."RefSheetAuthor" refsheet_author, 
-			a."DateDownloaded" refsheet_dategot, 
+       coalesce(substring(trim(a."EcolSite"), '^(?:F|R|G?)(\d{3}[A-z]?[A-z]?\d{3}[A-z]{2})(_*\d*)$'), 
+                trim(a."EcolSite")) ecoid_std, 
+       CASE WHEN a."RefSheetType" = 1 THEN 'new'
+            WHEN a."RefSheetType" = 2 THEN 'nrcs'
+            WHEN a."RefSheetType" = 3 THEN 'other'
+            ELSE NULL END refsheet_src, 
+            a."RefSheetDate" refsheet_datepub, 
+            a."RefSheetAuthor" refsheet_author, 
+            a."DateDownloaded" refsheet_dategot, 
        CASE WHEN a."AttrEvalMethod" = 0 THEN 'preponderance of evidence'
-	        WHEN a."AttrEvalMethod" = 1 THEN 'equal'
-	        WHEN a."AttrEvalMethod" = 2 THEN 'downloaded'
-	        WHEN a."AttrEvalMethod" = 3 THEN 'user defined'
-	        ELSE NULL END indicator_wgt_method, 
-	   a."WeightsSource" weight_src, 
-	   a."RepCriteria" rep_criteria, 
+            WHEN a."AttrEvalMethod" = 1 THEN 'equal'
+            WHEN a."AttrEvalMethod" = 2 THEN 'downloaded'
+            WHEN a."AttrEvalMethod" = 3 THEN 'user defined'
+            ELSE NULL END indicator_wgt_method, 
+       a."WeightsSource" weight_src, 
+       a."RepCriteria" rep_criteria, 
        CASE WHEN a."CompositionBase" = 1 THEN 'production'
-	        WHEN a."CompositionBase" = 2 THEN 'cover'
-			WHEN a."CompositionBase" = 3 THEN 'biomass'
-			ELSE NULL END composition_base,
-	   a."PlotKey" plotkey
+            WHEN a."CompositionBase" = 2 THEN 'cover'
+            WHEN a."CompositionBase" = 3 THEN 'biomass'
+            ELSE NULL END composition_base,
+       a."PlotKey" plotkey
   FROM dima."tblQualHeader" a
   LEFT JOIN public.point b ON a."PlotKey" = b.plotkey
 )
@@ -1435,13 +1476,13 @@ VALUES
 ), lmf_process0 AS ( 
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", '4') reckey,
        unnest(array[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 100, 300, 200]) seq_no,
-	   unnest(array['i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 
-					'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a']) rate_type,
+       unnest(array['i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 
+                    'i', 'i', 'i', 'i', 'i', 'i', 'i', 'a', 'a', 'a']) rate_type,
        unnest(array["RILLS", "WATER_FLOW_PATTERNS", "PEDESTALS_TERRACETTES", "BARE_GROUND", "GULLIES", 
-	   "WIND_SCOURED_AREAS", "LITTER_MOVEMENT", "SOIL_SURF_RESIS_EROSION", "SOIL_SURFACE_LOSS_DEG", 
-	   "INFILTRATION_RUNOFF", "COMPACTION_LAYER", "FUNC_STRUCT_GROUPS", "PLANT_MORTALITY_DEC", 
-	   "LITTER_AMOUNT", "ANNUAL_PRODUCTION", "INVASIVE_PLANTS", "REPROD_CAPABILITY_PEREN", 
-	   "SOILSITE_STABILITY", "BIOTIC_INTEGRITY", "HYDROLOGIC_FUNCTION"]) rating_str
+       "WIND_SCOURED_AREAS", "LITTER_MOVEMENT", "SOIL_SURF_RESIS_EROSION", "SOIL_SURFACE_LOSS_DEG", 
+       "INFILTRATION_RUNOFF", "COMPACTION_LAYER", "FUNC_STRUCT_GROUPS", "PLANT_MORTALITY_DEC", 
+       "LITTER_AMOUNT", "ANNUAL_PRODUCTION", "INVASIVE_PLANTS", "REPROD_CAPABILITY_PEREN", 
+       "SOILSITE_STABILITY", "BIOTIC_INTEGRITY", "HYDROLOGIC_FUNCTION"]) rating_str
   FROM lmf."RANGEHEALTH"
 
 ), lmf_final AS (
@@ -1458,9 +1499,9 @@ SELECT a."RecKey" reckey, a."Seq" seq_no, b.rate_abbr, 'i' rate_type, a."Rating"
 ), dima_process1 AS (
 SELECT "RecKey" reckey, 
        unnest(array[100, 200, 300]) seq_no,
-	   unnest(array['a', 'a', 'a']) rate_type,
-	   unnest(array["SSSVxWRatingFinal", "HFVxWRatingFinal", "BIVxWRatingFinal"]) rating_str,
-	   unnest(array["CommentSSS", "CommentHF", "CommentBI"]) note
+       unnest(array['a', 'a', 'a']) rate_type,
+       unnest(array["SSSVxWRatingFinal", "HFVxWRatingFinal", "BIVxWRatingFinal"]) rating_str,
+       unnest(array["CommentSSS", "CommentHF", "CommentBI"]) note
   FROM dima."tblQualHeader"
 
 ), dima_process2 AS (
@@ -1490,17 +1531,17 @@ CREATE MATERIALIZED VIEW public.soilstability_meta AS
 WITH lmf_final AS (
 SELECT concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT", '5') reckey, 
        b."CAPDATE" AT TIME ZONE 'UTC' survey_date, NULL observer,
-	   'surface' rectype, NULL notes,
+       'surface' rectype, NULL notes,
        concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") plotkey 
   FROM lmf."SOILDISAG" a
   LEFT JOIN lmf."GPS" b ON concat(a."SURVEY", a."STATE", a."COUNTY", a."PSU", a."POINT") = 
                            concat(b."SURVEY", b."STATE", b."COUNTY", b."PSU", b."POINT")
-		
+        
 ), dima_final AS (
 SELECT a."RecKey" reckey, a."FormDate"::timestamp AT TIME ZONE b.tz survey_date, 
        a."Observer" observer,
        CASE WHEN a."SoilStabSubSurface" = 2 THEN 'surface/subsurface'
-	        ELSE 'surface' END rectype, a."Notes" notes, a."PlotKey" plotkey
+            ELSE 'surface' END rectype, a."Notes" notes, a."PlotKey" plotkey
   FROM dima."tblSoilStabHeader" a
   LEFT JOIN public.point b ON a."PlotKey" = b.plotkey
 )
@@ -1519,14 +1560,14 @@ CREATE MATERIALIZED VIEW public.soilstability AS
 WITH lmf_process0 AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT") plotkey, 1 box_no,
        unnest(array[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]) cell,
-	   unnest(array['nesw', 'nesw', 'nesw', 'nesw', 'nesw', 'nesw', 'nesw', 'nesw', 'nesw', 
-					'nwse', 'nwse', 'nwse', 'nwse', 'nwse', 'nwse', 'nwse', 'nwse', 'nwse']) lineid,
-	   unnest(array[15, 30, 45, 60, 75, 90, 105, 120, 135, 15, 30, 45, 60, 75, 90, 105, 120, 135]) pos,
+       unnest(array['nesw', 'nesw', 'nesw', 'nesw', 'nesw', 'nesw', 'nesw', 'nesw', 'nesw', 
+                    'nwse', 'nwse', 'nwse', 'nwse', 'nwse', 'nwse', 'nwse', 'nwse', 'nwse']) lineid,
+       unnest(array[15, 30, 45, 60, 75, 90, 105, 120, 135, 15, 30, 45, 60, 75, 90, 105, 120, 135]) pos,
        unnest(array["VEG1", "VEG2", "VEG3", "VEG4", "VEG5", "VEG6", "VEG7", "VEG8", "VEG9", 
-					"VEG10", "VEG11", "VEG12", "VEG13", "VEG14", "VEG15", "VEG16", "VEG17", "VEG18"]) veg, 
-	   unnest(array["STABILITY1", "STABILITY2", "STABILITY3", "STABILITY4", "STABILITY5", "STABILITY6", "STABILITY7", "STABILITY8", "STABILITY9", 
-					"STABILITY10", "STABILITY11", "STABILITY12", "STABILITY13", "STABILITY14", "STABILITY15", "STABILITY16", "STABILITY17", "STABILITY18"]) rating,
-	   NULL::boolean hydrophobic
+                    "VEG10", "VEG11", "VEG12", "VEG13", "VEG14", "VEG15", "VEG16", "VEG17", "VEG18"]) veg, 
+       unnest(array["STABILITY1", "STABILITY2", "STABILITY3", "STABILITY4", "STABILITY5", "STABILITY6", "STABILITY7", "STABILITY8", "STABILITY9", 
+                    "STABILITY10", "STABILITY11", "STABILITY12", "STABILITY13", "STABILITY14", "STABILITY15", "STABILITY16", "STABILITY17", "STABILITY18"]) rating,
+       NULL::boolean hydrophobic
   FROM lmf."SOILDISAG"
 
 ), lmf_final AS (
@@ -1537,30 +1578,30 @@ SELECT concat(plotkey, '5') reckey,
 
 ), dima_process0 AS (
 SELECT "RecKey" reckey, "BoxNum" box_no,
-	   unnest(array[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]) cell,
+       unnest(array[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]) cell,
        unnest(array["Line1", "Line1", "Line1", "Line2", "Line2", "Line2", "Line3", "Line3", "Line3", 
-					"Line4", "Line4", "Line4", "Line5", "Line5", "Line5", "Line6", "Line6", "Line6"]) lineid, 
-	   unnest(array["Pos1", "Pos2", "Pos3", "Pos4", "Pos5", "Pos6", "Pos7", "Pos8", "Pos9", 
-					"Pos10", "Pos11", "Pos12", "Pos13", "Pos14", "Pos15", "Pos16", "Pos17", "Pos18"]) pos, 
-	   unnest(array["Veg1", "Veg2", "Veg3", "Veg4", "Veg5", "Veg6", "Veg7", "Veg8", "Veg9", 
-					"Veg10", "Veg11", "Veg12", "Veg13", "Veg14", "Veg15", "Veg16", "Veg17", "Veg18"]) veg, 
-	   unnest(array["Rating1", "Rating2", "Rating3", "Rating4", "Rating5", "Rating6", "Rating7", "Rating8", "Rating9", 
-					"Rating10", "Rating11", "Rating12", "Rating13", "Rating14", "Rating15", "Rating16", "Rating17", "Rating18"]) rating, 
-	   unnest(array["Hydro1", "Hydro2", "Hydro3", "Hydro4", "Hydro5", "Hydro6", "Hydro7", "Hydro8", "Hydro9", 
-					"Hydro10", "Hydro11", "Hydro12", "Hydro13", "Hydro14", "Hydro15", "Hydro16", "Hydro17", "Hydro18"]) hydrophobic, 
-	   unnest(array["In1", "In2", "In3", "In4", "In5", "In6", "In7", "In8", "In9", 
-					"In10", "In11", "In12", "In13", "In14", "In15", "In16", "In17", "In18"]) time_wet, 
-	   unnest(array["Dip1", "Dip2", "Dip3", "Dip4", "Dip5", "Dip6", "Dip7", "Dip8", "Dip9", 
-					"Dip10", "Dip11", "Dip12", "Dip13", "Dip14", "Dip15", "Dip16", "Dip17", "Dip18"]) time_dip
+                    "Line4", "Line4", "Line4", "Line5", "Line5", "Line5", "Line6", "Line6", "Line6"]) lineid, 
+       unnest(array["Pos1", "Pos2", "Pos3", "Pos4", "Pos5", "Pos6", "Pos7", "Pos8", "Pos9", 
+                    "Pos10", "Pos11", "Pos12", "Pos13", "Pos14", "Pos15", "Pos16", "Pos17", "Pos18"]) pos, 
+       unnest(array["Veg1", "Veg2", "Veg3", "Veg4", "Veg5", "Veg6", "Veg7", "Veg8", "Veg9", 
+                    "Veg10", "Veg11", "Veg12", "Veg13", "Veg14", "Veg15", "Veg16", "Veg17", "Veg18"]) veg, 
+       unnest(array["Rating1", "Rating2", "Rating3", "Rating4", "Rating5", "Rating6", "Rating7", "Rating8", "Rating9", 
+                    "Rating10", "Rating11", "Rating12", "Rating13", "Rating14", "Rating15", "Rating16", "Rating17", "Rating18"]) rating, 
+       unnest(array["Hydro1", "Hydro2", "Hydro3", "Hydro4", "Hydro5", "Hydro6", "Hydro7", "Hydro8", "Hydro9", 
+                    "Hydro10", "Hydro11", "Hydro12", "Hydro13", "Hydro14", "Hydro15", "Hydro16", "Hydro17", "Hydro18"]) hydrophobic, 
+       unnest(array["In1", "In2", "In3", "In4", "In5", "In6", "In7", "In8", "In9", 
+                    "In10", "In11", "In12", "In13", "In14", "In15", "In16", "In17", "In18"]) time_wet, 
+       unnest(array["Dip1", "Dip2", "Dip3", "Dip4", "Dip5", "Dip6", "Dip7", "Dip8", "Dip9", 
+                    "Dip10", "Dip11", "Dip12", "Dip13", "Dip14", "Dip15", "Dip16", "Dip17", "Dip18"]) time_dip
   FROM dima."tblSoilStabDetail"
 
 ), dima_process1 AS (
 SELECT reckey, box_no, cell,
        CASE WHEN trim(lineid) = '' THEN NULL ELSE trim(lineid) END lineid,
-	   CASE WHEN trim(pos) = '' THEN NULL ELSE cast(substring(pos, '[0-9]+\.{0,1}[0-9]*') as double precision) END pos,
-	   CASE WHEN trim(veg) = '' THEN NULL ELSE trim(veg) END veg,
-	   CASE WHEN trim(rating) = '' THEN NULL ELSE cast(substring(rating, '\d+') as integer) END rating,
-	   hydrophobic
+       CASE WHEN trim(pos) = '' THEN NULL ELSE cast(substring(pos, '[0-9]+\.{0,1}[0-9]*') as double precision) END pos,
+       CASE WHEN trim(veg) = '' THEN NULL ELSE trim(veg) END veg,
+       CASE WHEN trim(rating) = '' THEN NULL ELSE cast(substring(rating, '\d+') as integer) END rating,
+       hydrophobic
   FROM dima_process0
 
 ), dima_final AS (
@@ -1585,107 +1626,125 @@ SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", '6') reckey,
        concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT") plotkey
   FROM lmf."SOILHORIZON"
  GROUP BY "SURVEY", "STATE", "COUNTY", "PSU", "POINT"
-						   
+                           
 ), lmf_final AS (
 SELECT a.reckey,
        c."CAPDATE" AT TIME ZONE 'UTC' survey_date, 
-	   NULL observer, NULL pit_desc, 
-	   nullif(trim(b."SSAID"), '') area_symbol, 
-	   nullif(trim(b."MUSYM"), '') mapunit_symbol, 
-	   NULL taxon_name, NULL series_name,
-	   nullif(trim(b."COMPONENT_NAME"), '') component_name, 
-	   nullif(trim(b."COMPONENT_ID"), '') component_key, 
+       NULL observer, NULL pit_desc, 
+       nullif(trim(b."SSAID"), '') area_symbol, 
+       nullif(trim(b."MUSYM"), '') mapunit_symbol, 
+       NULL taxon_name, NULL series_name,
+       nullif(trim(b."COMPONENT_NAME"), '') component_name, 
+       nullif(trim(b."COMPONENT_ID"), '') component_key, 
        b."SOIL_CONFIDENCE_RATING" soil_confidence_rating,
-	   NULL notes,
-	   NULL::double precision longitude, NULL::double precision latitude,
-	   NULL::double precision elevation_m, NULL::geometry geom,
-	   a.plotkey
+       NULL notes,
+       NULL::double precision longitude, NULL::double precision latitude,
+       NULL::double precision elevation_m, NULL::geometry geom,
+       a.plotkey
   FROM lmf_process0 a
   LEFT JOIN lmf."POINT" b ON a.plotkey = concat(b."SURVEY", b."STATE", b."COUNTY", b."PSU", b."POINT")
   LEFT JOIN lmf."GPS" c ON a.plotkey = concat(c."SURVEY", c."STATE", c."COUNTY", c."PSU", c."POINT")
 
 ), dima_coords0 AS (
 SELECT a."PlotKey" plotkey, 
-	   CASE WHEN (a."Easting" IS NULL OR a."Easting" = 0) AND 
-	             (a."Longitude" IS NOT NULL AND a."Longitude" != 0) THEN a."Longitude"
-	        ELSE a."Easting" END easting, 
-	   CASE WHEN (a."Northing" IS NULL OR a."Northing" = 0) AND 
-	             (a."Latitude" IS NOT NULL AND a."Latitude" != 0) THEN a."Latitude" 
-	        ELSE a."Northing" END northing, 
-	   b."GPSCoordSys" gpscoordsys, b."Datum" datum, b."Zone" zone_str,
-	   substring(b."Zone", '\d{2}') zone_num, 
-	   CASE WHEN a."ElevationType" = 1 THEN a."Elevation"
-	        WHEN a."ElevationType" = 2 THEN a."Elevation" / 3.281
-	        ELSE 0 END elevation_m
+       CASE WHEN (a."Easting" IS NULL OR a."Easting" = 0) AND 
+                 (a."Longitude" IS NOT NULL AND a."Longitude" != 0) THEN a."Longitude"
+            ELSE a."Easting" END easting, 
+       CASE WHEN (a."Northing" IS NULL OR a."Northing" = 0) AND 
+                 (a."Latitude" IS NOT NULL AND a."Latitude" != 0) THEN a."Latitude" 
+            ELSE a."Northing" END northing, 
+       b."GPSCoordSys" gpscoordsys, b."Datum" datum, b."Zone" zone_str,
+       substring(b."Zone", '\d{2}') zone_num,
+       CASE WHEN a."Elevation" IS NULL THEN 0
+            WHEN a."ElevationType" = 1 THEN a."Elevation"
+            WHEN a."ElevationType" = 2 THEN a."Elevation" / 3.281
+            ELSE 0 END elevation_m
   FROM dima."tblSoilPits" a
   LEFT JOIN dima."tblPlots" b ON a."PlotKey" = b."PlotKey"
 
 ), dima_coords1 AS (
 SELECT plotkey, easting, northing, gpscoordsys, datum, zone_num, round(cast(elevation_m as numeric), 1) elevation_m,
-	   CASE WHEN easting BETWEEN -180 AND 180 AND northing BETWEEN -90 AND 90 THEN True
-	        ELSE False END AS valid_latlong
+       CASE WHEN easting BETWEEN -180 AND 180 AND northing BETWEEN -90 AND 90 THEN True
+            ELSE False END AS valid_latlong
   FROM dima_coords0
  WHERE easting IS NOT NULL AND easting != 0 AND northing IS NOT NULL AND northing != 0
 
 ), dima_coords2 AS (
 SELECT plotkey, 
-	   CASE WHEN easting > 0 AND valid_latlong = True THEN easting * -1
-	        ELSE easting END easting, 
-	   northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
+       CASE WHEN easting > 0 AND valid_latlong = True THEN easting * -1
+            ELSE easting END easting, 
+       northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
        CASE WHEN datum ~ 'WGS\s*84' AND valid_latlong = True THEN 4326
-	        WHEN datum ~ 'NAD\s*83' AND valid_latlong = True THEN 4269
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong = True THEN 4269
             WHEN datum ~ 'WGS\s*84' AND valid_latlong = False THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
-			WHEN datum ~ 'NAD\s*83' AND valid_latlong = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
-			ELSE NULL END srid
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
+            ELSE NULL END srid
   FROM dima_coords1
 
 ), dima_coords3 AS (
-SELECT plotkey, elevation_m,
-       ST_Transform(ST_SetSRID(ST_MakePoint(easting, northing, elevation_m), srid), 4326) AS geom
+SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
+       CASE WHEN srid::text LIKE '326%' THEN 4326
+            WHEN srid::text LIKE '269%' THEN 4269
+            ELSE srid END pre_srid, srid,
+       ST_SetSRID(ST_MakePoint(easting, northing, elevation_m), srid)  AS geom
   FROM dima_coords2 
  WHERE srid IS NOT NULL
 
 ), dima_coords4 AS (
-SELECT a.plotkey, st_x(a.geom) longitude, st_y(a.geom) latitude, elevation_m, a.geom
-  FROM dima_coords3 a
+SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
+       pre_srid, srid,
+       ST_Transform(geom, pre_srid) AS geom
+  FROM dima_coords3
+ WHERE geom IS NOT NULL
+
+), dima_coords5 AS (
+SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
+       pre_srid, srid,
+       ST_Transform(geom, 4326) AS geom
+  FROM dima_coords4
+
+), dima_coords6 AS (
+SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
+       pre_srid, srid, st_x(geom) longitude, st_y(geom) latitude, geom
+  FROM dima_coords5
 
 ), dima_process0 AS (
 SELECT a."SoilKey" reckey, a."DateRecorded"::timestamp AT TIME ZONE c.tz survey_date, 
-	   a."Observer" observer, a."PitDesc" pit_desc, NULL area_symbol, b."Soil" mapunit_symbol,
-	   array_to_string(array[
-	     array_to_string(array[
-		   nullif(trim(b."ESD_ParticleSizeClass"), ''), 
-		   nullif(trim(b."ESD_Mineralogy"), ''), 
-		   nullif(trim(b."ESD_CationExchangeActivityClass"), ''), 
-		   nullif(trim(b."ESD_Reaction"), ''), 
-		   nullif(trim(b."ESD_SoilTempRegime"), ''), 
-		   nullif(trim(b."ESD_DepthClass"), '')], ', '),
-	     nullif(trim(b."ESD_Subgroup"), ''), 
-	     nullif(trim(b."ESD_SoilMoistureRegime"), ''), 
-	     nullif(trim(b."ESD_Greatgroup"), '')], ' ') taxon_name,
-	   b."ESD_Series" series_name, b."MapUnitComponent" component_name,
-	   NULL component_key, NULL::integer soil_confidence_rating, a."Notes" notes,
-	   CASE WHEN a."ElevationType" = 2 THEN a."Elevation"/3.281
-	        ELSE a."Elevation" END elevation_m, 
+       a."Observer" observer, a."PitDesc" pit_desc, NULL area_symbol, b."Soil" mapunit_symbol,
+       array_to_string(array[
+         array_to_string(array[
+           nullif(trim(b."ESD_ParticleSizeClass"), ''), 
+           nullif(trim(b."ESD_Mineralogy"), ''), 
+           nullif(trim(b."ESD_CationExchangeActivityClass"), ''), 
+           nullif(trim(b."ESD_Reaction"), ''), 
+           nullif(trim(b."ESD_SoilTempRegime"), ''), 
+           nullif(trim(b."ESD_DepthClass"), '')], ', '),
+         nullif(trim(b."ESD_Subgroup"), ''), 
+         nullif(trim(b."ESD_SoilMoistureRegime"), ''), 
+         nullif(trim(b."ESD_Greatgroup"), '')], ' ') taxon_name,
+       b."ESD_Series" series_name, b."MapUnitComponent" component_name,
+       NULL component_key, NULL::integer soil_confidence_rating, a."Notes" notes,
+       CASE WHEN a."ElevationType" = 2 THEN a."Elevation"/3.281
+            ELSE a."Elevation" END elevation_m, 
        a."Latitude" latitude, a."Longitude" longitude,
-	   a."PlotKey" plotkey
+       a."PlotKey" plotkey
   FROM dima."tblSoilPits" a
   LEFT JOIN dima."tblPlots" b on a."PlotKey" = b."PlotKey"
   LEFT JOIN public.point c ON a."PlotKey" = c.plotkey
-	
+    
 ), dima_final AS (
 SELECT a.reckey, a.survey_date, a.observer, a.pit_desc, a.area_symbol,
-	   nullif(trim(a.mapunit_symbol), '') mapunit_symbol, 
-	   nullif(trim(a.taxon_name),'') taxon_name, 
-	   nullif(trim(a.series_name), '') series_name, 
-	   nullif(trim(a.component_name), '') component_name, 
-	   a.component_key, a.soil_confidence_rating, a.notes,
+       nullif(trim(a.mapunit_symbol), '') mapunit_symbol, 
+       nullif(trim(a.taxon_name),'') taxon_name, 
+       nullif(trim(a.series_name), '') series_name, 
+       nullif(trim(a.component_name), '') component_name, 
+       a.component_key, a.soil_confidence_rating, a.notes,
        coalesce(b.longitude, a.longitude) longitude, 
-	   coalesce(b.latitude, a.latitude) latitude, 
-	   coalesce(b.elevation_m, a.elevation_m) elevation_m,
-	   b.geom, a.plotkey
+       coalesce(b.latitude, a.latitude) latitude, 
+       coalesce(b.elevation_m, a.elevation_m) elevation_m,
+       b.geom, a.plotkey
   FROM dima_process0 a
-  LEFT JOIN dima_coords4 b ON a.plotkey = b.plotkey
+  LEFT JOIN dima_coords6 b ON a.plotkey = b.plotkey
 )
 
 SELECT * FROM lmf_final
@@ -1703,83 +1762,83 @@ WITH dima_process0 AS (
 -- pages references from NRCS Field Book for Describing and Sampling Soils v3
 SELECT "SoilKey" reckey,
        CASE WHEN "DepthMeasure" = 'cm' THEN cast(substring("HorizonDepthUpper", '\d+\.{0,1}\d*') AS double precision)
-	        ELSE round(cast(substring("HorizonDepthUpper", '\d+\.{0,1}\d*') AS numeric) * 2.54, 1) END depth_upper_cm, 
+            ELSE round(cast(substring("HorizonDepthUpper", '\d+\.{0,1}\d*') AS numeric) * 2.54, 1) END depth_upper_cm, 
        CASE WHEN "DepthMeasure" = 'cm' THEN cast(substring("HorizonDepthLower", '\d+\.{0,1}\d*') AS double precision)
-	        ELSE round(cast(substring("HorizonDepthLower", '\d+\.{0,1}\d*') AS numeric) * 2.54, 1) END depth_lower_cm, 
-	   -- Horizon and Layer Designations, 2-2
-	   "ESD_Horizon" horizon_lbl,
-	   -- Soil Color, 2-8
-	   "ESD_Hue" color_hue, "ESD_Value"::double precision color_value, "ESD_Chroma" color_chroma, lower("ESD_Color") color_measure_type,
-	   -- Concentrations, 2-20
-	   "ESD_GravelCarbonateCoatPct"::double precision/100 conc_gr_co3_pct,
-	   -- Pedogenic Carbonate Stages (Discussion), 2-28
-	   "ESD_CarbonateStage" conc_carbonate_stage,
-	   -- Ped and Void Surface Features, 2-32
-	   "ESD_ClayFilm" film_clay,
-	   -- Soil Texture, 2-36
+            ELSE round(cast(substring("HorizonDepthLower", '\d+\.{0,1}\d*') AS numeric) * 2.54, 1) END depth_lower_cm, 
+       -- Horizon and Layer Designations, 2-2
+       "ESD_Horizon" horizon_lbl,
+       -- Soil Color, 2-8
+       "ESD_Hue" color_hue, "ESD_Value"::double precision color_value, "ESD_Chroma" color_chroma, lower("ESD_Color") color_measure_type,
+       -- Concentrations, 2-20
+       "ESD_GravelCarbonateCoatPct"::double precision/100 conc_gr_co3_pct,
+       -- Pedogenic Carbonate Stages (Discussion), 2-28
+       "ESD_CarbonateStage" conc_carbonate_stage,
+       -- Ped and Void Surface Features, 2-32
+       "ESD_ClayFilm" film_clay,
+       -- Soil Texture, 2-36
        "Texture" texture, "ESD_HorizonModifier" texture_modifier, "ESD_Gypsic" texture_gypsic,
-	   -- Rock and Other Fragments, 2-46
-	   "RockFragments"::double precision/100 frag_total_pct, "ESD_PetrocalcicRubble" frag_petrocalcic,
-	   -- (Soil) Structure, 2-52
-	   "ESD_Structure" struct_type1, "ESD_Grade"::smallint struct_grade1, "ESD_Size" struct_size1, "ESD_StructQual" struct_verb,
-	   "ESD_Structure2" struct_type2, "ESD_Grade2"::smallint struct_grade2, "ESD_Size2" struct_size2,
-	   -- Consistence - Rupture Resistance, 2-62
-	   "ESD_RuptureResistance" rupture_resist, 
-	   -- Roots, 2-70
-	   "ESD_RootSize" root_size, "ESD_RootQty" root_qty, "ESD_PoresSize" pore_size, "ESD_PoresQty" pore_qty,
-	   -- Chemical Response, 2-85
-	   "ESD_pH" chem_ph, 
-	   -- Chemical Response - Effervescence, 2-87
-	   "Effer" chem_effer_class, "ESD_CaCO3EquivPct"::double precision/100 chem_caco3_equiv_pct, 
+       -- Rock and Other Fragments, 2-46
+       "RockFragments"::double precision/100 frag_total_pct, "ESD_PetrocalcicRubble" frag_petrocalcic,
+       -- (Soil) Structure, 2-52
+       "ESD_Structure" struct_type1, "ESD_Grade"::smallint struct_grade1, "ESD_Size" struct_size1, "ESD_StructQual" struct_verb,
+       "ESD_Structure2" struct_type2, "ESD_Grade2"::smallint struct_grade2, "ESD_Size2" struct_size2,
+       -- Consistence - Rupture Resistance, 2-62
+       "ESD_RuptureResistance" rupture_resist, 
+       -- Roots, 2-70
+       "ESD_RootSize" root_size, "ESD_RootQty" root_qty, "ESD_PoresSize" pore_size, "ESD_PoresQty" pore_qty,
+       -- Chemical Response, 2-85
+       "ESD_pH" chem_ph, 
+       -- Chemical Response - Effervescence, 2-87
+       "Effer" chem_effer_class, "ESD_CaCO3EquivPct"::double precision/100 chem_caco3_equiv_pct, 
        "ESD_GypsumPct"::double precision/100 chem_gypsum_pct, 
-	   -- Chemical Response - Salinity Class, 2-89
-	   "ESD_EC" chem_ec, "ESD_NAabsorptionRatio" chem_sar,
-	   -- notes
-	   "ESD_Notes" notes
+       -- Chemical Response - Salinity Class, 2-89
+       "ESD_EC" chem_ec, "ESD_NAabsorptionRatio" chem_sar,
+       -- notes
+       "ESD_Notes" notes
   FROM dima."tblSoilPitHorizons"
 
 ), dima_final AS (
 SELECT reckey, row_number() over(partition by reckey order by depth_upper_cm) seq_no,
-	   depth_upper_cm, depth_lower_cm, horizon_lbl, color_hue, color_value, color_chroma, color_measure_type, 
-	   conc_gr_co3_pct, conc_carbonate_stage, film_clay, texture, texture_modifier, texture_gypsic, frag_total_pct, 
-	   frag_petrocalcic, struct_type1, struct_grade1, struct_size1, struct_verb, struct_type2, struct_grade2, struct_size2, 
-	   rupture_resist, root_size, root_qty, pore_size, pore_qty, chem_ph, chem_effer_class, chem_caco3_equiv_pct, 
-	   chem_gypsum_pct, chem_ec, chem_sar, notes
+       depth_upper_cm, depth_lower_cm, horizon_lbl, color_hue, color_value, color_chroma, color_measure_type, 
+       conc_gr_co3_pct, conc_carbonate_stage, film_clay, texture, texture_modifier, texture_gypsic, frag_total_pct, 
+       frag_petrocalcic, struct_type1, struct_grade1, struct_size1, struct_verb, struct_type2, struct_grade2, struct_size2, 
+       rupture_resist, root_size, root_qty, pore_size, pore_qty, chem_ph, chem_effer_class, chem_caco3_equiv_pct, 
+       chem_gypsum_pct, chem_ec, chem_sar, notes
   FROM dima_process0
 
 ), lmf_process0 AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", '6') reckey,
-	   "SEQNUM" seq_no,
-	   lag("DEPTH", 1) over(partition by "SURVEY", "STATE", "COUNTY", "PSU", "POINT" order by "SEQNUM") depth_upper_in,
-	   "DEPTH" depth_lower_in, 
-	   CASE WHEN "HORIZON_TEXTURE" = '' THEN NULL
-	        WHEN "HORIZON_TEXTURE" = 'bed' THEN 'BR'
-	        ELSE upper("HORIZON_TEXTURE") END texture, 
-	   CASE WHEN "TEXTURE_MODIFIER" IN ('', 'none') THEN NULL
-	        ELSE upper("TEXTURE_MODIFIER") END texture_modifier, 
-	   CASE WHEN "EFFERVESCENCE_CLASS" = '' THEN NULL 
-	        ELSE "EFFERVESCENCE_CLASS" END chem_effer_class, 
-	   CASE WHEN trim("UNUSUAL_FEATURES") = '' THEN NULL 
-	        ELSE trim("UNUSUAL_FEATURES") END notes
+       "SEQNUM" seq_no,
+       lag("DEPTH", 1) over(partition by "SURVEY", "STATE", "COUNTY", "PSU", "POINT" order by "SEQNUM") depth_upper_in,
+       "DEPTH" depth_lower_in, 
+       CASE WHEN "HORIZON_TEXTURE" = '' THEN NULL
+            WHEN "HORIZON_TEXTURE" = 'bed' THEN 'BR'
+            ELSE upper("HORIZON_TEXTURE") END texture, 
+       CASE WHEN "TEXTURE_MODIFIER" IN ('', 'none') THEN NULL
+            ELSE upper("TEXTURE_MODIFIER") END texture_modifier, 
+       CASE WHEN "EFFERVESCENCE_CLASS" = '' THEN NULL 
+            ELSE "EFFERVESCENCE_CLASS" END chem_effer_class, 
+       CASE WHEN trim("UNUSUAL_FEATURES") = '' THEN NULL 
+            ELSE trim("UNUSUAL_FEATURES") END notes
   FROM lmf."SOILHORIZON"
 
-	
+    
 ), lmf_final AS (
 SELECT reckey, seq_no,
-	   coalesce(round(depth_upper_in::numeric * 2.54, 1), 0) depth_upper_cm, 
-	   round(depth_lower_in::numeric * 2.54, 1) depth_lower_cm,
-	   NULL horizon_lbl, NULL color_hue, NULL::double precision color_value, NULL::double precision color_chroma, NULL color_measure_type, 
-	   NULL::double precision conc_gr_co3_pct, NULL::smallint conc_carbonate_stage, NULL::boolean film_clay, 
-	   texture, texture_modifier, 
-	   NULL::boolean texture_gypsic, 
-	   NULL::double precision frag_total_pct, NULL::boolean frag_petrocalcic, 
-	   NULL struct_type1, NULL::smallint struct_grade1, NULL struct_size1, NULL struct_verb, 
-	   NULL struct_type2, NULL::smallint struct_grade2, NULL struct_size2, 
-	   NULL rupture_resist, NULL root_size, NULL root_qty, NULL pore_size, NULL pore_qty, NULL::double precision chem_ph, 
-	   chem_effer_class, 
-	   NULL::double precision chem_caco3_equiv_pct, NULL::double precision chem_gypsum_pct, 
-	   NULL::double precision chem_ec, NULL::double precision chem_sar, 
-	   notes
+       coalesce(round(depth_upper_in::numeric * 2.54, 1), 0) depth_upper_cm, 
+       round(depth_lower_in::numeric * 2.54, 1) depth_lower_cm,
+       NULL horizon_lbl, NULL color_hue, NULL::double precision color_value, NULL::double precision color_chroma, NULL color_measure_type, 
+       NULL::double precision conc_gr_co3_pct, NULL::smallint conc_carbonate_stage, NULL::boolean film_clay, 
+       texture, texture_modifier, 
+       NULL::boolean texture_gypsic, 
+       NULL::double precision frag_total_pct, NULL::boolean frag_petrocalcic, 
+       NULL struct_type1, NULL::smallint struct_grade1, NULL struct_size1, NULL struct_verb, 
+       NULL struct_type2, NULL::smallint struct_grade2, NULL struct_size2, 
+       NULL rupture_resist, NULL root_size, NULL root_qty, NULL pore_size, NULL pore_qty, NULL::double precision chem_ph, 
+       chem_effer_class, 
+       NULL::double precision chem_caco3_equiv_pct, NULL::double precision chem_gypsum_pct, 
+       NULL::double precision chem_ec, NULL::double precision chem_sar, 
+       notes
   FROM lmf_process0
 )
 
@@ -1805,7 +1864,7 @@ VALUES
 ), dima_convert AS (
 SELECT "SoilKey" reckey,
        CASE WHEN "DepthMeasure" = 'cm' THEN cast(substring("HorizonDepthUpper", '\d+\.{0,1}\d*') AS double precision)
-	        ELSE round(cast(substring("HorizonDepthUpper", '\d+\.{0,1}\d*') AS numeric) * 2.54, 1) END depth_upper_cm,
+            ELSE round(cast(substring("HorizonDepthUpper", '\d+\.{0,1}\d*') AS numeric) * 2.54, 1) END depth_upper_cm,
        "ESD_PctSand"/100 sand_pct, (100-("ESD_PctSand" + "ESD_PctClay")/100) silt_pct, "ESD_PctClay"/100 clay_pct,
        "ESD_PSAPctSand"/100 psa_sand_pct, "ESD_PSAPctSilt"/100 psa_silt_pct, "ESD_PSAPctClay"/100 psa_clay_pct,
        "ESD_SandFractPctVeryFine"/100 sand_pct_vf, "ESD_SandFractPctFine"/100 sand_pct_f, "ESD_SandFractPctMed"/100 sand_pct_m, 
@@ -1815,7 +1874,7 @@ SELECT "SoilKey" reckey,
        cast(substring("ESD_FragVolPct2", '\d+\.{0,1}\d*') as double precision)/100 fragvolpct2, 
        cast(substring("ESD_FragVolPct3", '\d+\.{0,1}\d*') as double precision)/100 fragvolpct3,
        "ESD_FragmentRoundness" frag_roundness, "ESD_GravelClassPctFine"/100 gr_pct_f, "ESD_GravelClassPctMed"/100 gr_pct_m, 
-	   "ESD_GravelClassPctCoarse"/100 gr_pct_c, "ESD_LabGravelPctFine"/100 lab_gr_pct_f, "ESD_LabGravelPctMed"/100 lab_gr_pct_m, 
+       "ESD_GravelClassPctCoarse"/100 gr_pct_c, "ESD_LabGravelPctFine"/100 lab_gr_pct_f, "ESD_LabGravelPctMed"/100 lab_gr_pct_m, 
        "ESD_LabGravelPctCoarse"/100 lab_gr_pct_c
   FROM dima."tblSoilPitHorizons"
 
@@ -1825,28 +1884,28 @@ SELECT *, row_number() over(partition by reckey order by depth_upper_cm) seq_no
 
 ), dima_texture_unnest AS (
 SELECT reckey, seq_no,
-	   unnest(array['field', 'field', 'field', 'lab', 'lab', 'lab']) analysis,
-	   unnest(array['S', 'SI', 'C', 'S', 'SI', 'C']) component,
+       unnest(array['field', 'field', 'field', 'lab', 'lab', 'lab']) analysis,
+       unnest(array['S', 'SI', 'C', 'S', 'SI', 'C']) component,
        unnest(array[sand_pct, silt_pct, clay_pct, 
-					psa_sand_pct, psa_silt_pct, psa_clay_pct]) vol_pct,
-	   unnest(array[NULL, NULL, NULL, sand_pct_vf, NULL, NULL]) frac_vfine,
-	   unnest(array[NULL, NULL, NULL, sand_pct_f, NULL, NULL]) frac_fine,
-	   unnest(array[NULL, NULL, NULL, sand_pct_m, NULL, NULL]) frac_med,
-	   unnest(array[NULL, NULL, NULL, sand_pct_c, NULL, NULL]) frac_coarse,
-	   unnest(array[NULL, NULL, NULL, sand_pct_vc, NULL, NULL]) frac_vcoarse
+                    psa_sand_pct, psa_silt_pct, psa_clay_pct]) vol_pct,
+       unnest(array[NULL, NULL, NULL, sand_pct_vf, NULL, NULL]) frac_vfine,
+       unnest(array[NULL, NULL, NULL, sand_pct_f, NULL, NULL]) frac_fine,
+       unnest(array[NULL, NULL, NULL, sand_pct_m, NULL, NULL]) frac_med,
+       unnest(array[NULL, NULL, NULL, sand_pct_c, NULL, NULL]) frac_coarse,
+       unnest(array[NULL, NULL, NULL, sand_pct_vc, NULL, NULL]) frac_vcoarse
   FROM dima_rn
 
 ), dima_texture_filter AS (
 SELECT reckey, seq_no, analysis, component, vol_pct,
-	   NULL frag_roundness, frac_vfine, frac_fine, frac_med, frac_coarse, frac_vcoarse
+       NULL frag_roundness, frac_vfine, frac_fine, frac_med, frac_coarse, frac_vcoarse
   FROM dima_texture_unnest
  WHERE coalesce(vol_pct, frac_vfine, frac_fine, frac_med, frac_coarse, frac_vcoarse) IS NOT NULL
-	
+    
 
 ), dima_frag_unnest AS (
 SELECT reckey, seq_no,
        unnest(array[fragtype1, fragtype2, fragtype3]) texture_id, 
-	   unnest(array[fragvolpct1, fragvolpct2, fragvolpct3]) vol_pct
+       unnest(array[fragvolpct1, fragvolpct2, fragvolpct3]) vol_pct
   FROM dima_rn
 
 ), dima_frag_join AS (
@@ -1863,8 +1922,8 @@ SELECT reckey, seq_no, analysis, component, sum(vol_pct) vol_pct
  
 ), dima_gravel_field AS (
 SELECT reckey, seq_no, 'field' analysis, 'GR' component, frag_roundness,
-	   NULL::double precision frac_vfine, gr_pct_f frac_fine, gr_pct_m frac_med, 
-	   gr_pct_c frac_coarse, NULL::double precision frac_vcoarse
+       NULL::double precision frac_vfine, gr_pct_f frac_fine, gr_pct_m frac_med, 
+       gr_pct_c frac_coarse, NULL::double precision frac_vcoarse
   FROM dima_rn
  WHERE coalesce(gr_pct_f, gr_pct_m, gr_pct_c) IS NOT NULL OR
        frag_roundness IS NOT NULL
@@ -1878,10 +1937,10 @@ SELECT a.reckey, a.seq_no, a.analysis, a.component, a.vol_pct,
 
 ), dima_labgravel AS (
 SELECT reckey, seq_no, 'lab' analysis, 'GR' component,
-	   NULL::double precision vol_pct, NULL frag_roundness,
+       NULL::double precision vol_pct, NULL frag_roundness,
        NULL::double precision frac_vfine, lab_gr_pct_f frac_fine, 
-	   lab_gr_pct_m frac_med, lab_gr_pct_c frac_coarse,
-	   NULL::double precision frac_vcoarse
+       lab_gr_pct_m frac_med, lab_gr_pct_c frac_coarse,
+       NULL::double precision frac_vcoarse
   FROM dima_rn
  WHERE coalesce(lab_gr_pct_f, lab_gr_pct_m, lab_gr_pct_c) IS NOT NULL
 
