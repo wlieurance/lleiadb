@@ -189,7 +189,8 @@ SELECT "PlotKey" plotkey,
 ), dima_coords1 AS (
 SELECT plotkey, easting, northing, gpscoordsys, datum, zone_num, round(cast(elevation_m as numeric), 1) elevation_m,
        CASE WHEN easting BETWEEN -180 AND 180 AND northing BETWEEN -90 AND 90 THEN True
-            ELSE False END AS valid_latlong
+            ELSE False END AS valid_latlong,
+       CASE WHEN easting BETWEEN 0 AND 999999 THEN True ELSE False END valid_utm
   FROM dima_coords0
  WHERE easting IS NOT NULL AND easting != 0 AND northing IS NOT NULL AND northing != 0
 
@@ -200,8 +201,8 @@ SELECT plotkey,
        northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
        CASE WHEN datum ~ 'WGS\s*84' AND valid_latlong = True THEN 4326
             WHEN datum ~ 'NAD\s*83' AND valid_latlong = True THEN 4269
-            WHEN datum ~ 'WGS\s*84' AND valid_latlong = False THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
-            WHEN datum ~ 'NAD\s*83' AND valid_latlong = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
+            WHEN datum ~ 'WGS\s*84' AND valid_latlong = False AND valid_utm = True THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong = False AND valid_utm = True THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
             ELSE NULL END srid
   FROM dima_coords1
 
@@ -395,7 +396,9 @@ SELECT *,
        CASE WHEN easting_start BETWEEN -180 AND 180 AND northing_start BETWEEN -90 AND 90 THEN True
             ELSE False END AS valid_latlong_start,
        CASE WHEN easting_end BETWEEN -180 AND 180 AND northing_end BETWEEN -90 AND 90 THEN True
-            ELSE False END AS valid_latlong_end
+            ELSE False END AS valid_latlong_end,
+       CASE WHEN easting_start BETWEEN 0 AND 999999 THEN True ELSE False END valid_utm_start,
+       CASE WHEN easting_end BETWEEN 0 AND 999999 THEN True ELSE False END valid_utm_end
   FROM dima_coords0
  WHERE (easting_start IS NOT NULL AND easting_start != 0 AND northing_start IS NOT NULL AND northing_start != 0) OR
        (easting_end IS NOT NULL AND easting_end != 0 AND northing_end IS NOT NULL AND northing_end != 0)
@@ -410,13 +413,13 @@ SELECT linekey,
        northing_end, elevation_end_m, valid_latlong_end, gpscoordsys, datum, zone_num,
        CASE WHEN datum ~ 'WGS\s*84' AND valid_latlong_start = True THEN 4326
             WHEN datum ~ 'NAD\s*83' AND valid_latlong_start = True THEN 4269
-            WHEN datum ~ 'WGS\s*84' AND valid_latlong_start = False THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
-            WHEN datum ~ 'NAD\s*83' AND valid_latlong_start = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
+            WHEN datum ~ 'WGS\s*84' AND valid_latlong_start = False AND valid_utm_start = True THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong_start = False AND valid_utm_start = True THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
             ELSE NULL END srid_start,
        CASE WHEN datum ~ 'WGS\s*84' AND valid_latlong_end = True THEN 4326
             WHEN datum ~ 'NAD\s*83' AND valid_latlong_end = True THEN 4269
-            WHEN datum ~ 'WGS\s*84' AND valid_latlong_end = False THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
-            WHEN datum ~ 'NAD\s*83' AND valid_latlong_end = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
+            WHEN datum ~ 'WGS\s*84' AND valid_latlong_end = False AND valid_utm_end = True THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong_end = False AND valid_utm_end = True THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
             ELSE NULL END srid_end
   FROM dima_coords1
 
@@ -449,6 +452,9 @@ SELECT linekey,  gpscoordsys, datum, zone_num,
 SELECT linekey,  gpscoordsys, datum, zone_num,
        easting_start, northing_start, elevation_start_m, valid_latlong_start, pre_srid_start, srid_start,
        easting_end, northing_end, elevation_end_m, valid_latlong_end, pre_srid_end, srid_end,
+       CASE WHEN (easting_start = 0 AND northing_start = 0) 
+              OR (easting_end = 0 AND northing_end = 0)
+            THEN False ELSE True END valid_line,
        ST_Transform(geom_start, 4326) AS geom_start,
        ST_Transform(geom_end, 4326) AS geom_end
   FROM dima_coords4
@@ -457,8 +463,9 @@ SELECT linekey,  gpscoordsys, datum, zone_num,
 SELECT linekey, 
        st_x(geom_start) longitude_start, st_y(geom_start) latitude_start, elevation_start_m,
        st_x(geom_end) longitude_end, st_y(geom_end) latitude_end, elevation_end_m,
-       st_makeline(geom_start, geom_end) geom
+       CASE WHEN valid_line = True THEN st_makeline(geom_start, geom_end) ELSE NULL END geom
   FROM dima_coords5
+ 
   
 ), dima_final AS (
 SELECT a.linekey, a.establish_date, a.lineid, a.azimuth, a.azimuth_type, a.transect_length, a.transect_units, 
@@ -469,10 +476,11 @@ SELECT a.linekey, a.establish_date, a.lineid, a.azimuth, a.azimuth_type, a.trans
 )
 
 SELECT * FROM lmf_final
- UNION ALL
+UNION ALL
 SELECT * FROM dima_final
- UNION ALL
+UNION ALL
 SELECT * FROM eco.transect;
+
 
 --
 -- pintercept_meta
@@ -493,8 +501,8 @@ SELECT survey, state, county, psu, point, transect
 
 ), lmf_final AS (
 SELECT concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.transect, 2)), '1') reckey,
-       b."CAPDATE" AT TIME ZONE 'UTC' survey_date, 
-       NULL observer, NULL notes,
+       b."CAPDATE" AT TIME ZONE 'UTC' survey_date, 150.0 transect_length, 
+       3.0 transect_interval, 'ft' transect_units, NULL observer, NULL notes,
        concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.transect, 2))) linekey
   FROM lmf_group_keys a
   LEFT JOIN lmf."GPS" AS b ON a.survey = b."SURVEY" AND a.state = b."STATE" AND a.county = b."COUNTY" 
@@ -502,7 +510,13 @@ SELECT concat(a.survey, a.state, a.county, a.psu, a.point, upper(right(a.transec
 
 ), dima_final AS (
 SELECT a."RecKey" reckey, a."FormDate"::timestamp AT TIME ZONE c.tz survey_date, 
-       a."Observer" observer, a."Notes" notes, a."LineKey" linekey
+       CAST(round(CAST(
+       CASE WHEN a."SpacingType" = 'cm' THEN a."LineLengthAmount" * 100 
+            WHEN a."SpacingType" = 'in' THEN a."LineLengthAmount" * 12
+            ELSE a."LineLengthAmount" END AS numeric), 2) AS DOUBLE PRECISION) transect_length, 
+       a."SpacingIntervalAmount" transect_interval, 
+       a."SpacingType" transect_units, a."Observer" observer, 
+       a."Notes" notes, a."LineKey" linekey
   FROM dima."tblLPIHeader" a
   LEFT JOIN dima."tblLines" b ON a."LineKey" = b."LineKey"
   LEFT JOIN public.point c ON b."PlotKey" = c.plotkey
@@ -1646,7 +1660,7 @@ SELECT a.reckey,
   LEFT JOIN lmf."GPS" c ON a.plotkey = concat(c."SURVEY", c."STATE", c."COUNTY", c."PSU", c."POINT")
 
 ), dima_coords0 AS (
-SELECT a."PlotKey" plotkey, 
+SELECT a."SoilKey" reckey, 
        CASE WHEN (a."Easting" IS NULL OR a."Easting" = 0) AND 
                  (a."Longitude" IS NOT NULL AND a."Longitude" != 0) THEN a."Longitude"
             ELSE a."Easting" END easting, 
@@ -1663,26 +1677,27 @@ SELECT a."PlotKey" plotkey,
   LEFT JOIN dima."tblPlots" b ON a."PlotKey" = b."PlotKey"
 
 ), dima_coords1 AS (
-SELECT plotkey, easting, northing, gpscoordsys, datum, zone_num, round(cast(elevation_m as numeric), 1) elevation_m,
+SELECT reckey, easting, northing, gpscoordsys, datum, zone_num, round(cast(elevation_m as numeric), 1) elevation_m,
        CASE WHEN easting BETWEEN -180 AND 180 AND northing BETWEEN -90 AND 90 THEN True
-            ELSE False END AS valid_latlong
+            ELSE False END AS valid_latlong,
+       CASE WHEN easting BETWEEN 0 AND 999999 THEN True ELSE False END valid_utm
   FROM dima_coords0
  WHERE easting IS NOT NULL AND easting != 0 AND northing IS NOT NULL AND northing != 0
 
 ), dima_coords2 AS (
-SELECT plotkey, 
+SELECT reckey, 
        CASE WHEN easting > 0 AND valid_latlong = True THEN easting * -1
             ELSE easting END easting, 
        northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
        CASE WHEN datum ~ 'WGS\s*84' AND valid_latlong = True THEN 4326
             WHEN datum ~ 'NAD\s*83' AND valid_latlong = True THEN 4269
-            WHEN datum ~ 'WGS\s*84' AND valid_latlong = False THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
-            WHEN datum ~ 'NAD\s*83' AND valid_latlong = False THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
+            WHEN datum ~ 'WGS\s*84' AND valid_latlong = False AND valid_utm = True THEN CAST('326' || lpad(zone_num, 2, '0') AS integer)
+            WHEN datum ~ 'NAD\s*83' AND valid_latlong = False AND valid_utm = True THEN CAST('269' || lpad(zone_num, 2, '0') AS integer)
             ELSE NULL END srid
   FROM dima_coords1
 
 ), dima_coords3 AS (
-SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
+SELECT reckey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
        CASE WHEN srid::text LIKE '326%' THEN 4326
             WHEN srid::text LIKE '269%' THEN 4269
             ELSE srid END pre_srid, srid,
@@ -1691,20 +1706,20 @@ SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, va
  WHERE srid IS NOT NULL
 
 ), dima_coords4 AS (
-SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
+SELECT reckey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
        pre_srid, srid,
        ST_Transform(geom, pre_srid) AS geom
   FROM dima_coords3
  WHERE geom IS NOT NULL
 
 ), dima_coords5 AS (
-SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
+SELECT reckey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
        pre_srid, srid,
        ST_Transform(geom, 4326) AS geom
   FROM dima_coords4
 
 ), dima_coords6 AS (
-SELECT plotkey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
+SELECT reckey, easting, northing, elevation_m, gpscoordsys, datum, zone_num, valid_latlong,
        pre_srid, srid, st_x(geom) longitude, st_y(geom) latitude, geom
   FROM dima_coords5
 
@@ -1744,7 +1759,7 @@ SELECT a.reckey, a.survey_date, a.observer, a.pit_desc, a.area_symbol,
        coalesce(b.elevation_m, a.elevation_m) elevation_m,
        b.geom, a.plotkey
   FROM dima_process0 a
-  LEFT JOIN dima_coords6 b ON a.plotkey = b.plotkey
+  LEFT JOIN dima_coords6 b ON a.reckey = b.reckey
 )
 
 SELECT * FROM lmf_final

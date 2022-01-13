@@ -264,6 +264,9 @@ DROP TABLE IF EXISTS eco.pintercept_meta CASCADE;
 CREATE TABLE eco.pintercept_meta (
     reckey character varying(20) PRIMARY KEY,
     survey_date timestamp with time zone NOT NULL,
+    transect_length double precision,
+    transect_interval double precision,
+    transect_units character varying (5),
     observer character varying(50),
     notes text,
     linekey character varying(20) NOT NULL,
