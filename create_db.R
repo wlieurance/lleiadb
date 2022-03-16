@@ -1,14 +1,18 @@
 #!/usr/bin/env Rscript
 
+github_libraries = c(list(name = "parsesql", 
+                          location = "wlieurance/parsesql/R")
+                     )
+
 libraries = c("DBI", "dplyr", "getPass", "glue", "optparse", "pool", 
               "readr", "RPostgres", "sf", "stringr", "XML")
 
-for (lib in libraries){
+github_names = subset(unlist(github_libraries), 
+                      names(unlist(github_libraries)) == "name")
+for (lib in c(libraries, github_names)){
   suppressMessages(library(lib, character.only = TRUE))
 }
 
-# custom sources
-suppressMessages(source("parse_sql.R"))
 
 
 #' Creates a pooled database object that other functions use to interact with
@@ -73,9 +77,10 @@ create.pool <- function(dbname, host, port, user, password){
 #'
 #' @return Nothing.
 #' @export
-execute.sql <- function(path, params = list()){
-  sql <- parse.sql(sql.path = path, params = params)
-  for (stmt in sql$noformat){
+execute.sql <- function(path, params = NA){
+  sql.obj <- sql_parser$new(file = path, params = params, 
+                            standard = 'PostgreSQL')
+  for (stmt in sql.obj$sql){
     # cat(stmt)
     res <- tryCatch(
       expr = {
