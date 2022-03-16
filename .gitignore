@@ -129,3 +129,6 @@ dmypy.json
 .RData
 .Rhistory
 priming.R
+
+# vim
+tags
