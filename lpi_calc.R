@@ -446,7 +446,8 @@ calc.plot <-  function(imported, indicators, indicator.list = NULL){
   if (is.null(indicator.list)){
     plot.indicators.all <- plot.indicators %>% 
       group_by(plotkey, survey_year, indicator) %>%
-      summarize(.groups = "drop") %>%
+      summarize(survey_date_min = min(survey_date),
+                .groups = "drop") %>%
       mutate(calc_type = "long") %>%
       left_join(hit.types, by=c("calc_type" = "calc_type")) %>%
       left_join(select(plot.head, plotkey, survey_year, linekey),
