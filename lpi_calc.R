@@ -455,7 +455,8 @@ calc.plot <-  function(imported, indicators, indicator.list = NULL){
   } else {
     all.lines <- plot.head %>%
       group_by(plotkey, survey_year, linekey) %>%
-      summarize(.groups = "drop")
+      summarize(survey_date_min = min(survey_date),
+                .groups = "drop")
     all.indicators <- select(indicator.list, filter.tbl, name) %>%
       left_join(hit.types, by = c("filter.tbl" = "calc_type")) %>%
       rename(calc_type = filter.tbl, indicator = name)
@@ -467,7 +468,8 @@ calc.plot <-  function(imported, indicators, indicator.list = NULL){
                      "indicator" = "indicator", "hit_type" = "hit_type")) %>%
     mutate(cvr_pct = coalesce(cvr_pct, 0))
   plot.indicators.sum <- plot.indicators.filled %>%
-    group_by(plotkey, survey_year, calc_type, indicator, hit_type) %>%
+    group_by(plotkey, survey_year, survey_date_min, calc_type, indicator, 
+             hit_type) %>%
     summarize(cvr_n = n(),
               cvr_pct_mean = mean(cvr_pct),
               cvr_pct_sd = sd(cvr_pct),
@@ -506,12 +508,15 @@ do.indicator.calc <- function(imported, indicator.list = NULL, num.cores = 1,
     # systems.
     if (use.mc) {
       cat(paste("Calculating indicators on", num.cores, "cores...\n"))
-      cl <- makeCluster(num.cores, type = "FORK")
+      # cl <- makeCluster(num.cores, type = "FORK")
+      cl <- makeForkCluster(num.cores)
       registerDoParallel(cl)
     } else {
       cat(paste("Calculating indicators...\n"))
     }
-    indicators <-  suppressWarnings(  # this way we can just write 1 do/dopar
+    # by using suppressWarnings(), we can just write one %dopar% which will 
+    # default to a %do% if no parallel cluster has been registered
+    indicators <-  suppressWarnings(  
       foreach(i=1:nrow(indicator.list), .combine = bind_rows 
               #, .packages = c("dplyr", "tidyr", "stringr") 
               #, .export = c("pintercept.long", "pintercept.wide")
@@ -600,22 +605,29 @@ do.indicator.test <- function(imported, indicator.list, test.dir, sep = ","){
 #'   or .csv extension.
 #' @param sep A character which is used to delimit the output file 
 #'   (\code{out.file}) in the case that it is to be in the CSV format.
+#' @param enable_parallel A Boolean flag telling the system to run parallel
+#'   processing for those calculations and system on which it is supported. This
+#'   can be useful generally for smaller data sets with many indicators.
 #' @return A list containing process time elapsed information.
 #' @export
 main <- function(dbname, host, port, user, password, 
                  indicator.path = NULL, test = NULL, out.file = NULL, 
-                 sep = ","){
+                 sep = ",", enable_parallel = FALSE){
   
   indicator.list <- load.indicators(indicator.path)
-  if (is.null(indicator.list)){
+  if (!is.null(indicator.list)){
     num.cores <- min(nrow(indicator.list), detectCores()-1)
   } else {
     num.cores <- 1
   }
-  use.mc <- switch(Sys.info()[['sysname']],
-                   Windows= {FALSE},
-                   Linux  = {TRUE},
-                   Darwin = {TRUE})
+  if (enable_parallel == TRUE){
+    use.mc <- switch(Sys.info()[['sysname']],
+                     Windows= {FALSE},
+                     Linux  = {TRUE},
+                     Darwin = {TRUE})
+  } else {
+    use.mc <- FALSE
+  }
   imported <- import.data(dbname = dbname, host = host, port = port, 
                           user = user, password = password)
 
@@ -658,7 +670,7 @@ if (sys.nframe() == 0) {
     make_option(opt_str = c("-H", "--host"), default = "localhost",
                 help = paste0("The host name or ip address of the connection")),
     make_option(opt_str = c("-P", "--password"),
-                help = paste0("The password for the user provided.")),
+                help = paste0("The password for the user")),
     make_option(opt_str = c("-o", "--outfile"), 
                 help = paste0("the output path for the calculated indicators ",
                               "(.csv, .rds")),
@@ -675,7 +687,15 @@ if (sys.nframe() == 0) {
                               " calculate the indicators. This can be used to ",
                               "test different dplyr filter strings.")),
     make_option(opt_str = c("-s", "--sep"), default = ",",
-                help = "Separator to use for delimited output.")
+                help = "Separator to use for delimited output."),
+    make_option(opt_str = c("-e", "--enable_parallel"), action = 'store_true',
+                default = FALSE,
+                help = paste0("Enable parallel processing. This is currently ",
+                              "not recommended for use in large datasets as 
+                              the parallel performance increases are outweighed",
+                              " by the memory and communitication overhead of ",
+                              "executing in parallel, even on fork compatible ",
+                              "POSIX systems."))
     )
   opt_parser = OptionParser(usage = paste0("usage: %prog [options] ",
                                            "dbname user"), 
@@ -707,7 +727,8 @@ if (sys.nframe() == 0) {
                user = opt$args[2], password = opt$options$password, 
                indicator.path = opt$options$indicators, test = opt$options$test,
                out.file = opt$options$outfile,
-               sep = opt$options$sep)
+               sep = opt$options$sep,
+               enable_parallel = opt$options$enable_parallel)
   
   timings <- unlist(lapply(time$log.lst, function(x) x$toc - x$tic))
   writeLines(unlist(time$log.txt))
