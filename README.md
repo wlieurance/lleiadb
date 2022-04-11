@@ -6,7 +6,7 @@ This project was initiated in order to facilitate the storage and manipulation o
 More specifically, it is an effort to commonly house the Bureau of Land Management's (BLM) Assessment, Inventory and Monitoring (AIM) data, as well as U.S Dept. of Agriculture (USDA) Natural Resources Conservation Service's (NRCS) National Resources Inventory (NRI) Grazing Land data, both of which are used to collect ecological related data in non-forested areas across the US.
 
 ## Features
-This project allows users to create an spatially enabled enterprise database (Postgres/PostGIS) with schemas for both USDA Agricultural Resource Service (ARS) Jornada's Database for Inventory Monitoring and Assessment (DIMA) and NRI Grazing Land databases. It then converts and combines data from both of these schemas into a third schema which naively houses both data types for those methodologies that overlap and are similar enough to warrant a shared schema.
+This project allows users to create a spatially enabled enterprise database (Postgres/PostGIS) with schemas for both USDA Agricultural Resource Service (ARS) Jornada's Database for Inventory Monitoring and Assessment (DIMA) and NRI Grazing Land databases. It then converts and combines data from both of these schemas into a third schema which naively houses both data types for those methodologies that overlap and are similar enough to warrant a shared schema.
 
 ### Database Functionality
 1. Spatially enabled PostGIS database.

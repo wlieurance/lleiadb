@@ -1,0 +1,43 @@
+Package: lleiadb
+Title: A PostGIS relational database to house BLM AIM and NRCS NRI monitoring data.
+Version: 0.1
+Authors@R: 
+    person("Wade", "Lieurance", , "wlieurance@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-1908-0197"))
+Description: This project was initiated in order to facilitate the storage and manipulation of ecological monitoring data collected in shrublands and grasslands by various federal, state, and private entities in the United States. It is an effort to commonly house the Bureau of Land Management's (BLM) Assessment, Inventory and Monitoring (AIM) data, as well as U.S Dept. of Agriculture (USDA) Natural Resources Conservation Service's (NRCS) National Resources Inventory (NRI) Grazing Land data, both of which are used to collect ecological related data in non-forested areas across the US. This package allows users to create a spatially enabled enterprise database (Postgres/PostGIS) with schemas for both USDA Agricultural Resource Service (ARS) Jornada's Database for Inventory Monitoring and Assessment (DIMA) and NRI Grazing Land databases. It then converts and combines data from both of these schemas into a third schema which naively houses both data types for those methodologies that overlap and are similar enough to warrant a shared schema. Users can also store data collected in this shared schema within the database.
+License: use_gpl3_license()
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
+Depends: R (>= 4.1.0)
+Imports:
+    DBI (>= 1.1.2),
+    dbplyr (>= 2.1.1),
+    digest (>= 0.6.29),
+    doParallel (>= 1.0.17),
+    dplyr (>= 1.0.8),
+    foreach (>= 1.5.2),
+    getPass (>= 0.2.2),
+    glue (>= 1.6.2),
+    lubridate (>= 1.8.0),
+    odbc (>= 1.3.3),
+    optparse (>= 1.7.1),
+    parallel (>= 4.1.3),
+    parsesql (>= 0.1),
+    pool (>= 0.1.6),
+    readr (>= 2.1.2),
+    rgdal (>= 1.5.28),
+    RPostgres (>= 1.4.3),
+    RSQLite (>= 2.2.10),
+    sf (>= 1.0.6),
+    stringr (>= 1.4.0),
+    tibble (>= 3.1.6),
+    tictoc (>= 1.0.1),
+    tidyr (>= 1.2.0),
+    tidyselect (>= 1.1.2),
+    tools (>= 4.1.3),
+    utils (>= 4.1.3),
+    XML (>= 3.99.0.9)
+Remotes: 
+    github::wlieurance/parsesql/R
+LazyData: true

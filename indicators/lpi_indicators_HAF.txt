@@ -1,21 +1,21 @@
 # use 'hits' as the name of the data source in the filter expression. Multiple filter expressions can be union-ed.
 
 filter.tbl	name	filter.exp
-long	tree	filter(hits, growth_habit_first == "Tree")
-long	shrub	filter(hits, growth_habit_first %in% c("Shrub", "Subshrub"))
-long	graminoid	filter(hits, growth_habit_first == "Graminoid")
-long	forb	filter(hits, growth_habit_first %in% c("Forb/herb", "Vine"))
-long	perennial_graminoid	filter(hits, growth_habit_first == "Graminoid" & duration_first == "Perennial")
-long	perennial_forb	filter(hits, growth_habit_first %in% c("Forb/herb", "Vine") & duration_first == "Perennial")
-long	introduced_annual_gram	filter(hits, grepl("L48(I)", native_status, fixed = TRUE) & growth_habit_first == "Graminoid" & duration_first == "Annual")
-long	introduced_annual_forb	filter(hits, grepl("L48(I)", native_status, fixed = TRUE) & growth_habit_first == "Forb/herb" & duration_first %in% c("Annual", "Biennial"))
+long	tree	dplyr::filter(hits, growth_habit_first == "Tree")
+long	shrub	dplyr::filter(hits, growth_habit_first %in% c("Shrub", "Subshrub"))
+long	graminoid	dplyr::filter(hits, growth_habit_first == "Graminoid")
+long	forb	dplyr::filter(hits, growth_habit_first %in% c("Forb/herb", "Vine"))
+long	perennial_graminoid	dplyr::filter(hits, growth_habit_first == "Graminoid" & duration_first == "Perennial")
+long	perennial_forb	dplyr::filter(hits, growth_habit_first %in% c("Forb/herb", "Vine") & duration_first == "Perennial")
+long	introduced_annual_gram	dplyr::filter(hits, grepl("L48(I)", native_status, fixed = TRUE) & growth_habit_first == "Graminoid" & duration_first == "Annual")
+long	introduced_annual_forb	dplyr::filter(hits, grepl("L48(I)", native_status, fixed = TRUE) & growth_habit_first == "Forb/herb" & duration_first %in% c("Annual", "Biennial"))
 
 # soil surface indicators
-long	total_litter	filter(hits, str_to_lower(hit) %in% c("l", "hl", "wl", "nl", "vl", "d", "el", "al", "om"))
-wide	bare_soil	filter(hits, hit1_t == "None" & str_to_lower(hit9_s) %in% c("s", "cy")) %>% filter_at(vars(starts_with("hit") & ends_with("_l")), all_vars((is.na(.))))
-long	total_rock	filter(hits, str_to_lower(hit) %in% c("rf", "gr", "r", "cb", "br", "st", "by"))
-long	biological_crust	filter(hits, str_to_lower(hit) %in% c("cy", "m", "lc"))
+long	total_litter	dplyr::filter(hits, stringr::str_to_lower(hit) %in% c("l", "hl", "wl", "nl", "vl", "d", "el", "al", "om"))
+wide	bare_soil	dplyr::filter(hits, hit1_t == "None" & stringr::str_to_lower(hit9_s) %in% c("s", "cy")) |> dplyr::filter_at(dplyr::vars(tidyselect::starts_with("hit") & tidyselect::ends_with("_l")), dplyr::all_vars((is.na(.))))
+long	total_rock	dplyr::filter(hits, stringr::str_to_lower(hit) %in% c("rf", "gr", "r", "cb", "br", "st", "by"))
+long	biological_crust	dplyr::filter(hits, stringr::str_to_lower(hit) %in% c("cy", "m", "lc"))
 
 # total cover indicators
-long	total	filter(hits, !(str_to_lower(hit) %in% c("s","hl","l","rf","gr","wl","r","m","lc","el","cb","d","br","st","cy","om","by","nl","vl","w","al","wa","ds")) & hit != "None")
+long	total	dplyr::filter(hits, !(stringr::str_to_lower(hit) %in% c("s","hl","l","rf","gr","wl","r","m","lc","el","cb","d","br","st","cy","om","by","nl","vl","w","al","wa","ds")) & hit != "None")
 
