@@ -18,13 +18,13 @@
 #' Creates a pooled database object that other functions use to interact with
 #' the database.
 #'
-#' @param dbname A string. The database name to connect to in the postgres
+#' @param dbname A character vector. The database name to connect to in the postgres
 #'   instance.
-#' @param host A string. The IP address or DNS name which hosts the database.
+#' @param host A character vector. The IP address or DNS name which hosts the database.
 #' @param port An integer. The port which the postgres service monitors for
 #'   connections.
-#' @param user A string. The database user used to connect to the database.
-#' @param password A string. The password used to connect to the database.
+#' @param user A character vector. The database user used to connect to the database.
+#' @param password A character vector. The password used to connect to the database.
 create.pool <- function(dbname, host, port, user, password){
   tryCatch(
     expr = {
@@ -67,16 +67,17 @@ create.pool <- function(dbname, host, port, user, password){
 #' Loads SQL statements from \code{path}, separates them, and executes them in
 #' order.
 #'
-#' @param path A string directory path which points to the location
+#' @param path A character vector directory path which points to the location
 #'   where SQL statements to be executed on the PostGIS instance are stored.
-#' @param params A named list of variables, which can be used with glue
-#'   syntax to replace parameters in \code{path}.
-#' @param verbose Boolean. If TRUE will direct the function to print status
-#'   messages.
-#' @param raw Boolean. If TRUE will direct the function to load the SQL from
-#'   the SQL files directly instead of using the \code{sql.list} variable.
+#' @param params A named list of variables, which can be used with
+#'   glue syntax to replace parameters in \code{path}.
+#' @param verbose Boolean. If TRUE will direct the function to print
+#'   status messages.
+#' @param raw Boolean. If TRUE will direct the function to load the
+#'   SQL from the SQL files directly instead of using the \code{sql.list}
+#'   variable.
 execute.sql <- function(path, params = NA, verbose = FALSE, raw = FALSE){
-  if (verbose == TRUE){
+  if (verbose == TRUE & raw == TRUE){
     cat("\tReading in SQL from file...\n")
   }
   if (raw == TRUE){
@@ -119,8 +120,9 @@ execute.sql <- function(path, params = NA, verbose = FALSE, raw = FALSE){
 
 #' Creates extensions on the public schema of the Postgres instance.
 #'
-#' @param sql.path A string directory path which points to the location
-#'   where SQL statements to be executed on the PostGIS instance are stored.
+#' @param sql.path A character vector directory path which points to the
+#'   location where SQL statements to be executed on the PostGIS instance are
+#'   stored.
 create.exts <-  function(sql.path){
   cat("PUBLIC: creating extensions...\n")
   execute.sql(path = file.path(sql.path, "execute_init.sql"))
@@ -130,8 +132,9 @@ create.exts <-  function(sql.path){
 #' Creates, loads data into, and executes other statements within dima schema
 #' of the Postgres instance.
 #'
-#' @param sql.path A string directory path which points to the location
-#'   where SQL statements to be executed on the PostGIS instance are stored.
+#' @param sql.path A character vector directory path which points to the
+#'   location where SQL statements to be executed on the PostGIS instance are
+#'   stored.
 create.dima <- function(sql.path){
   cat("DIMA: creating tables...\n")
   execute.sql(path = file.path(sql.path, "create_dima_tables.sql"))
@@ -147,8 +150,9 @@ create.dima <- function(sql.path){
 #' Creates, loads data into, and executes other statements within lmf schema
 #' of the Postgres instance.
 #'
-#' @param sql.path A string directory path which points to the location
-#'   where SQL statements to be executed on the PostGIS instance are stored.
+#' @param sql.path A character vector directory path which points to the
+#'   location where SQL statements to be executed on the PostGIS instance are
+#'   stored.
 create.lmf <- function(sql.path){
   cat("LMF: creating tables...\n")
   execute.sql(path = file.path(sql.path, "create_lmf_tables.sql"))
@@ -160,8 +164,9 @@ create.lmf <- function(sql.path){
 #' Creates, loads data into, and executes other statements within eco schema
 #' of the Postgres instance.
 #'
-#' @param sql.path A string directory path which points to the location
-#'   where SQL statements to be executed on the PostGIS instance are stored.
+#' @param sql.path A character vector directory path which points to the
+#'   location where SQL statements to be executed on the PostGIS instance are
+#'   stored.
 create.eco <- function(sql.path){
   cat("ECO: creating tables...\n")
   execute.sql(path = file.path(sql.path, "create_eco_tables.sql"))
@@ -171,8 +176,9 @@ create.eco <- function(sql.path){
 #' Creates, loads data into, and executes other statements within public schema
 #' of the Postgres instance.
 #'
-#' @param sql.path A string directory path which points to the location
-#'   where SQL statements to be executed on the PostGIS instance are stored.
+#' @param sql.path A character vector directory path which points to the
+#'   location where SQL statements to be executed on the PostGIS instance are
+#'   stored.
 create.public <- function(sql.path){
   cat("PUBLIC: creating tables...\n")
   execute.sql(path = file.path(sql.path, "create_public_tables.sql"))
@@ -187,8 +193,9 @@ create.public <- function(sql.path){
 
 #' Imports spatial features into the PostGIS database.
 #'
-#' @param spatial.path A string directory path which points to the location
-#'   where spatial data to be imported into the PostGIS instance is stored.
+#' @param spatial.path A character vector directory path which points to the
+#'   location where spatial data to be imported into the PostGIS instance is
+#'   stored.
 create.spatial <- function(spatial.path){
   cat("PUBLIC: importing spatial features...\n")
   stmt.d = "DROP TABLE IF EXISTS public.timezone CASCADE;"
@@ -208,7 +215,7 @@ create.spatial <- function(spatial.path){
 #' An SQL execution function which uses a try-catch statement to skip/print
 #' errors if found in the comment SQL.
 #'
-#' @param sql character string. The SQL to execute.
+#' @param sql character vector. The SQL to execute.
 execute.comment <- function(sql){
   res <- tryCatch(
     expr = {
@@ -222,16 +229,16 @@ execute.comment <- function(sql){
 
 #' Creates comment SQL.
 #'
-#' @param tbl.type character string. The type of comment to be created. One of
+#' @param tbl.type character vector. The type of comment to be created. One of
 #'   c("table", "view", "column")
-#' @param schema character string. The name of the schema on which to comment.
-#' @param name character string. The name of the table or view on which to
+#' @param schema character vector. The name of the schema on which to comment.
+#' @param name character vector. The name of the table or view on which to
 #'   comment.
-#' @param def character string. The comment text.
-#' @param col character string. The name of the column on which to comment.
-#'   Can be NULL to make a table or view comment.
+#' @param def character vector. The comment text.
+#' @param col character vector. The name of the column on which to
+#'   comment. Can be NULL to make a table or view comment.
 #'
-#' @return character string. An SQL statement that can be executed by the
+#' @return character vector. An SQL statement that can be executed by the
 #'   database.
 create.comment.sql <- function(tbl.type, schema, name, def, col = NULL){
   type <- stringr::str_to_upper(tbl.type)
@@ -256,7 +263,7 @@ create.comment.sql <- function(tbl.type, schema, name, def, col = NULL){
 #' Main processing function for inserting iso19110-2016 catalog metadata in XML
 #' format into the database as comments.
 #'
-#' @param xml.path A character string. Path to the xml metadata for the
+#' @param xml.path A character vector. Path to the xml metadata for the
 #'   database.
 comment.from.xml <- function(xml.path){
   cat("Writing table/view and field COMMENTs to database from metadata...\n")
@@ -333,25 +340,28 @@ comment.from.xml <- function(xml.path){
   }
 }
 
-#' The main processing function which creates the PostGIS database and populates
-#' it with default data.
+#' Creates a PostGIS database and populates it with default data.
 #'
-#' @param dbname A string. The database name to connect to in the postgres
-#'   instance.
-#' @param user A string. The database user used to connect to the database.
-#' @param password A string. The password used to connect to the database.
-#' @param sql.path A string directory path which points to the location where
-#'   the SQL files for DB creation are stored.
-#' @param spatial.path A string directory path which points to the location
-#'   where spatial data to be imported into the PostGIS instance is stored.
-#' @param host A string. The IP address or DNS name which hosts the database.
-#' @param port An integer. The port which the postgres service monitors for
-#'   connections.
-#'
-#' @return Nothing.
+#' @param dbname character vector. The database name to connect to in the
+#'   postgres instance.
+#' @param user character vector. The database user used to connect to the
+#'   database.
+#' @param password character vector. The password used to connect to
+#'   the database. If no password is provided, user will be prompted upon
+#'   execution.
+#' @param sql.path character vector directory path which points to
+#'   the location where the SQL files for DB creation are stored.
+#' @param spatial.path character vector directory path which
+#'   points to the location where spatial data to be imported into the PostGIS
+#'   instance is stored.
+#' @param host character vector. The IP address or DNS name which
+#'   hosts the database.
+#' @param port An integer. The port which the postgres service
+#'   monitors for connections.
 #' @export
-create.lleiadb <-  function(dbname, user, password, sql.path, spatial.path,
-                  host = "localhost", port = 5432){
+create.lleiadb <-  function(dbname, user, password = getPass::getPass(),
+                            sql.path = "sql", spatial.path = "spatial",
+                            host = "localhost", port = 5432){
   # <<- creates global pool (parent scope of main())
   pool <<- create.pool(dbname = dbname, host = host,
                       port = port, user = user,
@@ -381,10 +391,11 @@ if (sys.nframe() == 0) {
                 help = paste0("The host name or ip address of the connection")),
     optparse::make_option(opt_str = c("-w", "--password"),
                 help = paste0("The password for the user provided.")),
-    optparse::make_option(opt_str = c("-s", "--sql_dir"),
+    optparse::make_option(opt_str = c("-s", "--sql_dir"), default = "sql",
                 help = paste0("The directory where the database creation SQL ",
                               "files are stored.")),
     optparse::make_option(opt_str = c("-S", "--spatial_dir"),
+                default = "spatial",
                 help = paste0("The directory where the spatial data to be
                               imported into the PostGIS instance is stored."))
   )
@@ -409,12 +420,6 @@ if (sys.nframe() == 0) {
   opt = optparse::parse_args(opt_parser, positional_arguments = 2, args = args)
   if (is.null(opt$options$password)){
     opt$options$password = getPass::getPass()
-  }
-  if (is.null(opt$options$sql_dir)){
-    opt$options$sql_dir = "sql"
-  }
-  if (is.null(opt$options$spatial_dir)){
-    opt$options$spatial_dir = "spatial"
   }
 
   create.lleiadb(
