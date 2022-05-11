@@ -2,42 +2,43 @@
 % Please edit documentation in R/create_db.R
 \name{create.lleiadb}
 \alias{create.lleiadb}
-\title{The main processing function which creates the PostGIS database and populates
-it with default data.}
+\title{Creates a PostGIS database and populates it with default data.}
 \usage{
 create.lleiadb(
   dbname,
   user,
-  password,
-  sql.path,
-  spatial.path,
+  password = getPass::getPass(),
+  sql.path = "sql",
+  spatial.path = "spatial",
   host = "localhost",
   port = 5432
 )
 }
 \arguments{
-\item{dbname}{A string. The database name to connect to in the postgres
-instance.}
+\item{dbname}{character vector. The database name to connect to in the
+postgres instance.}
 
-\item{user}{A string. The database user used to connect to the database.}
+\item{user}{character vector. The database user used to connect to the
+database.}
 
-\item{password}{A string. The password used to connect to the database.}
+\item{password}{(optional) character vector. The password used to connect to
+the database. If no password is provided, user will be prompted upon
+execution.}
 
-\item{sql.path}{A string directory path which points to the location where
-the SQL files for DB creation are stored.}
+\item{sql.path}{(optional) A character vector directory path which points to
+the location where the SQL files for DB creation are stored
+(default = "sql").}
 
-\item{spatial.path}{A string directory path which points to the location
-where spatial data to be imported into the PostGIS instance is stored.}
+\item{spatial.path}{(optional) A character vector directory path which
+points to the location where spatial data to be imported into the PostGIS
+instance is stored (default = "spatial").}
 
-\item{host}{A string. The IP address or DNS name which hosts the database.}
+\item{host}{(optional) character vector. The IP address or DNS name which
+hosts the database (default = "localhost").}
 
-\item{port}{An integer. The port which the postgres service monitors for
-connections.}
-}
-\value{
-Nothing.
+\item{port}{(optional) An integer. The port which the postgres service
+monitors for connections (default = 5432).}
 }
 \description{
-The main processing function which creates the PostGIS database and populates
-it with default data.
+Creates a PostGIS database and populates it with default data.
 }

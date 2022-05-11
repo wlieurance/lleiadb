@@ -7,21 +7,21 @@
 create.comment.sql(tbl.type, schema, name, def, col = NULL)
 }
 \arguments{
-\item{tbl.type}{character string. The type of comment to be created. One of
+\item{tbl.type}{character vector. The type of comment to be created. One of
 c("table", "view", "column")}
 
-\item{schema}{character string. The name of the schema on which to comment.}
+\item{schema}{character vector. The name of the schema on which to comment.}
 
-\item{name}{character string. The name of the table or view on which to
+\item{name}{character vector. The name of the table or view on which to
 comment.}
 
-\item{def}{character string. The comment text.}
+\item{def}{character vector. The comment text.}
 
-\item{col}{character string. The name of the column on which to comment.
-Can be NULL to make a table or view comment.}
+\item{col}{(optional) character vector. The name of the column on which to
+comment. Can be NULL to make a table or view comment (default = NULL).}
 }
 \value{
-character string. An SQL statement that can be executed by the
+character vector. An SQL statement that can be executed by the
 database.
 }
 \description{

@@ -7,8 +7,9 @@
 create.exts(sql.path)
 }
 \arguments{
-\item{sql.path}{A string directory path which points to the location
-where SQL statements to be executed on the PostGIS instance are stored.}
+\item{sql.path}{A character vector directory path which points to the
+location where SQL statements to be executed on the PostGIS instance are
+stored.}
 }
 \description{
 Creates extensions on the public schema of the Postgres instance.

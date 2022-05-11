@@ -7,8 +7,9 @@
 create.spatial(spatial.path)
 }
 \arguments{
-\item{spatial.path}{A string directory path which points to the location
-where spatial data to be imported into the PostGIS instance is stored.}
+\item{spatial.path}{A character vector directory path which points to the
+location where spatial data to be imported into the PostGIS instance is
+stored.}
 }
 \description{
 Imports spatial features into the PostGIS database.

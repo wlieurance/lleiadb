@@ -8,7 +8,7 @@ format into the database as comments.}
 comment.from.xml(xml.path)
 }
 \arguments{
-\item{xml.path}{A character string. Path to the xml metadata for the
+\item{xml.path}{A character vector. Path to the xml metadata for the
 database.}
 }
 \description{

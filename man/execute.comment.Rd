@@ -8,7 +8,7 @@ errors if found in the comment SQL.}
 execute.comment(sql)
 }
 \arguments{
-\item{sql}{character string. The SQL to execute.}
+\item{sql}{character vector. The SQL to execute.}
 }
 \description{
 An SQL execution function which uses a try-catch statement to skip/print

@@ -8,8 +8,9 @@ of the Postgres instance.}
 create.public(sql.path)
 }
 \arguments{
-\item{sql.path}{A string directory path which points to the location
-where SQL statements to be executed on the PostGIS instance are stored.}
+\item{sql.path}{A character vector directory path which points to the
+location where SQL statements to be executed on the PostGIS instance are
+stored.}
 }
 \description{
 Creates, loads data into, and executes other statements within public schema

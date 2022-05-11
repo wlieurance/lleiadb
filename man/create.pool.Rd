@@ -8,17 +8,17 @@ the database.}
 create.pool(dbname, host, port, user, password)
 }
 \arguments{
-\item{dbname}{A string. The database name to connect to in the postgres
+\item{dbname}{A character vector. The database name to connect to in the postgres
 instance.}
 
-\item{host}{A string. The IP address or DNS name which hosts the database.}
+\item{host}{A character vector. The IP address or DNS name which hosts the database.}
 
 \item{port}{An integer. The port which the postgres service monitors for
 connections.}
 
-\item{user}{A string. The database user used to connect to the database.}
+\item{user}{A character vector. The database user used to connect to the database.}
 
-\item{password}{A string. The password used to connect to the database.}
+\item{password}{A character vector. The password used to connect to the database.}
 }
 \description{
 Creates a pooled database object that other functions use to interact with
