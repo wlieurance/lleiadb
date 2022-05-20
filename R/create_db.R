@@ -25,7 +25,8 @@
 #'   connections.
 #' @param user A character vector. The database user used to connect to the database.
 #' @param password A character vector. The password used to connect to the database.
-create.pool <- function(dbname, host, port, user, password){
+create.pool <- function(dbname, host = "localhost", port = 5432,
+                        user, password){
   tryCatch(
     expr = {
       pool::dbPool(RPostgres::Postgres(), dbname = dbname, host = host,
@@ -47,13 +48,13 @@ create.pool <- function(dbname, host, port, user, password){
         if (x == "y"){
           print(paste0("Attemping temp connection to db '", user,
                        "' for db creation..."))
-          con <- dbConnect(RPostgres::Postgres(), dbname = user, host = host,
+          con <- DBI::dbConnect(RPostgres::Postgres(), dbname = user, host = host,
                     port = port, user = user, password = password)
           stmt <- paste0("CREATE DATABASE ", dbname, ";")
           DBI::dbExecute(con, stmt)
-          dbDisconnect(con)
+          DBI::dbDisconnect(con)
           print(paste0("Connecting to ", dbname, "..."))
-          dbPool(RPostgres::Postgres(), dbname = dbname, host = host,
+          DBI::dbPool(RPostgres::Postgres(), dbname = dbname, host = host,
                     port = port, user = user, password = password)
         }
       }
@@ -366,6 +367,10 @@ create.lleiadb <-  function(dbname, user, password = getPass::getPass(),
   pool <<- create.pool(dbname = dbname, host = host,
                       port = port, user = user,
                       password = password)
+  if (is.null(pool)){
+    cat("Connecting to database failed.")
+    quit()
+  }
   # assign("pool", pool, envir = .GlobalEnv)
   res <- DBI::dbExecute(pool, "SET client_min_messages TO WARNING;")
   create.exts(sql.path)

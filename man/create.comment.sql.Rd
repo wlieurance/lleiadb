@@ -17,8 +17,8 @@ comment.}
 
 \item{def}{character vector. The comment text.}
 
-\item{col}{(optional) character vector. The name of the column on which to
-comment. Can be NULL to make a table or view comment (default = NULL).}
+\item{col}{character vector. The name of the column on which to
+comment. Can be NULL to make a table or view comment.}
 }
 \value{
 character vector. An SQL statement that can be executed by the

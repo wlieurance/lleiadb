@@ -5,7 +5,7 @@
 \title{Creates a pooled database object that other functions use to interact with
 the database.}
 \usage{
-create.pool(dbname, host, port, user, password)
+create.pool(dbname, host = "localhost", port = 5432, user, password)
 }
 \arguments{
 \item{dbname}{A character vector. The database name to connect to in the postgres

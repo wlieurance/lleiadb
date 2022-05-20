@@ -21,23 +21,22 @@ postgres instance.}
 \item{user}{character vector. The database user used to connect to the
 database.}
 
-\item{password}{(optional) character vector. The password used to connect to
+\item{password}{character vector. The password used to connect to
 the database. If no password is provided, user will be prompted upon
 execution.}
 
-\item{sql.path}{(optional) A character vector directory path which points to
-the location where the SQL files for DB creation are stored
-(default = "sql").}
+\item{sql.path}{character vector directory path which points to
+the location where the SQL files for DB creation are stored.}
 
-\item{spatial.path}{(optional) A character vector directory path which
+\item{spatial.path}{character vector directory path which
 points to the location where spatial data to be imported into the PostGIS
-instance is stored (default = "spatial").}
+instance is stored.}
 
-\item{host}{(optional) character vector. The IP address or DNS name which
-hosts the database (default = "localhost").}
+\item{host}{character vector. The IP address or DNS name which
+hosts the database.}
 
-\item{port}{(optional) An integer. The port which the postgres service
-monitors for connections (default = 5432).}
+\item{port}{An integer. The port which the postgres service
+monitors for connections.}
 }
 \description{
 Creates a PostGIS database and populates it with default data.

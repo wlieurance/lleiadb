@@ -10,8 +10,8 @@
 # }
 
 #' load special binary operators
-# `%do%` <- foreach::`%do%`
-# `%dopar%` <- foreach::`%dopar%`
+`%do%` <- foreach::`%do%`
+`%dopar%` <- foreach::`%dopar%`
 
 #' This function connects to a Postgres instance of the LLEIA database and reads
 #' in relevant tables for Point intercept calculations.
@@ -627,7 +627,7 @@ do.indicator.test <- function(imported, indicator.list, test.dir, sep = ","){
     cat(paste0("Writing delimited output to ",
                file.path(test.dir, indicator.list$name[i]), ".csv\n"))
     utils::write.table(raw.out,
-                file = paste0(file.path(test,dir, indicator.list$name[i]),
+                file = paste0(file.path(test.dir, indicator.list$name[i]),
                                        ".csv"),
                 row.names = FALSE, na = "", col.names = TRUE, sep = sep)
   }
@@ -659,7 +659,7 @@ do.indicator.test <- function(imported, indicator.list, test.dir, sep = ","){
 calc.lpi <- function(
     dbname, host, port, user, password,
     indicator.path = NULL, test = NULL, out.file = NULL,
-    calc.lpisep = ",", enable_parallel = FALSE){
+    sep = ",", enable_parallel = FALSE){
 
   indicator.list <- load.indicators(indicator.path)
   if (!is.null(indicator.list)){
@@ -721,7 +721,7 @@ if (sys.nframe() == 0) {
                 help = paste0("The password for the user")),
     optparse::make_option(opt_str = c("-o", "--outfile"),
                 help = paste0("the output path for the calculated indicators ",
-                              "(.csv, .rds")),
+                              "(.csv, .rds)")),
     optparse::make_option(opt_str = c("-i", "--indicators"),
                 help = paste0("A file path to a tab delimited list of ",
                               "indicators and their respective dplyr ",
@@ -735,7 +735,10 @@ if (sys.nframe() == 0) {
                               "to calculate the indicators. This can be used ",
                               "to test different dplyr filter strings.")),
     optparse::make_option(opt_str = c("-s", "--sep"), default = ",",
-                help = "Separator to use for delimited output."),
+                help = paste0("Separator to use for delimited output. In the ",
+                              r"{case of escaped characters (e.g. \t) you must}",
+                              " pass the literal character recongnized your ",
+                              r"{shell (e.g. $'\t' for bash).}")),
     optparse::make_option(opt_str = c("-e", "--enable_parallel"),
                           action = 'store_true',
                 default = FALSE,
@@ -764,12 +767,13 @@ if (sys.nframe() == 0) {
   if (is.null(opt$options$test) & is.null(opt$options$outfile)){
     stop("One option, either --test or --outfile is necessary. Exiting...")
   }
-  if(!(tools::file_ext(opt$options$outfile) %in% c("csv", "rds"))){
-    stop("Output file must have extension .csv or .rds")
-  }
-
-  if (!dir.exists(dirname(opt$options$outfile))){
-    stop(paste0("Directory ", dirname(opt$options$outfile), " does not exist."))
+  if(!is.null(opt$options$outfile)){
+    if(!(tools::file_ext(opt$options$outfile) %in% c("csv", "rds"))){
+      stop("Output file must have extension .csv or .rds")
+    }
+    if (!dir.exists(dirname(opt$options$outfile))){
+      stop(paste0("Directory ", dirname(opt$options$outfile), " does not exist."))
+    }
   }
   time <- calc.lpi(
     dbname = opt$args[1], host = opt$options$host,

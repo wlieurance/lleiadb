@@ -7,6 +7,9 @@
 #   suppressMessages(library(lib, character.only = TRUE))
 # }
 
+#' load special binary operators
+`%do%` <- foreach::`%do%`
+`%dopar%` <- foreach::`%dopar%`
 
 #' This vectorizes the digest function from the digest package
 vdigest <- Vectorize(digest::digest)
@@ -96,11 +99,11 @@ get.key <- function(src){
       # removes a00000004.gdbtable and a00000004.gdbtablx, a00000004.freelist,
       # and timestamps, which seem to change even when the only file operation
       # is copy
-      stringr::str_subset(pattern = fixed("a00000004.gdbtabl"),
+      stringr::str_subset(pattern = stringr::fixed("a00000004.gdbtabl"),
                           negate = TRUE) |>
-      stringr::str_subset(pattern = fixed("a00000004.freelist"),
+      stringr::str_subset(pattern = stringr::fixed("a00000004.freelist"),
                           negate = TRUE) |>
-      stringr::str_subset(pattern = fixed("timestamps"), negate = TRUE)
+      stringr::str_subset(pattern = stringr::fixed("timestamps"), negate = TRUE)
 
     full.files <- sapply(files, FUN=function(x) file.path(src, x))
     hashes <- sapply(full.files, FUN=function(x) digest::digest(x, algo="md5",
@@ -590,7 +593,7 @@ dbbind.insert <- function(update, schema, table, table.name, cols, cast, log,
       },
       error=function(e) {
         # cat(paste0("\n", e$message))
-        cat("\nFailed on dbBind(), attempting rowwise insert...")
+        cat("\nFailed on dbBind, attempting rowwise insert...")
         error.affected <- DBI::dbGetRowsAffected(send)
         DBI::dbClearResult(send)
         rowwise.affected <- rowwise.insert(update = update, schema = schema,
@@ -854,40 +857,42 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
   eco.tbls.sql <- paste0("SELECT table_name FROM information_schema.tables ",
                          "WHERE table_schema='eco';")
   eco.table.names <- (DBI::dbGetQuery(con, eco.tbls.sql))$table_name
+  compat <- check.compatible(path)
+  if (compat$compatible == FALSE){
+    cat("Data source not not readable.\n")
+    cat(error.msg)
+    cat("\n")
+    quit()
+  }
+  if (compat$con.type == "access") {
+    if (compat$con.sub == "odbc"){
+      access.head <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ="
+      access.constring <- paste0(access.head, path)
+      access.con <- odbc::dbConnect(odbc::odbc(),
+                                    .connection_string = access.constring,
+                                    encoding = "latin1")
 
-  if (stringr::str_to_lower(tools::file_ext(path)) %in% c("mdb", "accdb")) {
-    con.type <- "access"
-    access.head <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ="
-    access.constring <- paste0(access.head, path)
-    access.con <- odbc::dbConnect(odbc::odbc(),
-                                  .connection_string = access.constring,
-                                  encoding = "latin1")
-
-    avail.tables <- odbc::dbListTables(access.con)
-  } else if (stringr::str_to_lower(
-      tools::file_ext(stringr::str_remove(path, "[/\\\\]+$"))) == "gdb") {
-    con.type <- "gdb"
+      avail.tables <- odbc::dbListTables(access.con)
+    } else if (compat$con.sub == "mdbtools"){
+      cmd.str <- "mdb-tables -1 {path}"
+      cmd <- glue::glue(cmd.str)
+      avail.tables <- system(cmd, intern = TRUE)
+    } else {
+      stop(paste0("Error: Return of check.compatible() should have been either",
+                  " 'odbc' or 'mdbtools'."))
+    }
+  } else if (compat$con.type == "gdb") {
     avail.tables <- rgdal::ogrListLayers(dsn = path)
     if ("terradat" %in% stringr::str_to_lower(avail.tables)){
       terradat = TRUE
     }
-  } else if (stringr::str_to_lower(
-      tools::file_ext(path)) %in% c("db", "sqlite", "gpkg")){
-    con.type <- "sqlite"
+  } else if (compat$con.type == "sqlite"){
     sqlite.con <- DBI::dbConnect(RSQLite::SQLite(), path)
     avail.tables <- DBI::dbListTables(sqlite.con)
-    res <- DBI::dbExecute(sqlite.con, "PRAGMA foreign_keys = on;")
-    spatial <- tryCatch(
-      expr = {
-        res <- DBI::dbExecute(sqlite.con,
-                              "SELECT load_extension('mod_spatialite');")
-        TRUE
-      },
-      error = function(e){
-        # print("Spatialite module not found. Creating non-spatial db.")
-        return(FALSE)
-      }
-    )
+    DBI::dbExecute(sqlite.con, "PRAGMA foreign_keys = on;")
+    if (compat$con.sub == "spatialite"){
+      DBI::dbExecute(sqlite.con, "SELECT load_extension('mod_spatialite');")
+    }
   }
   dima.tables.get <-  intersect(avail.tables, dima.table.names)
   lmf.tables.get <-  intersect(avail.tables, lmf.table.names)
@@ -900,34 +905,55 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
     cat(paste0("\nimporting ", schema, " tables...\n\n"))
     for (t in get(paste0(schema, ".tables.get"))){
       cat(paste0("importing ", t, "...\n"))
-      if (con.type == "access"){
-        tbl <- tibble::as_tibble(tbl(access.con, t))
-      } else if (con.type == "gdb"){
+      if (compat$con.type == "access"){
+        if(compat$con.sub == "odbc"){
+          tbl <- tibble::as_tibble(dplyr::tbl(access.con, t))
+        } else if (compat$con.sub == "mdbtools"){
+          cmd.str <- paste0('mdb-json -D "%Y-%m-%d" -T "%Y-%m-%d %H:%M:%S"',
+                            ' {path} {t}')
+          cmd <- glue::glue(cmd.str)
+          rows <- system(cmd, intern = TRUE)
+          tbl <- foreach::foreach(row=iterators::iter(rows),
+                                  .combine = dplyr::bind_rows) %do% {
+            tibble::as_tibble_row(rjson::fromJSON(json_str = row))
+          }
+        } else {
+          stop(paste0("Error: Return of check.compatible() should have been ",
+                      "either 'odbc' or 'mdbtools'."))
+        }
+      } else if (compat$con.type == "gdb"){
         tbl <- tibble::as_tibble(
           suppressWarnings(rgdal::readOGR(dsn = path, layer = t,
-                                   dropNULLGeometries = FALSE,
-                                   stringsAsFactors = FALSE,
-                                   verbose = FALSE, encoding = "UTF-8",
-                                   use_iconv = TRUE)))
-      } else if (con.type == "sqlite"){
+                                  dropNULLGeometries = FALSE,
+                                  stringsAsFactors = FALSE,
+                                  verbose = FALSE, encoding = "UTF-8",
+                                  use_iconv = TRUE)))
+      } else if (compat$con.type == "sqlite"){
+        if (compat$con.sub == "spatialite"){
+          spatial = TRUE
+        } else {
+          spatial = F
+        }
         query <- create.sqlite.select(sqlite.con = sqlite.con, table = t,
                                       spatial = spatial)
         result <- DBI::dbSendQuery(sqlite.con, query$sql)
         tbl <- DBI::dbFetch(result)
         DBI::dbClearResult(result)
       }
-      tbl.processed <- tbl |> dplyr::rename_at(dplyr::vars(matches("dbkey")),
-                                               stringr::str_to_lower)
-      if ("dbkey" %in% colnames(tbl.processed)){
-        tbl.processed <- tbl.processed |>
-          dplyr::mutate(dbkey = ifelse(is.na(dbkey), key, dbkey))
+      if (!is.null(tbl)){
+        tbl.processed <- tbl |> dplyr::rename_at(dplyr::vars(tidyselect::matches("dbkey")),
+                                                 stringr::str_to_lower)
+        if ("dbkey" %in% colnames(tbl.processed)){
+          tbl.processed <- tbl.processed |>
+            dplyr::mutate(dbkey = ifelse(is.na(dbkey), key, dbkey))
+        }
+        tables[[schema]][[t]] <- tbl.processed
       }
-      tables[[schema]][[t]] <- tbl.processed
     }
   }
-  if (con.type == "access"){
+  if (compat$con.type == "access" & compat$con.sub == "odbc"){
     DBI::dbDisconnect(access.con)
-  } else if (con.type == "sqlite"){
+  } else if (compat$con.type == "sqlite"){
     DBI::dbDisconnect(sqlite.con)
   }
 
@@ -939,7 +965,7 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
     if(!all(is.na(names(plot)))){
       plot <- plot[lengths(plot) != 0][[1]]
       if ("dbkey" %in% stringr::str_to_lower(colnames(plot))){
-        db <-  plot |> dplyr::select(matches("dbkey")) |>
+        db <-  plot |> dplyr::select(tidyselect::matches("dbkey")) |>
           dplyr::rename_all(stringr::str_to_lower) |> dplyr::group_by(dbkey) |>
           dplyr::summarize(.groups = "drop") |> dplyr::filter(!is.na(dbkey)) |>
           dplyr::mutate(dbpath = path, md5hash = md5hash, description = desc)
@@ -986,9 +1012,9 @@ process.terradat <-  function(imported){
       # re-keys key.fields which are > 20 based on their hash
       cat("\n\t... re-keying keys > length 20 ")
       tbl <- tbls[[schema]][[name]] |>
-        dplyr::mutate(across(any_of(key.fields),
-                      ~ case_when(
-                        str_count(.) > 20 ~ substr(vdigest(., algo = "md5",
+        dplyr::mutate(dplyr::across(tidyselect::any_of(key.fields),
+                      ~ dplyr::case_when(
+                        stringr::str_count(.) > 20 ~ substr(vdigest(., algo = "md5",
                                                            serialize = FALSE),
                                                    1, 16),
                         TRUE ~ .)))
@@ -1000,7 +1026,7 @@ process.terradat <-  function(imported){
         if (colname %in% src.col.names & !(colname %in% key.fields)){
           cat(paste0("\n\t\t... ", colname, " @ ", maxlen))
           tbl[[colname]] <-
-            str_sub(tbl[[colname]], 1, maxlen)
+            stringr::str_sub(tbl[[colname]], 1, maxlen)
         }
       }
       cat("\n")
@@ -1060,10 +1086,10 @@ process.terradat <-  function(imported){
         tbl <- tbls[[schema]][["tblGapDetail"]] |>
           dplyr::group_by(RecKey, RecType) |>
           dplyr::mutate(n = sum(as.double(GapEnd) - as.double(GapStart))) |>
-          dplyr::mutate(rn = case_when(n <= 0 ~ row_number(desc(GapStart)),
-                                TRUE ~ row_number(GapStart))) |>
+          dplyr::mutate(rn = dplyr::case_when(n <= 0 ~ dplyr::row_number(dplyr::desc(GapStart)),
+                                TRUE ~ dplyr::row_number(GapStart))) |>
           dplyr::ungroup() |>
-          dplyr::mutate(SeqNo = case_when(is.na(SeqNo) ~ rn,
+          dplyr::mutate(SeqNo = dplyr::case_when(is.na(SeqNo) ~ rn,
                                    TRUE ~ SeqNo)) |>
           dplyr::select(-n, -rn)
         tbls[[schema]][["tblGapDetail"]] <- tbl
@@ -1074,6 +1100,169 @@ process.terradat <-  function(imported){
               path = imported$path, md5hash = imported$md5hash,
               key = imported$key, desc = imported$desc,
               tables = tbls))
+}
+
+#' Checks if a data source can be read by the import functions.
+#'
+#' @param path character string. The file path to the data source.
+#'
+#' @return A list with compatibility characteristics.
+#' @export
+check.compatible <- function(path){
+  ret <- list(compatible = FALSE, con.type = NA, con.sub = NA, error.msg = NA,
+              warn.msg = NA)
+  if (stringr::str_to_lower(tools::file_ext(path)) %in% c("mdb", "accdb")) {
+    if (!file.exists(path)){
+      ret$error.msg <- "File does not exist."
+      return(ret)
+    }
+    try.mdbtools <- FALSE
+    mdbtools <- FALSE
+    ret$con.type <- "access"
+    access.head <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ="
+    access.constring <- paste0(access.head, path)
+    connect <- tryCatch(
+      {
+      odbc::dbConnect(odbc::odbc(), .connection_string = access.constring,
+                      encoding = "latin1")
+
+      },
+      error=function(cond) {
+        ret$error.msg <<- cond
+        try.mdbtools <<- TRUE
+        return(cond)
+      }
+    )
+    if (inherits(connect, "DBIConnection")) {
+      tables <- tryCatch(
+        {
+          odbc::dbListTables(access.con)
+        },
+        error=function(cond) {
+          ret$error.msg <<- cond
+          try.mdbtools <<- TRUE
+          return(cond)
+        }
+      )
+    }
+    if (inherits(connect, "DBIConnection")){
+      odbc::dbDisconnect(connect)
+    }
+    # try mdbtools
+    if (try.mdbtools == TRUE){
+      try <- suppressWarnings(
+        system("mdb-json --version > /dev/null 2>&1")
+        )
+      if (try == 0){
+        mdbtools <- TRUE
+        }
+    }
+    if (!("error" %in% class(connect))){
+      if (!("error" %in% class(tables))){
+        ret$compatible <- TRUE
+        ret$con.sub <- "odbc"
+      } else if (mdbtools == TRUE){
+        ret$compatible <- TRUE
+        ret$con.sub <- "mdbtools"
+      }
+    } else if (mdbtools == TRUE){
+      ret$compatible <- TRUE
+      ret$con.sub <- "mdbtools"
+    }
+  } else if (stringr::str_to_lower(
+    tools::file_ext(stringr::str_remove(path, "[/\\\\]+$"))) == "gdb") {
+    if (!dir.exists(path)){
+      ret$error.msg <- "Directory does not exist."
+      return(ret)
+    }
+    ret$con.type <- "gdb"
+    tables <- tryCatch(
+      {
+        rgdal::ogrListLayers(dsn = path)
+      },
+      error=function(cond) {
+        ret$error.msg <<- cond
+        return(cond)
+      }
+    )
+    if (!("error" %in% class(tables))){
+      ret$compatible <- TRUE
+      ret$con.sub <- "gdal"
+    }
+  } else if (stringr::str_to_lower(
+    tools::file_ext(path)) %in% c("db", "sqlite", "gpkg")){
+    if (!file.exists(path)){
+      ret$error.msg <- "Path does not exist."
+      return(ret)
+    }
+    no_tables <- 0
+    try.spatial <- TRUE
+    ret$con.type <- "sqlite"
+    connect <- tryCatch(
+      {
+        DBI::dbConnect(RSQLite::SQLite(), path)
+      },
+      error=function(cond) {
+        ret$error.msg <<- cond
+        try.spatial <<- FALSE
+        return(cond)
+      }
+    )
+    if (inherits(connect, "DBIConnection")){
+      tables <- tryCatch(
+        {
+          DBI::dbListTables(connect)
+        },
+        error=function(cond) {
+          try.spatial <<- FALSE
+          ret$error.msg <<- cond
+          return(cond)
+        }
+      )
+      if (!("error" %in% class(tables))){
+        no_tables <- length(tables)
+      }
+    }
+    if (try.spatial == TRUE){
+      spatial <- tryCatch(
+        expr = {
+          DBI::dbExecute(connect,
+                         "SELECT load_extension('mod_spatialite');")
+          TRUE
+        },
+        error = function(cond){
+          ret$error.msg <<- cond
+          return(cond)
+        },
+        warning = function(cond){
+          ret$warn.msg <<- cond
+          return(NULL)
+        }
+      )
+      if (spatial == TRUE){
+        ret$con.sub <- "spatialite"
+      } else {
+        ret$con.sub <- "sqlite"
+      }
+    }
+    if (inherits(connect, "DBIConnection")){
+      odbc::dbDisconnect(connect)
+    }
+    if(!inherits(connect, "DBIConnection")){
+      ret$compatible <- FALSE
+    } else if ("error" %in% class(tables)){
+      ret$compatible <- FALSE
+    } else if (no_tables == 0){
+      ret$compatible <- FALSE
+      ret$error.msg <- "Database is empty."
+    } else {
+      ret$compatible <- TRUE
+    }
+  } else {
+    ret$error.msg <- paste0("File extension not one of (mdb, accdb, gdb, db, ",
+                            "sqlite, gpkg)")
+  }
+  return(ret)
 }
 
 
@@ -1116,10 +1305,11 @@ process.terradat <-  function(imported){
 #'   multiple databases.
 #' @export
 import.to.post <-  function(
-    dbname, user, password, src.path, key, desc,
+    dbname, user, password = getPass::getPass(), src.path, key, desc,
     host = "localhost", port = 5432, update = FALSE, log = FALSE,
     save.raw = NULL, save.processed = NULL, verbose = FALSE,
     chunk.size = 1000, skip.refresh = FALSE){
+  compat <- check.compatible(path = src.path)
   con <<- DBI::dbConnect(RPostgres::Postgres(), dbname = dbname,
                   host = host, port = port,
                   user = user, password = password)
@@ -1143,7 +1333,7 @@ import.to.post <-  function(
     }
     hash <- get.key(src.path)
     imported <- get.src.tables(path = src.path, md5hash = hash, key = key,
-                             desc = desc)
+                               desc = desc)
     if (!is.null(save.raw)){
       cat(paste0("Saving raw tables as ", save.raw),
           "\n")

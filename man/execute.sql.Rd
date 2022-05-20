@@ -11,15 +11,15 @@ execute.sql(path, params = NA, verbose = FALSE, raw = FALSE)
 \item{path}{A character vector directory path which points to the location
 where SQL statements to be executed on the PostGIS instance are stored.}
 
-\item{params}{(optional) A named list of variables, which can be used with
+\item{params}{A named list of variables, which can be used with
 glue syntax to replace parameters in \code{path}.}
 
-\item{verbose}{(optional) Boolean. If TRUE will direct the function to print
+\item{verbose}{Boolean. If TRUE will direct the function to print
 status messages.}
 
-\item{raw}{(optional) Boolean. If TRUE will direct the function to load the
-SQL from
-the SQL files directly instead of using the \code{sql.list} variable.}
+\item{raw}{Boolean. If TRUE will direct the function to load the
+SQL from the SQL files directly instead of using the \code{sql.list}
+variable.}
 }
 \description{
 Loads SQL statements from \code{path}, separates them, and executes them in

@@ -2,8 +2,7 @@
 % Please edit documentation in R/lpi_calc.R
 \name{import.data}
 \alias{import.data}
-\title{load special binary operators
-This function connects to a Postgres instance of the LLEIA database and reads
+\title{This function connects to a Postgres instance of the LLEIA database and reads
 in relevant tables for Point intercept calculations.}
 \usage{
 import.data(dbname, host, port, user, password)
@@ -23,7 +22,6 @@ import.data(dbname, host, port, user, password)
 A list of tibbles imported from the connection source.
 }
 \description{
-load special binary operators
 This function connects to a Postgres instance of the LLEIA database and reads
 in relevant tables for Point intercept calculations.
 }

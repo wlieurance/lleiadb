@@ -13,7 +13,7 @@ calc.lpi(
   indicator.path = NULL,
   test = NULL,
   out.file = NULL,
-  calc.lpisep = ",",
+  sep = ",",
   enable_parallel = FALSE
 )
 }
@@ -39,12 +39,12 @@ filtered version of the raw data for each indicator, for testing purposes.}
 \item{out.file}{A string. The file path for the output file. Must have a .rds
 or .csv extension.}
 
+\item{sep}{A character which is used to delimit the output file
+(\code{out.file}) in the case that it is to be in the CSV format.}
+
 \item{enable_parallel}{A Boolean flag telling the system to run parallel
 processing for those calculations and system on which it is supported. This
 can be useful generally for smaller data sets with many indicators.}
-
-\item{sep}{A character which is used to delimit the output file
-(\code{out.file}) in the case that it is to be in the CSV format.}
 }
 \value{
 A list containing process time elapsed information.

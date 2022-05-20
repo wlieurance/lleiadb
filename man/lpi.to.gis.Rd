@@ -2,7 +2,8 @@
 % Please edit documentation in R/lpi_convert.R
 \name{lpi.to.gis}
 \alias{lpi.to.gis}
-\title{The main processing function for the module.}
+\title{Takes an output from \code{calc.lpi}, coverts it to a gis friendly wide
+format, and adds geomtery fields.}
 \usage{
 lpi.to.gis(
   dbname,
@@ -15,9 +16,10 @@ lpi.to.gis(
   layer.name = "point",
   srid = 4326,
   sep = ",",
-  cover.str = NULL,
-  height.str = NULL,
-  dead.str = NULL
+  sd = TRUE,
+  n = TRUE,
+  filter.df = tibble::tibble(field = character(), indicator = character(), hit_type =
+    character())
 )
 }
 \arguments{
@@ -48,17 +50,21 @@ destination (\code{out.path}) when the feature is written.}
 \item{sep}{A character which is used to delimit the input file
 (\code{in.path}) in the case that it is in the CSV format.}
 
-\item{cover.str}{A string in the format of "{indicator1}, {hit_type1};
-{indicator2}, {hit_type2}; etc." which is used to build filters for in.tbl
-and determines which cover fields the wide output table will have.}
+\item{sd}{Boolean. Use standard deviation field(s) in wide result.}
 
-\item{height.str}{A string. Similar to \code{cover.str}, but for height fields.}
+\item{n}{Boolean. Use line count (n) field(s) in wide result.}
 
-\item{dead.str}{A string. Similar to \code{cover.str}, but for dead fields.}
+\item{filter.df}{A tibble with the character fields: \code{field},
+\code{indicator}, and \code{hit_type}. The \code{field} column must contain
+one of \code{c("cover", "height", "dead")}. The indicator field must match
+indicators to filter \code{in.tbl} by or NA, which will result in all
+indicators of a certain \code{hit_type} being selected. The same logic
+applies to the \code{hit_type} field.}
 }
 \value{
 Nothing.
 }
 \description{
-The main processing function for the module.
+Takes an output from \code{calc.lpi}, coverts it to a gis friendly wide
+format, and adds geomtery fields.
 }

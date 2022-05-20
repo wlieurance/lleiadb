@@ -8,7 +8,7 @@ PostGIS database}
 import.to.post(
   dbname,
   user,
-  password,
+  password = getPass::getPass(),
   src.path,
   key,
   desc,
