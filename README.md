@@ -44,10 +44,10 @@ devtools::install_github("wlieurance/lleiadb")
 ```
 
 ## Usage
-Functionality is provided via command line usage of Rscript, located in the *bin* sub-folder of your R installation. In Linux this is typically your shell (**Bash**, **Zsh**, etc.), for Mac this is likely **Zsh** (Applications -> Utilities -> Terminal), and for MS Windows this is typically **PowerShell.exe** or **CMD.exe** (Search -> PowerShell).
+Functionality is provided via command line usage of Rscript, located in the *bin* sub-folder of your R installation. In Linux this is typically your shell (**Bash**, **Zsh**, etc.), for Mac this is likely **Zsh** (Applications -> Utilities -> Terminal), and for MS Windows this is typically **PowerShell.exe** or **CMD.exe** (Search -> PowerShell). Alternatively, users can call functions directly from the R command line if the the code was installed as an R package.
 
 ### Database Creation
-Database creation is accomplished through the *create_db.R* script. The command line arguments and options which this script can accept can be seen by running:
+Database creation is accomplished through the *create_db.R* script or directly in R via the *create.lleiadb* function. The command line arguments and options which this script can accept can be seen by running:
 ```
 Rscript create_db.R -h
 ```
@@ -56,10 +56,12 @@ Example usage:
 Rscript create_db.R database_name database_user
 ```
 
+See `help(create.lleiadb)` for R command line help.
+
 Database user (database\_user) must already be present in the postgres server, but if database\_name is not found, the script attempts to create it by connecting to the user's default database with the password provided. This can be accomplished with a new install of postgres by setting database\_user=postgres. If no password is provided, the user will be asked for it interactively.
 
 ### Loading Data
-Database loading is accomplished through the *import.R* script. The command line arguments and options which this script can accept can be seen by running:
+Database loading is accomplished through the *import.R* script or directly in R via the *import.to.post* function. The command line arguments and options which this script can accept can be seen by running:
 ```
 Rscript import.R -h
 ```
@@ -68,11 +70,13 @@ Example usage:
 Rscript import.R --key some_unique_code --desc "My Project YYYY-YYYY" database_name database_user /path/to/source_database
 ```
 
+See `help(import.to.post)` for R command line help.
+
 Currently, a variety of formats are allowed for **source_database**, including MS Access (.mdb, .accdb), ESRI File Geodatabase (.gdb), or SQLite/SpatialLite (.sqlite, .db) databases.
 Tables that are present in all three schema (dima, lmf, eco) will be scanned for in the **source_database** and data in matching fields will be imported to the relevant table in LLEIA.
 
 ### Exporting Data
-Schema exporting to an SQLite/SpatiaLite database is accomplished through the *export.R* script. The command line arguments and options which this script can accept can be seen by running:
+Schema exporting to an SQLite/SpatiaLite database is accomplished through the *export.R* script or directly in R via the *post.to.sqlite* function. The command line arguments and options which this script can accept can be seen by running:
 ```
 Rscript export.R -h
 ```
@@ -80,6 +84,8 @@ Example usage:
 ```
 Rscript export.R --schema eco database_name database_user /path/to/export_database.sqlite
 ```
+
+See `help(post.to.sqlite)` for R command line help.
 
 If the schema contains spatial data (currently only the *eco* schema), a SpatiaLite database will be created, otherwise a standard SQLite database will be created. The will export an entire schema.
 
@@ -117,7 +123,7 @@ The following methodologies are currently calculated as PostgreSQL views.
 #### R Scripts
 While SQL based views can provide quick and convenient access to species level data, a more customizable approach is achieved through R scripting. Currently, only the line-point intercept methodology has a script based calculator. This script calculator allows the user to specify custom indicators for output and gives them for multiple "hit types" (i.e. top, basal, any, etc.)
 
-Users can export line-point intercept data by running:
+Users can export line-point intercept data by running the *lpi\_calc.R* script or by utilizing the *calc.lpi* function in R directly:
 
 ```
 Rscript lpi_calc.R -h
@@ -127,9 +133,11 @@ Example usage:
 Rscript lpi_calc.R --outfile "path/to/outfile.csv" --indicators "path/to/indicator/definitions.txt" database_name database_user
 ```
 
+See `help(calc.lpi)` for R command line help.
+
 This script calculates indicator-level data at the unique plot and survey year level for each indicator in the indicators definitions file to a delimited or RDS file. A call to this script without the indicator definitions file will result in species level data being exported, where each species code is its own indicator. Users can construct their own indicators by using [dplyr filter](https://dplyr.tidyverse.org/reference/filter.html) strings. Example indicator files can be found in the **indicators** sub-folder and examples of the **hits** tables that can be used are in the **example** sub-folder. Further information about what types of data each specific field name may contain can be found in the *pintercept* and *plant* subsections of the database metadata file.
 
-Further simplification and widening of the data produced via the lpi\_calc module can be produced by running:  
+Further simplification and widening of the data produced via the lpi\_calc module can be produced through the *lpi\_convert.R* script or by utilizing the *lpi.to.gis* function in R directly:  
 
 ```
 Rscript lpi_convert.R -h
@@ -138,6 +146,8 @@ Example usage:
 ```
 Rscript lpi_convert.R  --cover "indicator_name1, any; indicator_name2, top;" database_name database_user "/path/to/lpi_calc_output.csv" "/path/to/new_output.shp"
 ```
+
+See `help(lpi.to.gis)` for R command line help.
 
 Running this script will produce a spatial feature with one line per plot/survey\_year easily viewed by applications which prefer wide format data (e.g. GIS applications). Each indicator mean and standard deviation are given their own field (wide format). Indicator string examples can be found in the **examples** sub-folder. The format of the output file will depend on the extension chosen and is guessed by *st_write()* in R's *sf* library and will depend on driver availability on a user's individual system. Common choices would be ESRI shapefile (.shp), OGC geopackage (.gpkg), or SpatiaLite (.sqlite). Indicator strings are constructed in the format of *indicator_name1, hit_type1; indicator_name2, hit_type2*. This string is parsed to select the appropriate fields for pivoting the data wider.
 
