@@ -30,24 +30,26 @@ The following software will be needed to use this project.
 	* [Microsoft Access Database Engine](https://www.microsoft.com/en-us/download/details.aspx?id=54920). **Please note that your R version (32 vs. 64 bit) must match your Access Database Engine version.**
 	* [mdbtools](https://github.com/mdbtools/mdbtools). The Access DB engine will be used if it is found however, for systems where the engine cannot be installed, use mdbtools instead. Check your \*nix distribution for available packages of mdbtools or optionally compile it yourself. **Note: mdbtools must be executable and in your PATH**
 5. [SpatiaLite](http://www.gaia-gis.it/gaia-sins/) libraries ([libspatialite](https://www.gaia-gis.it/fossil/libspatialite/index)). Optional. Specifically needed is the *mod_spatialite.dll* or *mod_spatialite.so* library compiled with its location in your system's PATH. This is only necessary when importing or exporting to and from SpatiaLite databases.
+6. [parsesql](https://github.com/wlieurance/parsesql) library installed as an R package (See \#Installing in the parsesql README file).
+7. 
+Various R libraries are also needed, which are listed at the beginning of each script and can be installed with the install_libs script `Rscript install_libs.R`.
 
-Various R libraries are also needed, which are listed at the beginning of each script and will be installed automatically if the project is installed as an R package.
 ## Installation
 
-You may either download the code base manually or using [Git](https://git-scm.com/)
+Download the code base manually or using [Git](https://git-scm.com/)
 ```
 git clone https://github.com/wlieurance/lleiadb.git
 ```
-Within the *R* environment, the project may be installed as a package with the *devtools* library.
-```
-devtools::install_github("wlieurance/lleiadb")
-```
+
+
 
 ## Usage
-Functionality is provided via command line usage of Rscript, located in the *bin* sub-folder of your R installation. In Linux this is typically your shell (**Bash**, **Zsh**, etc.), for Mac this is likely **Zsh** (Applications -> Utilities -> Terminal), and for MS Windows this is typically **PowerShell.exe** or **CMD.exe** (Search -> PowerShell). Alternatively, users can call functions directly from the R command line if the the code was installed as an R package.
+Functionality is provided via command line usage of Rscript, located in the *bin* sub-folder of your R installation. In Linux this is typically your shell (**Bash**, **Zsh**, etc.), for Mac this is likely **Zsh** (Applications -> Utilities -> Terminal), and for MS Windows this is typically **PowerShell.exe** or **CMD.exe** (Search -> PowerShell). Alternatively, users can call functions directly from the R command line if the the code is called with `source()`.  
+
+** UPDATE: ** While intitially this project was also packaged as an R package, this was reversed due primarily to the nature of the database creation/data loading and how the spatial data and metadata is stored within the project. Since generally users would be making single function calls anyway, packaging support was dropped to maintain simplicity. Sourcing the functions manually with `source()` is recommended for users who want finer grained control of script function.
 
 ### Database Creation
-Database creation is accomplished through the *create_db.R* script or directly in R via the *create.lleiadb* function. The command line arguments and options which this script can accept can be seen by running:
+Database creation is accomplished through the *create_db.R* script or directly in R via the *create.lleiadb* function if sourcing the file. The command line arguments and options which this script can accept can be seen by running:
 ```
 Rscript create_db.R -h
 ```
@@ -56,12 +58,10 @@ Example usage:
 Rscript create_db.R database_name database_user
 ```
 
-See `help(create.lleiadb)` for R command line help.
-
 Database user (database\_user) must already be present in the postgres server, but if database\_name is not found, the script attempts to create it by connecting to the user's default database with the password provided. This can be accomplished with a new install of postgres by setting database\_user=postgres. If no password is provided, the user will be asked for it interactively.
 
 ### Loading Data
-Database loading is accomplished through the *import.R* script or directly in R via the *import.to.post* function. The command line arguments and options which this script can accept can be seen by running:
+Database loading is accomplished through the *import.R* script or directly in R via the *import.to.post* function if sourcing the file. The command line arguments and options which this script can accept can be seen by running:
 ```
 Rscript import.R -h
 ```
@@ -69,8 +69,6 @@ Example usage:
 ```
 Rscript import.R --key some_unique_code --desc "My Project YYYY-YYYY" database_name database_user /path/to/source_database
 ```
-
-See `help(import.to.post)` for R command line help.
 
 Currently, a variety of formats are allowed for **source_database**, including MS Access (.mdb, .accdb), ESRI File Geodatabase (.gdb), or SQLite/SpatialLite (.sqlite, .db) databases.
 Tables that are present in all three schema (dima, lmf, eco) will be scanned for in the **source_database** and data in matching fields will be imported to the relevant table in LLEIA.
@@ -85,9 +83,9 @@ Example usage:
 Rscript export.R --schema eco database_name database_user /path/to/export_database.sqlite
 ```
 
-See `help(post.to.sqlite)` for R command line help.
-
 If the schema contains spatial data (currently only the *eco* schema), a SpatiaLite database will be created, otherwise a standard SQLite database will be created. The will export an entire schema.
+
+** NOTE: ** Currently only exporting the *eco* schema is supported. Exporting other schema, as well as other individual loaded databases is planned for future work.
 
 ### Accessing Data
 After data have been imported, they can be viewed within their individual schema in LLEIA. For instance, if a DIMA database was imported, its data will be located in the *dima* schema, within the same table name as the source. Data can be referenced back to their database of origin using the *db* table available in each schema. Removing or updating a record from a *db* table will cascade that update/delete throughout the rest of the database (mostly). This provides a convenient way to remove data contained in one source database if a user needs to.
