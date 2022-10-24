@@ -932,7 +932,7 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
         if (compat$con.sub == "spatialite"){
           spatial = TRUE
         } else {
-          spatial = F
+          spatial = FALSE
         }
         query <- create.sqlite.select(sqlite.con = sqlite.con, table = t,
                                       spatial = spatial)
@@ -965,11 +965,14 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
     if(!all(is.na(names(plot)))){
       plot <- plot[lengths(plot) != 0][[1]]
       if ("dbkey" %in% stringr::str_to_lower(colnames(plot))){
-        db <-  plot |> dplyr::select(tidyselect::matches("dbkey")) |>
+        db.sep <-  plot |> dplyr::select(tidyselect::matches("dbkey")) |>
           dplyr::rename_all(stringr::str_to_lower) |> dplyr::group_by(dbkey) |>
           dplyr::summarize(.groups = "drop") |> dplyr::filter(!is.na(dbkey)) |>
-          dplyr::mutate(dbpath = path, md5hash = md5hash, description = desc)
-        tables[[schema]][["db"]] <- db
+          dplyr::mutate(dbpath = path, md5hash = md5hash, description = desc) 
+        db.comb <- tibble::as_tibble(
+          list(dbkey = key, dbpath = path, md5hash = md5hash, description = desc))
+        tables[[schema]][["db"]] <- dplyr::bind_rows(db.sep, db.comb)
+
       }
     }
   }
@@ -1037,9 +1040,9 @@ process.terradat <-  function(imported){
       if (name == "tblSpecRichDetail"){
         cat("Flattening tblSpecRichDetail...\n")
         tbl <- tbls[[schema]][[name]] |>
-          # dplyr::arrange(dbkey, RecKey, subPlotID, SpeciesList) |>
+          dplyr::arrange(dbkey, RecKey, subPlotID, SpeciesList) |>
           dplyr::group_by(dbkey, RecKey, subPlotID, subPlotDesc) |>
-          dplyr::summarize(SpeciesCount = max(SpeciesCount),
+          dplyr::summarize(SpeciesCount = dplyr::n(),
                     SpeciesList = paste0(SpeciesList, collapse = ";"),
                     .groups = "drop")
         tbls[[schema]][[name]] <- tbl
