@@ -989,8 +989,14 @@ SELECT "RecKey" reckey, "SpeciesCode" species_code,
              ELSE "SubPlotSize" END subsize_m2, 
         CASE WHEN "WtUnitWt" = 0 THEN 1 ELSE "WtUnitWt" END unit_wgt,
         "WtMeas" wgt_measure,
-        "ADWAdj"::double precision adjust_airdrywgt, "UtilAdj"::double precision adjust_utilization, 
-        "GwthAdj"::double precision adjust_growth, "WthrAdj"::double precision adjust_climate
+        (CASE WHEN regexp_match("ADWAdj", '^(\d*)(\.?)(\d*)$') IS NULL 
+		      THEN NULL ELSE "ADWAdj" END)::double precision adjust_airdrywgt, 
+	    (CASE WHEN regexp_match("UtilAdj", '^(\d*)(\.?)(\d*)$') IS NULL 
+		      THEN NULL ELSE "UtilAdj" END)::double precision adjust_utilization, 
+	    (CASE WHEN regexp_match("GwthAdj", '^(\d*)(\.?)(\d*)$') IS NULL 
+		      THEN NULL ELSE "GwthAdj" END)::double precision adjust_growth, 
+	    (CASE WHEN regexp_match("WthrAdj", '^(\d*)(\.?)(\d*)$') IS NULL 
+		      THEN NULL ELSE "WthrAdj" END)::double precision adjust_climate
   FROM dima."tblPlantProdDetail"
 
 ), dima_species1 AS (
