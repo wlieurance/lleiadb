@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+<idinfo>
+<citation>
+<citeinfo>
+<origin>U.S. Department of the Interior, Bureau of Land Management (BLM)</origin>
+<origin>U.S. Department of Interior, Bureau of Land Management (BLM)</origin>
+<pubdate>20210214</pubdate>
+<title>I_VegSpeciesFreqOccurrence</title>
+<geoform>vector digital data</geoform>
+<pubinfo>
+<pubplace>Unknown</pubplace>
+<publish>Bureau of Land Management</publish>
+</pubinfo>
+</citeinfo>
+</citation>
+<descript>
+<abstract>Frequency of occurrence of priority noxious and native vegetative species</abstract>
+<purpose>Frequency of occurrence of priority noxious and native vegetative species</purpose>
+</descript>
+<timeperd>
+<timeinfo>
+<rngdates>
+<begdate>20130101</begdate>
+<enddate>20211231</enddate>
+</rngdates>
+</timeinfo>
+<current>publication date</current>
+</timeperd>
+<status>
+<progress>Complete</progress>
+<update>Annually</update>
+</status>
+<spdom>
+<bounding>
+<westbc>-180</westbc>
+<eastbc>180</eastbc>
+<northbc>90</northbc>
+<southbc>-90</southbc>
+</bounding>
+</spdom>
+<keywords>
+<theme>
+<themekt>BLM-AIM</themekt>
+<themekey>AIM_AK</themekey>
+<themekey>AIM_AZ</themekey>
+<themekey>AIM_CA</themekey>
+<themekey>AIM_CO</themekey>
+<themekey>AIM_ID</themekey>
+<themekey>AIM_MTDA</themekey>
+<themekey>AIM_NATL</themekey>
+<themekey>AIM_NM</themekey>
+<themekey>AIM_NV</themekey>
+<themekey>AIM_ORWA</themekey>
+<themekey>AIM_Policy</themekey>
+<themekey>AIM_Protocol</themekey>
+<themekey>AIM_Tool</themekey>
+<themekey>AIM_UT</themekey>
+<themekey>AIM_WY</themekey>
+</theme>
+<theme>
+<themekt>BLM-THEME</themekt>
+<themekey>Endangered</themekey>
+<themekey>Geospatial</themekey>
+<themekey>Hydrology</themekey>
+<themekey>Wildlife</themekey>
+</theme>
+<theme>
+<themekt>NONE</themekt>
+<themekey>AIM</themekey>
+<themekey>AquaDat</themekey>
+<themekey>aquatic</themekey>
+<themekey>aquatics</themekey>
+<themekey>BLM</themekey>
+<themekey>bug lab</themekey>
+<themekey>DOI</themekey>
+<themekey>Fish</themekey>
+<themekey>Geomorphology</themekey>
+<themekey>GRSG</themekey>
+<themekey>lakes</themekey>
+<themekey>Landscape Monitoring Framework</themekey>
+<themekey>lotic</themekey>
+<themekey>Macroinvertebrates</themekey>
+<themekey>monitoring</themekey>
+<themekey>Monitoring Methods</themekey>
+<themekey>National Resources Inventory</themekey>
+<themekey>Projects</themekey>
+<themekey>reach</themekey>
+<themekey>riparian</themekey>
+<themekey>rivers</themekey>
+<themekey>Science</themekey>
+<themekey>streams</themekey>
+<themekey>Utah State University</themekey>
+<themekey>Water quality</themekey>
+<themekey>Western Rivers and Streams Assessment</themekey>
+</theme>
+<theme>
+<themekt>ISO 19115 Topic Categories</themekt>
+<themekey>biota</themekey>
+<themekey>boundaries</themekey>
+<themekey>environment</themekey>
+<themekey>geoscientificInformation</themekey>
+<themekey>health</themekey>
+<themekey>inlandWaters</themekey>
+</theme>
+<place>
+<placekt>BLM-STATE</placekt>
+<placekey>Alaska</placekey>
+<placekey>Arizona</placekey>
+<placekey>California</placekey>
+<placekey>Colorado</placekey>
+<placekey>Idaho</placekey>
+<placekey>Montana</placekey>
+<placekey>Nevada</placekey>
+<placekey>New Mexico</placekey>
+<placekey>Oregon</placekey>
+<placekey>Utah</placekey>
+<placekey>Washington</placekey>
+<placekey>Wyoming</placekey>
+</place>
+<place>
+<placekt>NONE</placekt>
+<placekey>National</placekey>
+</place>
+</keywords>
+<accconst>None, these data are considered public domain.</accconst>
+<useconst>These data are provided by Bureau of Land Management (BLM) "as is" and might contain errors or omissions. The User assumes the entire risk associated with its use of these data and bears all responsibility in determining whether these data are fit for the User's intended use. The information contained in these data is dynamic and may change over time. The data are not better than the sources from which they were derived, and both scale and accuracy may vary across the data set. These data might not have the accuracy, resolution, completeness, timeliness, or other characteristics appropriate for applications that potential users of the data may contemplate. The User is encouraged to carefully consider the content of the metadata file associated with these data. These data are neither legal documents nor land surveys, and must not be used as such. Official records may be referenced at most BLM offices. Please report any errors in the data to the BLM office from which it was obtained. The BLM should be cited as the data source in any products derived from these data. Any Users wishing to modify the data should describe the types of modifications they have performed. The User should not misrepresent the data, nor imply that changes made were approved or endorsed by BLM. This data may be updated by the BLM without notification.</useconst>
+<ptcontac>
+<cntinfo>
+<cntorgp>
+<cntorg>Bureau of Land Management</cntorg>
+<cntper>AIM Lotic Program Manager</cntper>
+</cntorgp>
+<cntpos>Lotic Program Manager</cntpos>
+<cntaddr>
+<addrtype>mailing and physical</addrtype>
+<address>BLM National Operations Center; Denver Federal Center,Building 50</address>
+<city>Lakewood</city>
+<state>CO</state>
+<postal>80225</postal>
+<country>US</country>
+</cntaddr>
+<cntvoice>720-545-8367</cntvoice>
+<cntemail>BLM_OC_AIM_Data@blm.gov</cntemail>
+</cntinfo>
+</ptcontac>
+<datacred>US Department of the Interior - Bureau of Land Management Assessment, Inventory, and Monitoring Project Team; NAMC</datacred>
+<native>Esri ArcGIS 12.9.2.32739</native>
+</idinfo>
+<dataqual>
+<attracc>
+<attraccr>Contact contributor of specific features for accuracy information</attraccr>
+</attracc>
+<logic>Data are related to the I_Indicators layer based upon the EvaluationID.</logic>
+<complete>Contact contributor of specific features for accuracy information</complete>
+<posacc>
+<horizpa>
+<horizpar>Contact contributor of specific features for accuracy information</horizpar>
+</horizpa>
+</posacc>
+<lineage>
+<procstep>
+<procdesc>Data were collected by trained field crews with the BLM and partner organizations. They followed the BLM core aquatic core and contingent indicators in TR 1735-2 (AIM National Aquatic Monitoring Framework: Field Protocol for Wadeable Lotic System). Pre-2021 data were captured electronically using the Stream And River Assessment Hub (SARAH), and 2021 and later data were collected using Survey123. They were managed by the data collectors, with oversight from BLM field offices, state offices, and the National Operations Center. This dataset has undergone rigorous QA/QC to ensure data quality.</procdesc>
+<procdate>20220622</procdate>
+<proccont>
+<cntinfo>
+<cntorgp>
+<cntorg>Bureau of Land Management</cntorg>
+<cntper>AIM Lotic Program Manager</cntper>
+</cntorgp>
+<cntpos>Lotic Program Manager</cntpos>
+<cntaddr>
+<addrtype>mailing and physical</addrtype>
+<address>BLM National Operations Center; Denver Federal Center,Building 50</address>
+<city>Lakewood</city>
+<state>CO</state>
+<postal>80225</postal>
+<country>US</country>
+</cntaddr>
+<cntvoice>720-545-8367</cntvoice>
+<cntemail>BLM_OC_AIM_Data@blm.gov</cntemail>
+</cntinfo>
+</proccont>
+</procstep>
+</lineage>
+</dataqual>
+<spdoinfo>
+<direct>Vector</direct>
+<ptvctinf>
+<sdtsterm>
+<sdtstype>Entity point</sdtstype>
+<ptvctcnt>0</ptvctcnt>
+</sdtsterm>
+</ptvctinf>
+</spdoinfo>
+<eainfo xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gml="http://www.opengis.net/gml" xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:gmd="http://www.isotc211.org/2005/gmd">
+<detailed>
+<enttyp>
+<enttypl>I_VegSpeciesFreqOccurrence</enttypl>
+<enttypd>Frequency of occurrence of priority noxious and native vegetative species</enttypd>
+<enttypds>BLM</enttypds>
+</enttyp>
+<attr>
+<attrlabl>OBJECTID</attrlabl>
+<attrdef>Internal feature number.</attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Sequential unique whole numbers that are automatically generated.</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>Shape</attrlabl>
+<attrdef>Feature geometry.</attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Coordinates defining the features.</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>EvaluationID</attrlabl>
+<attrdef>Unique visit or evaluation identifier; PointID concatenated with the evaluation/ sampled date</attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Unique visit or evaluation identifier; PointID concatenated with the evaluation/ sampled date</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>CommonName</attrlabl>
+<attrdef>Common name of priority noxious or native species. Names should be all lower case for input into Survey 123</attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Common name of priority noxious or native species. Names should be all lower case for input into Survey 123</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>ScientificName</attrlabl>
+<attrdef>The scientific name of the vegetation species present in the plot</attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>The scientific name of the vegetation species present in the plot</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PercentPlotsPresent</attrlabl>
+<attrdef>The percent of vegetation plots collected that contained a given species</attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>The percent of vegetation plots collected that contained a given species</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>Noxious</attrlabl>
+<attrdef>Whether or not the species is noxious or not</attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Whether or not the species is noxious or not</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>WoodyHerb</attrlabl>
+<attrdef>Whether the species is woody or herbaceous</attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Whether the species is woody or herbaceous</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>RecordID</attrlabl>
+<attrdef>A unique identifier for each row in each table</attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>A unique identifier for each row in each table</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>created_user</attrlabl>
+<attrdef>Name of the user that created the data entry. </attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Name of the user that created the data entry. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>created_date</attrlabl>
+<attrdef>Date the data entry was created. </attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Date the data entry was created. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>last_edited_user</attrlabl>
+<attrdef>Name of the user that last edited the data. </attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Name of the user that last edited the data. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>last_edited_date</attrlabl>
+<attrdef>Date the data was last edited. </attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Date the data was last edited. </udom>
+</attrdomv>
+</attr>
+</detailed>
+<overview>
+<eaover>Entities are broad data types and attributes are specific AIM indicators collected at reaches across BLM lands for a variety of purposes.</eaover>
+<eadetcit>BLM</eadetcit>
+</overview>
+</eainfo>
+<distinfo>
+<distrib>
+<cntinfo>
+<cntorgp>
+<cntorg>Bureau of Land Management</cntorg>
+<cntper>AIM Lotic Program Manager</cntper>
+</cntorgp>
+<cntpos>Lotic Program Manager</cntpos>
+<cntaddr>
+<addrtype>mailing and physical</addrtype>
+<address>BLM National Operations Center; Denver Federal Center,Building 50</address>
+<city>Lakewood</city>
+<state>CO</state>
+<postal>80225</postal>
+<country>US</country>
+</cntaddr>
+<cntvoice>720-545-8367</cntvoice>
+<cntemail>BLM_OC_AIM_Data@blm.gov</cntemail>
+</cntinfo>
+</distrib>
+<distliab>The BLM assumes no responsibility for errors or omissions.  No warranty is made by the BLM as to the accuracy, reliability, or completeness of these data for individual use or aggregate use with other data; nor shall the act of distribution to contractors, partners, or beyond, constitute any such warranty for individual or aggregate data use with other data.  Although these data have been processed successfully on computers of BLM, no warranty, expressed or implied, is made by BLM regarding the use of these data on any other system, or for general or scientific purposes, nor does the fact of distribution constitute or imply any such warranty.  In no event shall the BLM have any liability whatsoever for payment of any consequential, incidental, indirect, special, or tort damages of any kind, including, but not limited to, any loss of profits arising out of the use or reliance on the geographic data or arising out of the delivery, installation, operation, or support by BLM.</distliab>
+</distinfo>
+<metainfo>
+<metd>20220707</metd>
+<metrd>20220125</metrd>
+<metc>
+<cntinfo>
+<cntorgp>
+<cntorg>Bureau of Land Management</cntorg>
+<cntper>AIM Lotic Program Manager</cntper>
+</cntorgp>
+<cntpos>Lotic Program Manager</cntpos>
+<cntaddr>
+<addrtype>mailing and physical</addrtype>
+<address>BLM National Operations Center; Denver Federal Center,Building 50</address>
+<city>Lakewood</city>
+<state>CO</state>
+<postal>80225</postal>
+<country>US</country>
+</cntaddr>
+<cntvoice>720-545-8367</cntvoice>
+<cntemail>BLM_OC_AIM_Data@blm.gov</cntemail>
+</cntinfo>
+</metc>
+<metstdn>FGDC Content Standard for Digital Geospatial Metadata</metstdn>
+<metstdv>FGDC-STD-001-1998</metstdv>
+<mettc>local time</mettc>
+</metainfo>
+</metadata>

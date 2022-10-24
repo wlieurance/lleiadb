@@ -1,0 +1,1189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+<idinfo>
+<citation>
+<citeinfo>
+<origin>U.S. Department of the Interior, Bureau of Land Management (BLM)</origin>
+<origin>U.S. Department of Interior, Bureau of Land Management (BLM)</origin>
+<pubdate>20210214</pubdate>
+<title>I_Indicators</title>
+<geoform>vector digital data</geoform>
+<pubinfo>
+<pubplace>Unknown</pubplace>
+<publish>Bureau of Land Management</publish>
+</pubinfo>
+</citeinfo>
+</citation>
+<descript>
+<abstract>This feature class includes monitoring data collected nationally to understand the status, condition, and trend of resources on BLM lands. Data are collected in accordance with the BLM Assessment, Inventory, and Monitoring (AIM) Strategy. The AIM Strategy specifies a probabilistic sampling design, standard core indicators and methods, electronic data capture and management, and integration with remote sensing. Attributes include the BLM aquatic core indicators: pH, conductivity, temperature, pool depth, length, frequency, streambed particles sizes, bank stability and cover, floodplain connectivity, large woody debris, macroinvertebrate biological integrity, ocular estimates of vegetative type, cover, and structure and canopy cover. In addition, the contingent indicators of total nitrogen and phosphorous, turbidity, bank angle, thalweg depth profile and quantitative vegetation estimates (see the Data Structure and Attribute Information section for exact details on attributes). Data were collected and managed by BLM Field Offices, BLM Districts, and/or affiliated field crews with support from the BLM National Operations Center. Data are stored in a centralized database (BLM AIM Lotic Database) at the BLM National Operations Center. </abstract>
+<purpose>This dataset was created to monitor the status, condition and trend of national BLM resources in accordance with BLM policies. The methodology used for the collection of these data can be found in TR 1735-2 (AIM National Aquatic Monitoring Framework: Field Protocol for Wadeable Lotic System). These data should not be used for statistical or spatial inferences without knowledge of how the sample design was drawn or without calculating spatial weights for the points based on the sample design.</purpose>
+</descript>
+<timeperd>
+<timeinfo>
+<rngdates>
+<begdate>2013</begdate>
+<enddate>20211231</enddate>
+</rngdates>
+</timeinfo>
+<current>publication date</current>
+</timeperd>
+<status>
+<progress>Complete</progress>
+<update>Annually</update>
+</status>
+<spdom>
+<bounding>
+<westbc>-163.742308</westbc>
+<eastbc>-102.365554</eastbc>
+<northbc>71.268600</northbc>
+<southbc>31.417495</southbc>
+</bounding>
+</spdom>
+<keywords>
+<theme>
+<themekt>BLM-AIM</themekt>
+<themekey>AIM_AK</themekey>
+<themekey>AIM_AZ</themekey>
+<themekey>AIM_CA</themekey>
+<themekey>AIM_CO</themekey>
+<themekey>AIM_ID</themekey>
+<themekey>AIM_MTDA</themekey>
+<themekey>AIM_NATL</themekey>
+<themekey>AIM_NM</themekey>
+<themekey>AIM_NV</themekey>
+<themekey>AIM_ORWA</themekey>
+<themekey>AIM_Policy</themekey>
+<themekey>AIM_Protocol</themekey>
+<themekey>AIM_Tool</themekey>
+<themekey>AIM_UT</themekey>
+<themekey>AIM_WY</themekey>
+</theme>
+<theme>
+<themekt>BLM-THEME</themekt>
+<themekey>Endangered</themekey>
+<themekey>Geospatial</themekey>
+<themekey>Hydrology</themekey>
+<themekey>Wildlife</themekey>
+</theme>
+<theme>
+<themekt>NONE</themekt>
+<themekey>AIM</themekey>
+<themekey>AquaDat</themekey>
+<themekey>aquatic</themekey>
+<themekey>aquatics</themekey>
+<themekey>BLM</themekey>
+<themekey>bug lab</themekey>
+<themekey>DOI</themekey>
+<themekey>Fish</themekey>
+<themekey>Geomorphology</themekey>
+<themekey>GRSG</themekey>
+<themekey>lakes</themekey>
+<themekey>Landscape Monitoring Framework</themekey>
+<themekey>lotic</themekey>
+<themekey>Macroinvertebrates</themekey>
+<themekey>monitoring</themekey>
+<themekey>Monitoring Methods</themekey>
+<themekey>National Resources Inventory</themekey>
+<themekey>Projects</themekey>
+<themekey>reach</themekey>
+<themekey>riparian</themekey>
+<themekey>rivers</themekey>
+<themekey>Science</themekey>
+<themekey>streams</themekey>
+<themekey>Utah State University</themekey>
+<themekey>Water quality</themekey>
+<themekey>Western Rivers and Streams Assessment</themekey>
+</theme>
+<theme>
+<themekt>ISO 19115 Topic Categories</themekt>
+<themekey>biota</themekey>
+<themekey>boundaries</themekey>
+<themekey>environment</themekey>
+<themekey>geoscientificInformation</themekey>
+<themekey>health</themekey>
+<themekey>inlandWaters</themekey>
+</theme>
+<place>
+<placekt>BLM-STATE</placekt>
+<placekey>Alaska</placekey>
+<placekey>Arizona</placekey>
+<placekey>California</placekey>
+<placekey>Colorado</placekey>
+<placekey>Idaho</placekey>
+<placekey>Montana</placekey>
+<placekey>Nevada</placekey>
+<placekey>New Mexico</placekey>
+<placekey>Oregon</placekey>
+<placekey>Utah</placekey>
+<placekey>Washington</placekey>
+<placekey>Wyoming</placekey>
+</place>
+<place>
+<placekt>NONE</placekt>
+<placekey>National</placekey>
+</place>
+</keywords>
+<accconst>None, these data are considered public domain.</accconst>
+<useconst>These data are provided by Bureau of Land Management (BLM) "as is" and might contain errors or omissions. The User assumes the entire risk associated with its use of these data and bears all responsibility in determining whether these data are fit for the User's intended use. The information contained in these data is dynamic and may change over time. The data are not better than the sources from which they were derived, and both scale and accuracy may vary across the data set. These data might not have the accuracy, resolution, completeness, timeliness, or other characteristics appropriate for applications that potential users of the data may contemplate. The User is encouraged to carefully consider the content of the metadata file associated with these data. These data are neither legal documents nor land surveys, and must not be used as such. Official records may be referenced at most BLM offices. Please report any errors in the data to the BLM office from which it was obtained. The BLM should be cited as the data source in any products derived from these data. Any Users wishing to modify the data should describe the types of modifications they have performed. The User should not misrepresent the data, nor imply that changes made were approved or endorsed by BLM. This data may be updated by the BLM without notification.</useconst>
+<ptcontac>
+<cntinfo>
+<cntorgp>
+<cntorg>Bureau of Land Management</cntorg>
+<cntper>AIM Lotic Program Manager</cntper>
+</cntorgp>
+<cntpos>Lotic Program Manager</cntpos>
+<cntaddr>
+<addrtype>mailing and physical</addrtype>
+<address>BLM National Operations Center; Denver Federal Center,Building 50</address>
+<city>Lakewood</city>
+<state>CO</state>
+<postal>80225</postal>
+<country>US</country>
+</cntaddr>
+<cntvoice>720-545-8367</cntvoice>
+<cntemail>BLM_OC_AIM_Data@blm.gov</cntemail>
+</cntinfo>
+</ptcontac>
+<datacred>US Department of the Interior - Bureau of Land Management Assessment, Inventory, and Monitoring Project Team; NAMC</datacred>
+<native>Esri ArcGIS 12.9.2.32739</native>
+</idinfo>
+<dataqual>
+<attracc>
+<attraccr>Contact contributor of specific features for accuracy information</attraccr>
+</attracc>
+<logic>Data are related to the I_Indicators layer based upon the EvaluationID.</logic>
+<complete>Contact contributor of specific features for accuracy information</complete>
+<posacc>
+<horizpa>
+<horizpar>Contact contributor of specific features for accuracy information</horizpar>
+</horizpa>
+</posacc>
+<lineage>
+<procstep>
+<procdesc>Data were collected by trained field crews with the BLM and partner organizations. They followed the BLM core aquatic core and contingent indicators in TR 1735-2 (AIM National Aquatic Monitoring Framework: Field Protocol for Wadeable Lotic System). Pre-2021 data were captured electronically using the Stream And River Assessment Hub (SARAH), and 2021 and later data were collected using Survey123. They were managed by the data collectors, with oversight from BLM field offices, state offices, and the National Operations Center. This dataset has undergone rigorous QA/QC to ensure data quality.</procdesc>
+<procdate>20220308</procdate>
+<proccont>
+<cntinfo>
+<cntorgp>
+<cntorg>Bureau of Land Management</cntorg>
+<cntper>AIM Lotic Program Manager</cntper>
+</cntorgp>
+<cntpos>Lotic Program Manager</cntpos>
+<cntaddr>
+<addrtype>mailing and physical</addrtype>
+<address>BLM National Operations Center; Denver Federal Center,Building 50</address>
+<city>Lakewood</city>
+<state>CO</state>
+<postal>80225</postal>
+<country>US</country>
+</cntaddr>
+<cntvoice>720-545-8367</cntvoice>
+<cntemail>BLM_OC_AIM_Data@blm.gov</cntemail>
+</cntinfo>
+</proccont>
+</procstep>
+</lineage>
+</dataqual>
+<spdoinfo>
+<direct>Vector</direct>
+<ptvctinf>
+<sdtsterm>
+<sdtstype>Entity point</sdtstype>
+<ptvctcnt>0</ptvctcnt>
+</sdtsterm>
+</ptvctinf>
+</spdoinfo>
+<eainfo xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gml="http://www.opengis.net/gml" xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:gmd="http://www.isotc211.org/2005/gmd">
+<detailed>
+<enttyp>
+<enttypl>I_Indicators</enttypl>
+<enttypd>This feature class includes monitoring data collected nationally to understand the status, condition, and trend of resources on BLM lands. Data are collected in accordance with the BLM Assessment, Inventory, and Monitoring (AIM) Strategy. The AIM Strategy specifies a probabilistic sampling design, standard core indicators and methods, electronic data capture and management, and integration with remote sensing. Attributes include the BLM aquatic core indicators: pH, conductivity, temperature, pool depth, length, frequency, streambed particles sizes, bank stability and cover, floodplain connectivity, large woody debris, macroinvertebrate biological integrity, ocular estimates of vegetative type, cover, and structure and canopy cover. In addition, the contingent indicators of total nitrogen and phosphorous, turbidity, bank angle, thalweg depth profile and quantitative vegetation estimates (see the Data Structure and Attribute Information section for exact details on attributes). Data were collected and managed by BLM Field Offices, BLM Districts, and/or affiliated field crews with support from the BLM National Operations Center. Data are stored in a centralized database (BLM AIM Lotic Database) at the BLM National Operations Center. </enttypd>
+<enttypds>BLM</enttypds>
+</enttyp>
+<attr>
+<attrlabl>OBJECTID</attrlabl>
+<attrdef>Internal feature number.</attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Sequential unique whole numbers that are automatically generated.</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>Shape</attrlabl>
+<attrdef>A field used by Esri to display a features geometry type and store its spatial information </attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>A field used by Esri to display a features geometry type and store its spatial information </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>Project</attrlabl>
+<attrdef>The BLM administrative unit associated with the design and points. National AIM (WRSA) points are associated with district or field office level projects if these points are reused at those specific levels in a design. </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>The BLM administrative unit associated with the design and points. National AIM (WRSA) points are associated with district or field office level projects if these points are reused at those specific levels in a design. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>BLM_AdminState</attrlabl>
+<attrdef>BLM administrative state </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>BLM administrative state </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>District</attrlabl>
+<attrdef>BLM administrative district </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>BLM administrative district </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>FieldOffice</attrlabl>
+<attrdef>BLM administrative field office </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>BLM administrative field office </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>EvaluationID</attrlabl>
+<attrdef>Unique visit or evaluation identifier; PointID concatenated with the evaluation/ sampled date </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Unique visit or evaluation identifier; PointID concatenated with the evaluation/ sampled date </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PointID</attrlabl>
+<attrdef>Unique location identifier; 2-3 letter prefix indicating the original stratum, followed by the stream order group, and 4-5 digit random code specifying the order the points were selected </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Unique location identifier; 2-3 letter prefix indicating the original stratum, followed by the stream order group, and 4-5 digit random code specifying the order the points were selected </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>StreamName</attrlabl>
+<attrdef>Name of stream, default is name from NHD but project leads may edit </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Name of stream, default is name from NHD but project leads may edit </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>FieldEvalDate</attrlabl>
+<attrdef>Date the point or reach was evaluated to determine if it could be sampled or not </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Date the point or reach was evaluated to determine if it could be sampled or not </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>SampledMidLatitude</attrlabl>
+<attrdef>Latitude of the F transect of the sampled reach in decimal degrees and WGS84 datum </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Latitude of the F transect of the sampled reach in decimal degrees and WGS84 datum </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>SampledMidLongitude</attrlabl>
+<attrdef>The longitude of the F transect of the sampled reach in decimal degrees and WGS84 datum </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>The longitude of the F transect of the sampled reach in decimal degrees and WGS84 datum </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>BottomReachLatitude</attrlabl>
+<attrdef>Latitude of bottom of reach in decimal degrees and WGS84 datum </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Latitude of bottom of reach in decimal degrees and WGS84 datum </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>BottomReachLongitude</attrlabl>
+<attrdef>Longitude of bottom of reach in decimal degrees and WGS84 datum </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Longitude of bottom of reach in decimal degrees and WGS84 datum </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>TopReachLatitude</attrlabl>
+<attrdef>Latitude of top of reach in decimal degrees and WGS84 datum </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Latitude of top of reach in decimal degrees and WGS84 datum </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>TopReachLongitude</attrlabl>
+<attrdef>Longitude of top of reach in decimal degrees and WGS84 datum </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Longitude of top of reach in decimal degrees and WGS84 datum </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>ProtocolReachLength</attrlabl>
+<attrdef>Total reach length intended to be sampled. Calculated in the app from average widths using the protocol rules </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>110</rdommin>
+<rdommax>4000</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>ProtocolType</attrlabl>
+<attrdef>Protocol used to sample the reach. Wadeable or Boatable. </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Protocol used to sample the reach. Wadeable or Boatable. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>ProtocolVersion</attrlabl>
+<attrdef>Pdf archive of the protocol used for data collection </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Pdf archive of the protocol used for data collection </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>FieldStatus</attrlabl>
+<attrdef>Whether the reach was partially or fully sampled or had interrupted flow. FieldStatus is used to determine required sample sizes for indicators to be reported. </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Whether the reach was partially or fully sampled or had interrupted flow. FieldStatus is used to determine required sample sizes for indicators to be reported. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PointSelectionType</attrlabl>
+<attrdef>Whether the point was selected from a spatially balanced random sample using Generalized Random Tessellation Stratified (RandomGRTS) algorithms, systematically random sample(RandomSystematic), or a hand selected (targeted) monitoring location </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Whether the point was selected from a spatially balanced random sample using Generalized Random Tessellation Stratified (RandomGRTS) algorithms, systematically random sample(RandomSystematic), or a hand selected (targeted) monitoring location </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>OriginalDesign</attrlabl>
+<attrdef>Original DesignID of the point </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Original DesignID of the point </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>OriginalStratum</attrlabl>
+<attrdef>Original stratum of the point </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Original stratum of the point </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>StreamOrder</attrlabl>
+<attrdef>Modified Strahler Stream Order </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>11</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>DefaultBenchmarkGroup</attrlabl>
+<attrdef>Category used to determine default benchmarks for making indicator specific condition ratings. This field is a combination of hybrid level 3 Omernick ecoregion (lower 48 states) or level 3 Omernick ecoregion (Alaska) ,stream size based on bankfull width, and protocol. </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Category used to determine default benchmarks for making indicator specific condition ratings. This field is a combination of hybrid level 3 Omernick ecoregion (lower 48 states) or level 3 Omernick ecoregion (Alaska) ,stream size based on bankfull width, and protocol. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctOverheadCover</attrlabl>
+<attrdef>Average % overhead cover provided by stream banks, vegetation, or other objects measured mid-channel (looking 4 directions) across 11 transects (units: %, min: 0, max: 100, n= 44) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average % overhead cover provided by stream banks, vegetation, or other objects measured mid-channel (looking 4 directions) across 11 transects (units: %, min: 0, max: 100, n= 44) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctBankOverheadCover</attrlabl>
+<attrdef>Average percent overhead cover provided by stream banks (left and right), vegetation or other objects measured at the scour line of the left and right banks across 11 transects (units: %, min: 0, max: 100, n= 22) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average percent overhead cover provided by stream banks (left and right), vegetation or other objects measured at the scour line of the left and right banks across 11 transects (units: %, min: 0, max: 100, n= 22) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>VegComplexity</attrlabl>
+<attrdef>Average vegetative cover provided by three different vegetative height categories: Canopy (&gt;5m), Understory (0.5-5m), and Ground (&lt;0.5m). Each vegetative height category is then divided into two vegetation types (e.g. woody or nonwoody). Proportional cover was binned into four classes (0.875, 0.575, 0.25, and 0.05) per vegetation type, summed across the three heights, and then averaged across the left and right banks of 11 transects. (units: none, min: 0, max: 2.6, n= 22) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average vegetative cover provided by three different vegetative height categories: Canopy (&gt;5m), Understory (0.5-5m), and Ground (&lt;0.5m). Each vegetative height category is then divided into two vegetation types (e.g. woody or nonwoody). Proportional cover was binned into four classes (0.875, 0.575, 0.25, and 0.05) per vegetation type, summed across the three heights, and then averaged across the left and right banks of 11 transects. (units: none, min: 0, max: 2.6, n= 22) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>VegComplexityWoody</attrlabl>
+<attrdef>Average woody vegetative cover provided by three different vegetative height categories: Canopy (&gt;5m), Understory (0.5-5m), and Ground (&lt;0.5m). Each vegetative height category is then divided into two vegetation types. Proportional cover was binned into four classes (0.875, 0.575, 0.25, and 0.05), summed across the three heights, and then averaged across the left and right banks of 11 transects. (units: none, min: 0, max: 2.6, n= 22) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average woody vegetative cover provided by three different vegetative height categories: Canopy (&gt;5m), Understory (0.5-5m), and Ground (&lt;0.5m). Each vegetative height category is then divided into two vegetation types. Proportional cover was binned into four classes (0.875, 0.575, 0.25, and 0.05), summed across the three heights, and then averaged across the left and right banks of 11 transects. (units: none, min: 0, max: 2.6, n= 22) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>VegComplexityUnderstoryGround</attrlabl>
+<attrdef>Average vegetative cover provided by two different vegetative height categories: Understory (0.5-5m), and Ground (&lt;0.5m). Each vegetative height category is then divided into two vegetation types (e.g. woody or nonwoody). Proportional cover was binned into four classes (0.875, 0.575, 0.25, and 0.05) per vegetation type, summed across the two heights, and then averaged across the left and right banks of 11 transects. (units: none, min: 0, max: 2.6, n= 22) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average vegetative cover provided by two different vegetative height categories: Understory (0.5-5m), and Ground (&lt;0.5m). Each vegetative height category is then divided into two vegetation types (e.g. woody or nonwoody). Proportional cover was binned into four classes (0.875, 0.575, 0.25, and 0.05) per vegetation type, summed across the two heights, and then averaged across the left and right banks of 11 transects. (units: none, min: 0, max: 2.6, n= 22) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctNoxiousWoodySpecies</attrlabl>
+<attrdef>Percent of 22 vegetation plots with priority noxious woody vegetation present (units: %, min: 0, max: 100, n= 22) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctNativeWoodySpecies</attrlabl>
+<attrdef>Percent of 22 vegetation plots with priority native woody vegetation present (units: %, min: 0, max: 100, n= 22) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctNoxiousHerbSpecies</attrlabl>
+<attrdef>Percent of 22 vegetation plots with priority noxious herbaceous vegetation present (units: %, min: 0, max: 100, n= 22) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctSedgeRushSpecies</attrlabl>
+<attrdef>Percent of 22 vegetation plots with sedges and rushes present (units: %, min: 0, max: 100, n= 22) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctEquisetumSpecies</attrlabl>
+<attrdef>Percent of 22 vegetation plots with equisetum present (units: %, min: 0, max: 100, n= 22) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>InvasiveInvertSpecies</attrlabl>
+<attrdef>List of invasive macroinvertebratespresent, if not present value is "Absent" </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>List of invasive macroinvertebratespresent, if not present value is "Absent" </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>ObservedInvertRichness</attrlabl>
+<attrdef>Observed macroinvertebrate richness standardized to model specific operational taxonomic units (OTU) (units: # of taxa) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Observed macroinvertebrate richness standardized to model specific operational taxonomic units (OTU) (units: # of taxa) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>ExpectedInvertRichness</attrlabl>
+<attrdef>Expected macroinvertebrate richness in the absence of anthropogenic impacts from the O/E model (units: # of taxa) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Expected macroinvertebrate richness in the absence of anthropogenic impacts from the O/E model (units: # of taxa) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>OE_Macroinvertebrate</attrlabl>
+<attrdef>Biological condition was assessed using an observed/expected (O/E) index. O/E models compare the macroinvertebrate taxa observed at sites of unknown biological condition (i.e., ‘test sites’) to the assemblages expected to be found in the absence of anthropogenic stressors (see Hawkins et al. 2000 for details). (units: none, min: 0, max: 1.5) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Biological condition was assessed using an observed/expected (O/E) index. O/E models compare the macroinvertebrate taxa observed at sites of unknown biological condition (i.e., ‘test sites’) to the assemblages expected to be found in the absence of anthropogenic stressors (see Hawkins et al. 2000 for details). (units: none, min: 0, max: 1.5) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>MMI_Macroinvertebrate</attrlabl>
+<attrdef>Biological condition was assessed using the MMI (MultimetricIndex) model specified in theOE_MMI_ModelUsedcolumn. </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Biological condition was assessed using the MMI (MultimetricIndex) model specified in theOE_MMI_ModelUsedcolumn. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>OE_MMI_ModelUsed</attrlabl>
+<attrdef>The O/E or MMI model used to determine biological integrity. NAMC currently has the following models available UT, NV, CA, CO, OR, WY, regional models for areas sampled by AREMP or PIBO programs (Northwest Forest Plan or Columbia River Basin), and a West-wide model. Generally, State based models are used ifavailable,otherwise the West-wide model is used. </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>The O/E or MMI model used to determine biological integrity. NAMC currently has the following models available UT, NV, CA, CO, OR, WY, regional models for areas sampled by AREMP or PIBO programs (Northwest Forest Plan or Columbia River Basin), and a West-wide model. Generally, State based models are used ifavailable,otherwise the West-wide model is used. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>OE_MMI_ModelApplicability</attrlabl>
+<attrdef>This field indicates whether or not the site's environmental gradients were within the range of experience of the model. A fail indicates the model potentially had to extrapolate, rather than interpolate, to accommodate one or more of the habitat variables. O/E scores and condition ratings should be interpreted cautiously if a site failed the test of experience. </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>This field indicates whether or not the site's environmental gradients were within the range of experience of the model. A fail indicates the model potentially had to extrapolate, rather than interpolate, to accommodate one or more of the habitat variables. O/E scores and condition ratings should be interpreted cautiously if a site failed the test of experience. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>MacroinvertebrateCount</attrlabl>
+<attrdef>Number of macroinvertebrates identified and resampled to a standardized fixed count (i.e. rarefaction). Samples with counts less than 200 macroinvertebrates can result from sampling and/or laboratory processing errors, but low counts can also be a signal of degraded biological condition. Additional samples should be taken to verify Major or Moderate departure from reference. (units: # of individuals, min: 0, max: 400) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>401</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>TotalNitrogen</attrlabl>
+<attrdef>Measured total nitrogen value (units: µg/L, n=1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Measured total nitrogen value (units: µg/L, n=1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PredictedTotalNitrogen</attrlabl>
+<attrdef>Site specific predicted values for reference nitrogen concentrations (Olson and Hawkins 2013) (units: µg/L) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Site specific predicted values for reference nitrogen concentrations (Olson and Hawkins 2013) (units: µg/L) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>TotalPhosphorous</attrlabl>
+<attrdef>Measured total phosphorous value (units: µg/L, n=1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Measured total phosphorous value (units: µg/L, n=1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PredictedTotalPhosphorous</attrlabl>
+<attrdef>Site specific predicted values for reference phosphorus concentrations (Olson and Hawkins 2013) (units: µg/L) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Site specific predicted values for reference phosphorus concentrations (Olson and Hawkins 2013) (units: µg/L) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>SpecificConductance</attrlabl>
+<attrdef>Measured specific conductance value using a Sonde. The specific conductance is conductivity standardized to 25 degrees C. (units: µS/cm, min: 0, max: 65500, n=1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>65500</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PredictedSpecificConductance</attrlabl>
+<attrdef>Site specific predicted values for reference specific conductance values (Olson and Hawkins 2012) (units: µS/cm, min: 0, max: 65500) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>65500</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>pH</attrlabl>
+<attrdef>Measured pH value using a Sonde (units: SU, min: 0, max: 14, n=1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>14</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>InstantTemp</attrlabl>
+<attrdef>Instantaneous temperature collected with sonde </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Instantaneous temperature collected with sonde </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>AugTempAvg</attrlabl>
+<attrdef>Site specific prediction of 19 year average August stream temperature for the period of 1993 – 2011 as derived fromNorWestmodels(Isaak et al.2016https://doi.org/10.2737/RDS-2016-0033)(units: degrees C, n=1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Site specific prediction of 19 year average August stream temperature for the period of 1993 – 2011 as derived fromNorWestmodels(Isaak et al.2016https://doi.org/10.2737/RDS-2016-0033)(units: degrees C, n=1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>TurbidityAvg</attrlabl>
+<attrdef>Average water clarity as measured by the suspended solids in the water column (units: NTU, n=3) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average water clarity as measured by the suspended solids in the water column (units: NTU, n=3) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PoolCount</attrlabl>
+<attrdef>The number of qualifying pools within the reach (units: # pools, n=1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>The number of qualifying pools within the reach (units: # pools, n=1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctPools</attrlabl>
+<attrdef>Percent of the sample reach (linear extent) classified as pool habitat as assessed using the core pool method (units: %, min: 0, max: 100, n=1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PoolFreq</attrlabl>
+<attrdef>Frequency of pools in the reach as assessed using the core pool method (units: # pools/km, n=1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Frequency of pools in the reach as assessed using the core pool method (units: # pools/km, n=1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>ResPoolDepthAvg</attrlabl>
+<attrdef>Average residual pool depth as assessed using the core pool method (units: m, n= variable depending on number of pools) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average residual pool depth as assessed using the core pool method (units: m, n= variable depending on number of pools) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>LgWoodInChanCount</attrlabl>
+<attrdef>Number of pieces of wood within the bankfull channel of the reach (units: # pieces, n= 1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Number of pieces of wood within the bankfull channel of the reach (units: # pieces, n= 1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>LgWoodInChanFreq</attrlabl>
+<attrdef>Frequency of large wood within the bankfull channel of the reach (units: # pieces/ 100 m, n= 1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Frequency of large wood within the bankfull channel of the reach (units: # pieces/ 100 m, n= 1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>LgWoodInChanVol</attrlabl>
+<attrdef>Volume of large wood within the bankfull channel of the reach (units: m^3/100 m, n=1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Volume of large wood within the bankfull channel of the reach (units: m^3/100 m, n=1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>LgWoodAboveChanCount</attrlabl>
+<attrdef>Number of pieces of wood bridging above the bankfull channel of the reach (units: # pieces, n= 1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Number of pieces of wood bridging above the bankfull channel of the reach (units: # pieces, n= 1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>LgWoodAboveChanFreq</attrlabl>
+<attrdef>Frequency of large wood bridging above the bankfull channel of the reach (units: # pieces/ 100 m, n= 1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Frequency of large wood bridging above the bankfull channel of the reach (units: # pieces/ 100 m, n= 1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>LgWoodAboveChanVol</attrlabl>
+<attrdef>Volume of large wood bridging above the bankfull channel of the reach (units: m^3/100 m, n=1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Volume of large wood bridging above the bankfull channel of the reach (units: m^3/100 m, n=1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctFinesLessThan2mm</attrlabl>
+<attrdef>Average percent fine sediment (&lt; 2mm) on the pool tail (units %, min: 0, max: 100, n= 3 per pool) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctFinesLessThan6mm</attrlabl>
+<attrdef>Average percent fine sediment (&lt; 6mm) on the pool tail (units %, min: 0, max: 100, n= 3 per pool) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>D16</attrlabl>
+<attrdef>Particle size corresponding to the 16th percentile of measured particles (units: mm, min: 1, max: 4098, n=210) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>1</rdommin>
+<rdommax>4098</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>D84</attrlabl>
+<attrdef>Particle size corresponding to the 84th percentile of measured particles (units: mm, min: 1, max: 4098, n=210) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>1</rdommin>
+<rdommax>4098</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>D50</attrlabl>
+<attrdef>Particle size corresponding to the 50th percentile of measured particles (units: mm, min: 1, max: 4098, n=210) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>1</rdommin>
+<rdommax>4098</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>GeometricMeanParticleDiam</attrlabl>
+<attrdef>Geometric average bed particle diameter= exponentialfunction[average(log(particle diameter)]. This is a less frequently used metric of characterizing central tendency of substrate sizes, but is the main metric used by the EPA for determining relative bed stability. It is less variable than a D50 and more biologically meaningful because it is more influenced by fine sediment. (units: mm, min: 1, max: 4098, n=210) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>1</rdommin>
+<rdommax>4098</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctPoolTailFinesLessThan2mm</attrlabl>
+<attrdef>Average percent fine sediment (&lt; 2mm) on the pool tail (units %, min: 0, max: 100, n= 3 per pool) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctPoolTailFinesLessThan6mm</attrlabl>
+<attrdef>Average percent fine sediment (&lt; 6mm) on the pool tail (units %, min: 0, max: 100, n=3 per pool) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctBankCoveredMIM</attrlabl>
+<attrdef>Percent of 42 erosional banks with greater than 50%foliarcover provided by perennial vegetation, wood or mineral substrate &gt; 15 cm (units: %, min: 0, max: 100, n= 42) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctBankStable</attrlabl>
+<attrdef>Percent of 42 banks lacking visible signs of active erosion (e.g., slump, slough, fracture) (units: %, min: 0, max: 100, n= 42) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctBankCoveredStableMIM</attrlabl>
+<attrdef>Percent of 42 banks both stable (lacking visible signs of active erosions (e.g., slump, slough, fracture)) and covered (greater than 50%foliarcover provided by perennial vegetation, wood or mineral substrate &gt; 15 cm) (units: %, min: 0, max: 100, n= 42) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctBankCoveredOld</attrlabl>
+<attrdef>Percent of 42 erosional banks with greater than 50% basal cover provided by perennial vegetation, wood or mineral substrate &gt; 15 cm (units: %, min: 0, max: 100, n= 42) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctBankCoveredStableOld</attrlabl>
+<attrdef>Percent of 42 banks both stable (lacking visible signs of active erosions (e.g., slump, slough, fracture)) and covered (greater than 50%basalcover provided by perennial vegetation, wood or mineral substrate &gt; 15 cm) (units: %, min: 0, max: 100, n= 42) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>BankfullHeightAvg</attrlabl>
+<attrdef>Average bankfull height measured from water surface across 11 transects (units: m, n = 11) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average bankfull height measured from water surface across 11 transects (units: m, n = 11) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>BenchHeightAvg</attrlabl>
+<attrdef>Average bench height measured from water surface across 11 transects (units: m, n = 11) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average bench height measured from water surface across 11 transects (units: m, n = 11) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>ChannelIncision</attrlabl>
+<attrdef>Logarithm of the difference between average bankfull height and average bench height= log(BenchHeight-BankHeight+ 0.1) (units: none, min: -1, max: 2, n=11) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Logarithm of the difference between average bankfull height and average bench height= log(BenchHeight-BankHeight+ 0.1) (units: none, min: -1, max: 2, n=11) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>FloodplainConnectivity</attrlabl>
+<attrdef>The ratio of average bench height to average bankfull height taken from the thalweg = (bench height + thalweg depth) / (bankfull height + thalweg depth). This is also known asRosgen'sBank Height Ratio (units: none, n= 11) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>The ratio of average bench height to average bankfull height taken from the thalweg = (bench height + thalweg depth) / (bankfull height + thalweg depth). This is also known asRosgen'sBank Height Ratio (units: none, n= 11) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>InstreamHabitatComplexity</attrlabl>
+<attrdef>Aggregate measure of average cover provided by boulders, overhanging vegetation, live trees and roots, large wood, small wood, and stream banks for stream fishes measured at 11 plots. Proportional cover was binned into four classes (0.875, 0.575, 0.25, and 0.5), averaged across transects, and then summed across six types of cover. (units: none, min: 0, max: 2.3, n= 66) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Aggregate measure of average cover provided by boulders, overhanging vegetation, live trees and roots, large wood, small wood, and stream banks for stream fishes measured at 11 plots. Proportional cover was binned into four classes (0.875, 0.575, 0.25, and 0.5), averaged across transects, and then summed across six types of cover. (units: none, min: 0, max: 2.3, n= 66) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>BankAngleAvg</attrlabl>
+<attrdef>Average angle of the stream bank; banks with obtuse angles = &gt;90° and undercut banks with acute angles = &lt;90° (units: degrees, min: 0, max: 180, n= 22) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>180</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>ThalwegDepthCV</attrlabl>
+<attrdef>Indicator of bed heterogeneity computed as the coefficient of variation of 100-300 thalweg depth measurements (units: none, n= 1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Indicator of bed heterogeneity computed as the coefficient of variation of 100-300 thalweg depth measurements (units: none, n= 1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>ThalwegDepthAvg</attrlabl>
+<attrdef>Average thalweg depth. Metric of how deep water was at the site. (units: m, min: 0, max: none, n variable depending on reach length (100 - 300)) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average thalweg depth. Metric of how deep water was at the site. (units: m, min: 0, max: none, n variable depending on reach length (100 - 300)) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctDry</attrlabl>
+<attrdef>Percent of the reach that was dry. This is calculated as the number of dry thalweg measurements divided by the total number of thalweg measurements collected and expressed as a percentage. (units: %, min: 0, max: 100, n= variable depending on reach length (100-300)) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>BankfullWidthAvg</attrlabl>
+<attrdef>Average bankfull width across 11 transects (units: m, n= 11) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average bankfull width across 11 transects (units: m, n= 11) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>WettedWidthAvg</attrlabl>
+<attrdef>Average wetted width across 21 transects (units: m, n= 21) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Average wetted width across 21 transects (units: m, n= 21) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>EntrenchmentRiffle1</attrlabl>
+<attrdef>Entrenchment ratio at the downstream end of the reach= averagefloodpronewidth divided by average bankfull width. Ratios of 1-1.4 represent entrenched streams; 1.41-2.2 represent moderately entrenched streams; and ratios greater than 2.2 indicate rivers only slightly entrenched in a well-developed floodplain (Rosgen1996). (units: none, min: 1, max: 3, n= 1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Entrenchment ratio at the downstream end of the reach= averagefloodpronewidth divided by average bankfull width. Ratios of 1-1.4 represent entrenched streams; 1.41-2.2 represent moderately entrenched streams; and ratios greater than 2.2 indicate rivers only slightly entrenched in a well-developed floodplain (Rosgen1996). (units: none, min: 1, max: 3, n= 1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>EntrenchmentRiffle2</attrlabl>
+<attrdef>Entrenchment ratio at the upstream end of the reach = averagefloodpronewidth divided by average bankfull width. Ratios of 1-1.4 represent entrenched streams; 1.41-2.2 represent moderately entrenched streams; and ratios greater than 2.2 indicate rivers only slightly entrenched in a well-developed floodplain (Rosgen1996). (units: none, min: 1, max: 3, n= 1) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Entrenchment ratio at the upstream end of the reach = averagefloodpronewidth divided by average bankfull width. Ratios of 1-1.4 represent entrenched streams; 1.41-2.2 represent moderately entrenched streams; and ratios greater than 2.2 indicate rivers only slightly entrenched in a well-developed floodplain (Rosgen1996). (units: none, min: 1, max: 3, n= 1) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PctSlope</attrlabl>
+<attrdef>Reach slope measured from the water's surface. In most cases, the reported value is an average of 2 independent measurements that were within 10% of one another. (units: %, min: 0, max: ~45, n= 2) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<rdom>
+<rdommin>0</rdommin>
+<rdommax>100</rdommax>
+</rdom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>Sinuosity</attrlabl>
+<attrdef>Sinuosity is calculated as protocol reach length / the Euclidean distance between top and bottom of reach coordinates </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Sinuosity is calculated as protocol reach length / the Euclidean distance between top and bottom of reach coordinates </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>HumanInfluence</attrlabl>
+<attrdef>Proximity weighted metric of human influence in the reach visually estimated in 10 m x 10 m plots at left and right banks and all 11 main transects (units:None, min: max, n=22). </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Proximity weighted metric of human influence in the reach visually estimated in 10 m x 10 m plots at left and right banks and all 11 main transects (units:None, min: max, n=22). </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>BeaverFlowMod</attrlabl>
+<attrdef>Flow influence by beaver across the reach </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Flow influence by beaver across the reach </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>BeaverSigns</attrlabl>
+<attrdef>Qualitative visual assessment of frequency of beaver signs (e.g. chewed logs) within the reach (Absent, Rare, Common) </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Qualitative visual assessment of frequency of beaver signs (e.g. chewed logs) within the reach (Absent, Rare, Common) </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>WaterWithdrawals</attrlabl>
+<attrdef>Presence or absence of water withdrawals </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Presence or absence of water withdrawals </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>SideChannels</attrlabl>
+<attrdef>Presence of absence of side channelsacross the entire reach </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Presence of absence of side channelsacross the entire reach </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>EvaluationID_OLD</attrlabl>
+<attrdef>Unique visit identifier from NAMC. Generated at time of data collection by the iPad. </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Unique visit identifier from NAMC. Generated at time of data collection by the iPad. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>RecordID</attrlabl>
+<attrdef>The primary key of the table </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>The primary key of the table </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>CoreSubset</attrlabl>
+<attrdef>Were all a subset of core indicators sampled? Y/N </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Were all a subset of core indicators sampled? Y/N </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>Supplementals</attrlabl>
+<attrdef>List of supplemental indicators collected </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>List of supplemental indicators collected </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>GreenlineVegComposition</attrlabl>
+<attrdef>Was greenline vegetation composition collected? Y/N </attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Was greenline vegetation composition collected? Y/N </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>PhotoLink</attrlabl>
+<attrdef>Link to photos from site visit. Only available to internal users.</attrdef>
+<attrdefs>BLM</attrdefs>
+<attrdomv>
+<udom>Link to photos from site visit. Only available to internal users.</udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>created_user</attrlabl>
+<attrdef>Name of the user that created the data entry. </attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Name of the user that created the data entry. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>created_date</attrlabl>
+<attrdef>Date the data entry was created. </attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Date the data entry was created. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>last_edited_user</attrlabl>
+<attrdef>Name of the user that last edited the data. </attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Name of the user that last edited the data. </udom>
+</attrdomv>
+</attr>
+<attr>
+<attrlabl>last_edited_date</attrlabl>
+<attrdef>Date the data was last edited. </attrdef>
+<attrdefs>Esri</attrdefs>
+<attrdomv>
+<udom>Date the data was last edited. </udom>
+</attrdomv>
+</attr>
+</detailed>
+<overview>
+<eaover>Entities are broad data types and attributes are specific AIM indicators collected at reaches across BLM lands for a variety of purposes.</eaover>
+<eadetcit>BLM</eadetcit>
+</overview>
+</eainfo>
+<distinfo>
+<distrib>
+<cntinfo>
+<cntorgp>
+<cntorg>Bureau of Land Management</cntorg>
+<cntper>AIM Lotic Program Manager</cntper>
+</cntorgp>
+<cntpos>Lotic Program Manager</cntpos>
+<cntaddr>
+<addrtype>mailing and physical</addrtype>
+<address>BLM National Operations Center; Denver Federal Center,Building 50</address>
+<city>Lakewood</city>
+<state>CO</state>
+<postal>80225</postal>
+<country>US</country>
+</cntaddr>
+<cntvoice>720-545-8367</cntvoice>
+<cntemail>BLM_OC_AIM_Data@blm.gov</cntemail>
+</cntinfo>
+</distrib>
+<distliab>The BLM assumes no responsibility for errors or omissions.  No warranty is made by the BLM as to the accuracy, reliability, or completeness of these data for individual use or aggregate use with other data; nor shall the act of distribution to contractors, partners, or beyond, constitute any such warranty for individual or aggregate data use with other data.  Although these data have been processed successfully on computers of BLM, no warranty, expressed or implied, is made by BLM regarding the use of these data on any other system, or for general or scientific purposes, nor does the fact of distribution constitute or imply any such warranty.  In no event shall the BLM have any liability whatsoever for payment of any consequential, incidental, indirect, special, or tort damages of any kind, including, but not limited to, any loss of profits arising out of the use or reliance on the geographic data or arising out of the delivery, installation, operation, or support by BLM.</distliab>
+</distinfo>
+<metainfo>
+<metd>20220707</metd>
+<metrd>20220308</metrd>
+<metc>
+<cntinfo>
+<cntorgp>
+<cntorg>Bureau of Land Management</cntorg>
+<cntper>AIM Lotic Program Manager</cntper>
+</cntorgp>
+<cntpos>Lotic Program Manager</cntpos>
+<cntaddr>
+<addrtype>mailing and physical</addrtype>
+<address>BLM National Operations Center; Denver Federal Center,Building 50</address>
+<city>Lakewood</city>
+<state>CO</state>
+<postal>80225</postal>
+<country>US</country>
+</cntaddr>
+<cntvoice>720-545-8367</cntvoice>
+<cntemail>BLM_OC_AIM_Data@blm.gov</cntemail>
+</cntinfo>
+</metc>
+<metstdn>FGDC Content Standard for Digital Geospatial Metadata</metstdn>
+<metstdv>FGDC-STD-001-1998</metstdv>
+<mettc>local time</mettc>
+</metainfo>
+</metadata>
