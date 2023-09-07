@@ -50,7 +50,6 @@ CREATE TABLE dima.db_line (
 -- Table structure for table 'tblSpecies'
 --
 
--- TODO create a species base and species delta table using tblSpecies as a base
 DROP TABLE IF EXISTS dima."tblSpecies" CASCADE;
 
 CREATE TABLE dima."tblSpecies" (
@@ -2533,7 +2532,7 @@ CREATE TABLE dima."tblPlantDenHeader" (
   "LineKey" VARCHAR(50), 
   "RecKey" VARCHAR(50) NOT NULL, 
   "DateModified" TIMESTAMP, 
-  "FormType" VARCHAR(5), 
+  "FormType" VARCHAR(10), 
   "FormDate" DATE, 
   "Observer" VARCHAR(50), 
   "Recorder" VARCHAR(50), 
