@@ -3,7 +3,7 @@
 #               "RPostgres", "RSQLite", "odbc", "rgdal", "getPass", "tools",
 #               "stringr", "glue")
 #
-# for (lib in libraries){
+# for (lib in libraries) {
 #   suppressMessages(library(lib, character.only = TRUE))
 # }
 
@@ -23,15 +23,52 @@ vdigest <- Vectorize(digest::digest)
 #'   character)
 #' @param prnt logical. A flag indicating whether or not to print the msg to
 #'   stdout
-msg.out <- function(msg, log = NULL, sep = "\n", prnt = TRUE){
-  if (prnt == TRUE){
+msg.out <- function(msg, log = NULL, sep = "\n", prnt = TRUE) {
+  if (prnt == TRUE) {
     cat(paste0(msg, sep))
   }
-  if (!is.null(log)){
+  if (!is.null(log)) {
     log.file <- file(log, "a", encoding = "UTF-8")
     writeLines(msg, log.file, sep = sep)
     close(log.file)
   }
+}
+
+#' This function is a cheap statement splitter in lieu of a more time consuming
+#' SQL parser.  Will break pretty easily so use with caution.
+#'
+#' @param string A string. A string of (optionally) multiple statements to 
+#'    split.
+#' @param pattern. A stringr regex pattern (optional). Use in case the default
+#'  of splitting at semicolon and INSERT, SELECT, UPDATE, DELETE, and CREATE is
+#'  not adequate.
+statement.split <- function(string, pattern = NULL) {
+  if (is.null(pattern)) {
+    pattern <- stringr::regex(r"{;\s*(?:INSERT|SELECT|UPDATE|DELETE|CREATE)\s}",
+                             ignore_case = TRUE)
+  }
+  breaks <- stringr::str_locate_all(string = string, pattern = pattern)[[1]]
+  if (nrow(breaks) > 0) {
+    start <- 1
+    new.mat <- matrix(nrow = nrow(breaks) + 1, ncol = 2,
+                      dimnames = list(NULL, c("start", "end")))
+    for (i in 1:nrow(breaks)) {
+      new.mat[i,1] <- start
+      brk <- breaks[[i,1]]
+      new.mat[i,2] <- brk
+      start <- brk + 1
+    }
+    if (start < nchar(string)) {
+      new.mat[nrow(new.mat), 1] <- start
+      new.mat[nrow(new.mat), 2] <- nchar(string)
+    }
+  split <- mapply(FUN = stringr::str_sub, start = new.mat[,1], 
+                  end = new.mat[,2],
+                  MoreArgs=list(string = string))
+  } else {
+  split <- string
+  }
+  return(split)
 }
 
 #######################################
@@ -44,7 +81,7 @@ msg.out <- function(msg, log = NULL, sep = "\n", prnt = TRUE){
 #' @param schema A string. The schema to query for tables.
 #'
 #' @return A table containing the table names in \code{schema}.
-get.dest.tables <- function(schema){
+get.dest.tables <- function(schema) {
   tables.sql <- glue::glue(paste(
     "SELECT table_name ",
     "  FROM information_schema.tables ",
@@ -56,6 +93,78 @@ get.dest.tables <- function(schema){
 
 }
 
+#' Retrieves Foreign keys for a table in Postgres
+#'
+#' @param schema A string. The name of the schema to be queried in the Postgres
+#'   connection.
+#' @param tbl.name A string. The name of the table to retrieve information about
+#'   from the postgres connection.
+get.foreign.keys <- function(schema, tbl.name) {
+  # query provided by user @martin on StackOverflow
+  # https://stackoverflow.com/questions/1152260/how-to-list-table-foreign-keys
+  fk.sql  <- glue::glue(paste(
+    "WITH con AS (",
+    "SELECT unnest(con1.conkey) AS parent,",
+    "           unnest(con1.confkey) AS child,",
+    "           con1.confrelid, con1.conrelid, con1.conname",
+    "  FROM pg_class cl",
+    " INNER JOIN pg_namespace ns ON cl.relnamespace = ns.oid",
+    " INNER JOIN pg_constraint con1 ON con1.conrelid = cl.oid",
+    " WHERE cl.relname = '{tbl.name}'",
+    "   AND ns.nspname = '{schema}'",
+    "   AND con1.contype = 'f'",
+    ")",
+    "",
+    "SELECT att2.attname as child_column, cl.relname as parent_table,",
+    "       att.attname as parent_column, conname",
+    "  FROM con",
+    " INNER JOIN pg_attribute att",
+    "    ON att.attrelid = con.confrelid AND att.attnum = con.child",
+    " INNER JOIN pg_class cl",
+    "    ON cl.oid = con.confrelid",
+    " INNER JOIN pg_attribute att2",
+    "    ON att2.attrelid = con.conrelid AND att2.attnum = con.parent;",
+    "", sep = "\n"), .trim = FALSE)
+
+  fk <- tibble::as_tibble(DBI::dbGetQuery(con, fk.sql))
+  return(fk)
+}
+
+
+#' Retrieves Primary keys for a table in Postgres
+#'
+#' @param schema A string. The name of the schema to be queried in the Postgres
+#'   connection.
+#' @param tbl.name A string. The name of the table to retrieve information about
+#'   from the postgres connection.
+get.primary.keys <- function(schema, tbl.name) {
+  pk.sql <- glue::glue(paste(
+    "SELECT tc.constraint_name, tc.constraint_type, c.column_name, c.data_type",
+    "  FROM information_schema.table_constraints tc",
+    " INNER JOIN information_schema.constraint_column_usage AS ccu",
+    " USING (constraint_schema, constraint_name)",
+    " INNER JOIN information_schema.columns AS c",
+    "    ON c.table_schema = tc.constraint_schema",
+    "   AND tc.table_name = c.table_name AND ccu.column_name = c.column_name",
+    " WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE')",
+    "   AND tc.table_schema = '{schema}' AND tc.table_name = '{tbl.name}';",
+    "", sep = "\n"), .trim = FALSE)
+  pk <- tibble::as_tibble(DBI::dbGetQuery(con, pk.sql))
+  return(pk)
+}
+
+
+#' Retrieves Primary and Foreign keys for a table in Postgres
+#'
+#' @param schema A string. The name of the schema to be queried in the Postgres
+#'   connection.
+#' @param tbl.name A string. The name of the table to retrieve information about
+#'   from the postgres connection.
+get.pg.tbl.constraints <- function(schema, tbl.name) {
+  fk <- get.foreign.keys(schema = schema, tbl.name = tbl.name)
+  pk <- get.primary.keys(schema = schema, tbl.name = tbl.name)
+  return(list(fk = fk, pk = pk))
+}
 
 #' This function generates an md5hash for database files or ESRI file
 #' geodatabase folders.
@@ -67,31 +176,31 @@ get.dest.tables <- function(schema){
 #' @return An md5hash of the file, or in the case of a folder, a hash of the
 #'   vector of hashes for each of the files in the folder, minus certain files
 #'   in the gdb folder which are mutable or transient.
-get.key <- function(src){
+get.key <- function(src) {
   allowed.exts <- c("mdb", "accdb", "gdb", "sqlite", "db", "gpkg")
   ext <- tools::file_ext(src)
   base <- basename(src)
   dir <- dirname(src)
-  if (stringr::str_to_lower(ext) == "gdb" & dir.exists(src)){
+  if (stringr::str_to_lower(ext) == "gdb" & dir.exists(src)) {
     exists <-  TRUE
     in.type <- "folder"
-  } else if (stringr::str_to_lower(ext) != "gdb" & file.exists(src)){
+  } else if (stringr::str_to_lower(ext) != "gdb" & file.exists(src)) {
     exists <-  TRUE
     in.type <- "file"
   } else {
     exists <- FALSE
   }
-  if(!exists){
+  if(!exists) {
     stop("Source path does not exist. Quitting...")
   }
-  if(!(ext %in% allowed.exts)){
+  if(!(ext %in% allowed.exts)) {
     stop(paste0("Source is not of type (", paste(allowed.exts, collapse = ", "),
                 "). Quitting..."))
   }
   cat("Calculating md5 hash...\n")
-  if (in.type == "file"){
+  if (in.type == "file") {
     key <- digest::digest(src, algo="md5", file=TRUE)
-  } else if (in.type == "folder"){
+  } else if (in.type == "folder") {
     files <- list.files(path = src, recursive = TRUE, all.files = TRUE,
                         full.names = FALSE) |>
       # removes anything which ends in .lock
@@ -130,55 +239,27 @@ get.key <- function(src){
 #' @return A tibble that gives each table in \code{schema} and a proper insert
 #'   order that will prevent improper foreign key violations.
 insert.order <- function(schema, level = 0, processed.tables = NULL,
-                         tables = NULL){
+                         tables = NULL) {
   # print(level)
-  if (is.null(tables)){
+  if (is.null(tables)) {
     tables <- get.dest.tables(schema)$table_name
   }
-
-  # sql courtesy of user martin
-  # https://stackoverflow.com/questions/1152260/postgres-sql-to-list-table-foreign-keys
-  find.parent.sql <- paste(
-    "SELECT att2.attname as \"child_column\", ",
-    "       cl.relname as \"parent_table\", ",
-    "       att.attname as \"parent_column\", ",
-    "       conname ",
-    "  FROM (",
-    "       SELECT unnest(con1.conkey) as \"parent\", ",
-    "              unnest(con1.confkey) as \"child\", ",
-    "              con1.confrelid, con1.conrelid, con1.conname ",
-    "         FROM pg_class cl ",
-    "         JOIN pg_namespace ns on cl.relnamespace = ns.oid ",
-    "         JOIN pg_constraint con1 on con1.conrelid = cl.oid ",
-    "        WHERE cl.relname = '{tbl}' ",
-    "          AND ns.nspname = '{schema}' ",
-    "          AND con1.contype = 'f' ",
-    "       ) con ",
-    "  JOIN pg_attribute att ON ",
-    "       att.attrelid = con.confrelid AND att.attnum = con.child ",
-    "  JOIN pg_class cl ON ",
-    "       cl.oid = con.confrelid ",
-    "  JOIN pg_attribute att2 ON ",
-    "       att2.attrelid = con.conrelid and att2.attnum = con.parent;",
-    sep = "\n")
-
 
   level.tables <- tibble::tibble(
     tblname = character(),
     level = integer())
-  if (is.null(processed.tables)){
+  if (is.null(processed.tables)) {
     processed.tables = level.tables
   }
 
-  for (tbl in tables){
-    sql  <- glue::glue(find.parent.sql)
-    parents <- DBI::dbGetQuery(con, sql)
+  for (tbl in tables) {
+    parents <- get.foreign.keys(schema = schema, tbl.name = tbl)
     parent.names <- unique(parents$parent_table)
     parents.processed <- intersect(unique(parent.names),
                                    unique(processed.tables$tblname))
     if (isTRUE(all.equal(sort(unique(parents.processed)),
-                         sort(unique(parent.names))))){
-      #if (length(parents.processed) == length(parent.names)){
+                         sort(unique(parent.names))))) {
+      #if (length(parents.processed) == length(parent.names)) {
       level.tables <- level.tables |>
         tibble::add_row(tblname = tbl, level = level)
     }
@@ -187,14 +268,13 @@ insert.order <- function(schema, level = 0, processed.tables = NULL,
   processed.tables <- processed.tables |> tibble::add_row(level.tables)
   remaining.tables <- setdiff(tables, level.tables$tblname)
   # print(level.tables)
-  if (nrow(level.tables) == 0){
+  if (nrow(level.tables) == 0) {
     return(processed.tables)
   } else {
     insert.order(schema, level = level + 1, processed.tables = processed.tables,
                  tables = remaining.tables)
   }
 }
-
 
 
 #' Gets column names from a Postgres schema/table.
@@ -205,7 +285,7 @@ insert.order <- function(schema, level = 0, processed.tables = NULL,
 #'
 #' @return A list of tibbles, one containing column information, and another
 #'   containing constraint information.
-get.dest.info <- function(schema, table){
+get.dest.info <- function(schema, table) {
   info.sql <- glue::glue(paste(
     "SELECT column_name, data_type, character_maximum_length ",
     "  FROM information_schema.columns ",
@@ -236,7 +316,7 @@ get.dest.info <- function(schema, table){
 #' @param tbl A tibble containing the source data.
 #'
 #' @return A tibble containing column information for \code{tbl}.
-get.src.info <- function(tbl){
+get.src.info <- function(tbl) {
   col.names <- tibble::as_tibble(list(column_name = colnames(tbl)))
   src.types <- tbl |>
     dplyr::summarise_all(class) |> dplyr::slice(1) |>
@@ -263,7 +343,7 @@ get.src.info <- function(tbl){
 #'
 #' @return A logical vector with TRUE indicating same column type and FALSE
 #'   indicating otherwise.
-compare.types <- function(src.cols, dest.cols){
+compare.types <- function(src.cols, dest.cols) {
   type.match <- tibble::tibble(ptype = character(), rtype = character()) |>
     tibble::add_row(ptype = "character varying", rtype = "character") |>
     tibble::add_row(ptype = "text", rtype = "character") |>
@@ -303,7 +383,7 @@ compare.types <- function(src.cols, dest.cols){
 #'   destination that are in the source, missing columns in the source that are
 #'   in the destination, columns which match in both source and destination,
 #'   and whether or not those columns need to be CAST during insert.
-get.info <- function(schema, tbl.name, src.data){
+get.info <- function(schema, tbl.name, src.data) {
   dest.info <- get.dest.info(schema, tbl.name)
   src.info <- get.src.info(src.data)
   cols.src <- src.info$column_name
@@ -321,6 +401,7 @@ get.info <- function(schema, tbl.name, src.data){
 #########################
 ## INSERTING functions ##
 #########################
+
 
 
 #' Will create an INSERT SQL statement for a Postgres table based on the
@@ -347,8 +428,8 @@ get.info <- function(schema, tbl.name, src.data){
 #'   to build it.
 create.insert <- function(schema, table.name, named = FALSE, update = FALSE,
                           ins.cols = NULL, update.cols = NULL, cast = NULL,
-                          srid = 4326){
-  if (is.null(cast)){
+                          srid = 4326) {
+  if (is.null(cast)) {
     cast <- rep(FALSE, times = length(ins.cols))
   }
   info <- get.dest.info(schema, table.name)
@@ -357,7 +438,7 @@ create.insert <- function(schema, table.name, named = FALSE, update = FALSE,
   constraint.name <- (info$constraints |>
                         dplyr::filter(contype %in% c("u", "p")) |>
                         dplyr::arrange(contype, conname))$conname[1]
-  if (is.null(ins.cols)){
+  if (is.null(ins.cols)) {
     cols <- info$col.info$column_name
     dtypes <- info$col.info$data_type
   } else {
@@ -367,7 +448,7 @@ create.insert <- function(schema, table.name, named = FALSE, update = FALSE,
     cols <- restricted$column_name
     dtypes <- restricted$data_type
   }
-  if (is.null(update.cols)){
+  if (is.null(update.cols)) {
     u.cols <- cols
   } else {
     u.cols <- intersect(cols, update.cols)
@@ -375,11 +456,11 @@ create.insert <- function(schema, table.name, named = FALSE, update = FALSE,
   # geometry
   geom.col <- cols == "geom"
 
-  if (update == FALSE | is.na(constraint.name)){
+  if (update == FALSE | is.na(constraint.name)) {
     update.sql <- "ON CONFLICT DO NOTHING"
   } else {
     l = character()
-    for (i in 1:length(u.cols)){
+    for (i in 1:length(u.cols)) {
       l[i] <- paste0('"', u.cols[i], '"', " = EXCLUDED.", '"', u.cols[i], '"')
     }
     update.sql <-  paste0(
@@ -388,7 +469,7 @@ create.insert <- function(schema, table.name, named = FALSE, update = FALSE,
       paste(l, collapse = ", "))
   }
   colstring <- paste(paste0('"', cols,'"'), collapse = ", ")
-  if (named == TRUE){
+  if (named == TRUE) {
     # we have to replace spaces in param names because glue::glue_data_sql()
     # can't handle them
     params <- paste0(ifelse(cast,"CAST({", "{"),
@@ -412,7 +493,6 @@ create.insert <- function(schema, table.name, named = FALSE, update = FALSE,
 }
 
 
-
 #' Used to insert individual rows via apply() family function or iterative loop
 #'
 #' @param row A named list or tibble containing the values to bind to the INSERT
@@ -423,7 +503,7 @@ create.insert <- function(schema, table.name, named = FALSE, update = FALSE,
 #'   results to.
 #'
 #' @return The number of rows affected by the insert.
-insert.row <- function(row, stmt, log = NULL){
+insert.row <- function(row, stmt, log = NULL) {
   # print(row)
   sql <- glue::glue_data_sql(.x = row, .con = con, stmt)
   # print(sql)
@@ -474,7 +554,7 @@ insert.row <- function(row, stmt, log = NULL){
 #'   results to.
 #'
 #' @return integer. Total number of rows affected by the insert.
-rowwise.insert <- function(update, schema, table, table.name, cols, cast, log){
+rowwise.insert <- function(update, schema, table, table.name, cols, cast, log) {
   insert <- create.insert(update = update, schema = schema,
                           table.name = table.name,
                           ins.cols = cols, cast = cast, named = TRUE)
@@ -502,9 +582,9 @@ rowwise.insert <- function(update, schema, table, table.name, cols, cast, log){
 #' @param insert A list constructed via \code{create.insert()}.
 #'
 #' @return The number of rows affected by the insert.
-dbbind.insert.rw <- function(table, insert){
+dbbind.insert.rw <- function(table, insert) {
   rowwise.affected = 0
-  for (i in rownames(table)){
+  for (i in rownames(table)) {
     row <- table[i,]
     send.data <- as.list(dplyr::select(row, insert$cols))
     names(send.data) <- NULL
@@ -557,7 +637,7 @@ dbbind.insert.rw <- function(table, insert){
 #'
 #' @return The number of rows affected by the insert.
 dbbind.insert <- function(update, schema, table, table.name, cols, cast, log,
-                          verbose = FALSE, chunk.size = 1000){
+                          verbose = FALSE, chunk.size = 1000) {
   insert <- create.insert(update = update, schema = schema,
                           table.name = table.name,
                           ins.cols = cols, cast = cast, named = FALSE)
@@ -568,12 +648,12 @@ dbbind.insert <- function(update, schema, table, table.name, cols, cast, log,
   total.affected <- 0
   affected <- NA
   tbl.nrow <- nrow(table)
-  if (verbose == TRUE){
+  if (verbose == TRUE) {
     msg <- paste0("Insert SQL: \n", insert$sql)
     msg.out(msg, log, prnt = FALSE)
   }
   while (processed < tbl.nrow) {
-    if (verbose == TRUE){
+    if (verbose == TRUE) {
       cat(paste0(processed,"/",tbl.nrow, "..."))
     } else {
       cat(paste0(as.integer(round(processed/tbl.nrow*100, 0)), "%..."))
@@ -616,6 +696,81 @@ dbbind.insert <- function(update, schema, table, table.name, cols, cast, log,
   return (total.affected)
 }
 
+#' This function removes records in the source tables which have and unmatched
+#' foreign key in the referenced parent table(s). It utilizes the foreign key
+#' definitions found in the postgres database passed with dbname and created
+#' via the create_db.R script.
+#'
+#' @param schema A string. The schema of the source table in the Postgres
+#'   database.
+#' @param tbl.name A string. The name of the source table in the Postgres 
+#'   database.
+#' @param tbl A tibble. The source data to be filtered with name 
+#'   \code{tbl.name}. May be different from the raw imported table in 
+#'   \code{tbl.set}.
+#' @param tbl.set A list of tables produced by \code{get.src.tables()}
+#' @return A list containing the number of orphaned records found as well as 
+#'   the filtered table with orphans removed.
+remove.orphans <- function(schema, tbl.name, tbl, tbl.set) {
+  filtered.table <- tbl
+  keys <- get.foreign.keys(schema = schema, tbl.name = tbl.name)
+  constraints <- unique(keys$conname)
+  for (constraint in constraints) {
+    fk.con <- keys |>
+      dplyr::filter(conname == constraint)
+    parent.name <- fk.con[[1, "parent_table"]]
+    parent.tbl <- tbl.set[[schema]][[parent.name]]
+    if(!is.null(parent.tbl)) {
+      child.col <- fk.con$child_column
+      parent.col <- fk.con$parent_column
+      names(parent.col) <- child.col
+      parent.tbl.keys <- parent.tbl |>
+        dplyr::select(tidyselect::all_of(parent.col))
+      filtered.table <- filtered.table |>
+        dplyr::inner_join(parent.tbl.keys, by = parent.col)
+    }
+  }
+  orphan.no <- nrow(tbl) - nrow(filtered.table)
+  return(list(orphan.no = orphan.no, filtered.table = filtered.table))
+}
+
+
+#' This function removes records in the source tables which have primary key
+#' violations within the postgres databse passed with dbname and created via the
+#' create_db.R script.
+#'
+#' @param schema A string. The schema of the source table in the Postgres
+#'   database.
+#' @param tbl.name A string. The name of the source table in the Postgres
+#'   database.
+#' @param tbl A tibble. The source data to be filtered with name
+#'   \code{tbl.name}.
+#' @return A list containing the number of duplicate records found as well as
+#'   the filtered table with duplicates removed.
+remove.duplicates <- function(schema, tbl.name, tbl) {
+  filtered.table <- tbl
+  keys <- get.primary.keys(schema = schema, tbl.name = tbl.name)
+  constraints <- unique(keys$constraint_name)
+  for (constraint in constraints) {
+    pk.con <- keys |>
+      dplyr::filter(constraint_name == constraint)
+    pk <- pk.con$column_name
+    names(pk) <- pk
+    key.string <- paste(paste0('"', pk, '"'), collapse = ", ")
+    sql <- glue::glue(paste(
+      'SELECT {key.string} FROM "{schema}"."{tbl.name}"',
+      " GROUP BY {key.string};",
+      "", sep = "\n"), .trim = FALSE)
+    existing.data <- tibble::as_tibble(DBI::dbGetQuery(con, sql)) |>
+      dplyr::mutate(del_me = 'x')
+    filtered.table <- filtered.table |>
+      dplyr::left_join(existing.data, by = pk)  |>
+      dplyr::filter(is.na(del_me)) |>
+      dplyr::select(-del_me)
+  }
+  dup.no <- nrow(tbl) - nrow(filtered.table)
+  return(list(dup.no = dup.no, filtered.table = filtered.table))
+}
 
 
 #' This is the top-level inserting function for all source data. It determines
@@ -643,16 +798,16 @@ dbbind.insert <- function(update, schema, table, table.name, cols, cast, log,
 #'   attempt to insert at once. Failure on a chunk will cause the function
 #'   to default to row-wise inserts for the entire chunk.
 to.db <- function(tbls, update, dbkey, desc, path, hash, verbose = FALSE,
-                  log = NULL, named = FALSE, chunk.size = 1000){
+                  log = NULL, named = FALSE, chunk.size = 1000) {
   # tic()
   special.tables = list(dima = list(
     tblSites = "db_site",
     tblPlots = "db_plot",
     tblLines = "db_line"))
   schemas <- names(tbls)
-  for (schema in schemas){
+  for (schema in schemas) {
     # creating record in table db before anything else
-    if (is.null(tbls[[schema]][["db"]])){
+    if (is.null(tbls[[schema]][["db"]])) {
       db.table <- tibble::as_tibble(
         list(dbkey = dbkey, md5hash = hash, dbpath = path, description = desc))
       tbls[[schema]][["db"]] <- db.table
@@ -668,51 +823,78 @@ to.db <- function(tbls, update, dbkey, desc, path, hash, verbose = FALSE,
 
 
     # loop through source tables and import
-    for (tbl in order.source$tblname){
+    for (tbl in order.source$tblname) {
       current.table <- tbls[[schema]][[tbl]]
       special.table <- special.tables[[schema]][[tbl]]
-      for (i.tbl in c(special.table, tbl)){
-        if (nrow(current.table) > 0){
+      iter.tables <- c(special.table, tbl)
+      for (i.tbl in iter.tables) {
+        if (nrow(current.table) > 0) {
           info <- get.info(schema = schema, tbl.name = i.tbl,
                            src.data = current.table)
-
-          if (verbose == TRUE){
+          if (verbose == TRUE && 
+              !(i.tbl %in% unlist(special.tables[[schema]]))
+            ) {
             msg <- paste0("\nFor table ", i.tbl, ":")
             msg.out(msg, log)
             msg <- paste0(length(info$import.cols),
                           " columns match in source and destination.")
             msg.out(msg, log)
-            if (length(info$missing.dest) > 0){
-              msg <- paste0("The following source columns have no match in the",
-                            " destination database: ", paste(info$missing.dest,
-                                                            collapse = ", "))
+            if (length(info$missing.dest) > 0) {
+              msg <- paste0("The following source columns have no match in ",
+                            "the destination database:\n\t",
+                            paste(info$missing.dest, collapse = ", "))
               msg.out(msg, log)
             }
-            if (length(info$missing.src) > 0){
-              msg <- paste0("The following destination columns have no match ",
-                            "in the source database: ", paste(info$missing.src,
-                                                           collapse = ", "))
+            if (length(info$missing.src) > 0) {
+              msg <- paste0("The following destination columns have no match",
+                            " in the source database:\n\t",
+                            paste(info$missing.src, collapse = ", "))
               msg.out(msg, log)
             }
           }
-          if ("dbkey" %in% info$missing.src){
+          if ("dbkey" %in% info$missing.src) {
             current.table <- current.table |> dplyr::mutate(dbkey = dbkey)
             info$import.cols <- c("dbkey", info$import.cols)
             info$cast <- c(FALSE, info$cast)
           }
+          msg <-  paste0("Filtering orphaned records from ", schema, ".", 
+                         i.tbl, "...")
+          msg.out(msg, log)
+          fk.filtered <- remove.orphans(schema = schema, tbl.name = i.tbl,
+                                        tbl = current.table, tbl.set = tbls)
+          filtered.table <- fk.filtered$filtered.table
+          if (fk.filtered$orphan.no > 0) {
+            msg <-  paste0(fk.filtered$orphan.no, " orphans found in ", 
+                           schema, ".", i.tbl, "...")
+            msg.out(msg, log)
+          }
+          if (update == FALSE) {
+            msg <-  paste0("Filtering duplicate records from ", schema, ".",
+                           i.tbl, "...")
+            msg.out(msg, log)
+            pk.filtered <- remove.duplicates(schema = schema, tbl.name = i.tbl,
+                                             tbl = current.table)
+
+            filtered.table <- pk.filtered$filtered.table
+            if (pk.filtered$dup.no > 0) {
+              msg <-  paste0(pk.filtered$dup.no, " duplicates found in ",
+                             schema, ".", i.tbl, "...")
+              msg.out(msg, log)
+            }
+          }
           msg <-  paste0("Inserting data into ", schema, ".", i.tbl,
                          "... ")
           msg.out(msg, log, sep = " ")
-          if (named == TRUE){
+          if (named == TRUE) {
             affected <- rowwise.insert(update = update, schema = schema,
-                                       table = current.table,
+                                       table = filtered.table,
                                        table.name = i.tbl,
                                        cols = info$import.cols, log = log,
                                        cast = info$cast)
           }
           else {
             affected <- dbbind.insert(update = update, schema = schema,
-                                      table = current.table,
+                                      table = filtered.table,
                                       table.name = i.tbl,
                                       cols = info$import.cols, log = log,
                                       verbose = verbose, cast = info$cast,
@@ -722,7 +904,7 @@ to.db <- function(tbls, update, dbkey, desc, path, hash, verbose = FALSE,
           # print(affected)
           msg <- paste0(sum(affected), "/", nrow(current.table),
                         " rows affected.\n")
-          if (i.tbl %in% c("tblSpecies", "tblSpeciesGeneric", "tblEcolSites")){
+          if (i.tbl %in% c("tblSpecies", "tblSpeciesGeneric", "tblEcolSites")) {
             msg <- paste0(msg, "Rows with values divergent from base table ",
                           "inserted into ", i.tbl, "_delta.\n")
           }
@@ -745,13 +927,13 @@ to.db <- function(tbls, update, dbkey, desc, path, hash, verbose = FALSE,
 #'   keep track of which views have already been refreshed.
 #' @param level An integer. An internal parameter which the function uses to
 #'   keep track of how many times it has been called.
-refresh.views <- function(done = character(0), level = 0){
+refresh.views <- function(done = character(0), level = 0) {
   # cat(paste0("level = ", level, "\n"))
   views <- (DBI::dbGetQuery(
     con, "SELECT relname FROM pg_class WHERE relkind = 'm';"))$relname
   undone.views <- views[!(views %in% done)]
   # cat(paste0("undone views: ", paste(undone.views, collapse = ", "), "\n"))
-  if (length(undone.views != 0)){
+  if (length(undone.views != 0)) {
     depend.sql <- "
     SELECT dependent_ns.nspname as dependent_schema,
            dependent_view.relname as dependent_view,
@@ -776,9 +958,9 @@ refresh.views <- function(done = character(0), level = 0){
      ORDER BY 1,2;
     "
     completed <-  done
-    for (view in undone.views){
+    for (view in undone.views) {
       depends <- (DBI::dbGetQuery(con, glue::glue(depend.sql)))$source_table
-      if (all(depends %in% completed)){
+      if (all(depends %in% completed)) {
         sql = paste0("REFRESH MATERIALIZED VIEW public.", view, ";")
         cat(paste0("Refreshing materialized view: public.", view, "...\n"))
         DBI::dbExecute(con, sql)
@@ -810,10 +992,10 @@ refresh.views <- function(done = character(0), level = 0){
 #'
 #' @return A list consisting of the constructed SELECT statement and the fields
 #'   used to construct it.
-create.sqlite.select <- function(sqlite.con, table, spatial){
+create.sqlite.select <- function(sqlite.con, table, spatial) {
   info <- DBI::dbGetQuery(sqlite.con, paste0("PRAGMA table_info(", table, ");"))
   cols <-  info$name
-  if (spatial == TRUE){
+  if (spatial == TRUE) {
     cols.new <- cols |> stringr::str_replace("^geom$", "st_astext(geom) geom")
   } else {
     cols.new = cols[cols != "geom"]
@@ -845,7 +1027,7 @@ create.sqlite.select <- function(sqlite.con, table, spatial){
 #'
 #' @return A list of schema names, and within each a list of tibbles containing
 #'   source data.
-get.src.tables <- function(path, md5hash, key, desc = NULL){
+get.src.tables <- function(path, md5hash, key, desc = NULL) {
   terradat = FALSE
   dima.tbls.sql <- paste0("SELECT table_name FROM information_schema.tables ",
                           "WHERE table_schema='dima' AND table_name NOT LIKE ",
@@ -858,14 +1040,14 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
                          "WHERE table_schema='eco';")
   eco.table.names <- (DBI::dbGetQuery(con, eco.tbls.sql))$table_name
   compat <- check.compatible(path)
-  if (compat$compatible == FALSE){
-    cat("Data source not not readable.\n")
+  if (compat$compatible == FALSE) {
+    cat("Data source not readable.\n")
     cat(error.msg)
     cat("\n")
     quit()
   }
   if (compat$con.type == "access") {
-    if (compat$con.sub == "odbc"){
+    if (compat$con.sub == "odbc") {
       access.head <- "Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ="
       access.constring <- paste0(access.head, path)
       access.con <- odbc::dbConnect(odbc::odbc(),
@@ -873,24 +1055,27 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
                                     encoding = "latin1")
 
       avail.tables <- odbc::dbListTables(access.con)
-    } else if (compat$con.sub == "mdbtools"){
+    } else if (compat$con.sub == "mdbtools") {
       cmd.str <- 'mdb-tables -1 "{path}"'
       cmd <- glue::glue(cmd.str)
-      avail.tables <- system(cmd, intern = TRUE)
+      avail.tables <- system2(command = "mdb-tables",
+                              args = c("-1", shQuote(path)), stdout = TRUE)
+      memory.con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+ 
     } else {
       stop(paste0("Error: Return of check.compatible() should have been either",
                   " 'odbc' or 'mdbtools'."))
     }
   } else if (compat$con.type == "gdb") {
     avail.tables <- rgdal::ogrListLayers(dsn = path)
-    if ("terradat" %in% stringr::str_to_lower(avail.tables)){
+    if ("terradat" %in% stringr::str_to_lower(avail.tables)) {
       terradat = TRUE
     }
-  } else if (compat$con.type == "sqlite"){
+  } else if (compat$con.type == "sqlite") {
     sqlite.con <- DBI::dbConnect(RSQLite::SQLite(), path)
     avail.tables <- DBI::dbListTables(sqlite.con)
     DBI::dbExecute(sqlite.con, "PRAGMA foreign_keys = on;")
-    if (compat$con.sub == "spatialite"){
+    if (compat$con.sub == "spatialite") {
       DBI::dbExecute(sqlite.con, "SELECT load_extension('mod_spatialite');")
     }
   }
@@ -901,35 +1086,49 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
   # list append in R is as inefficient as R itself is ugly,
   # but like many other ugly things, we'll do them anyway
   tables = list()
-  for (schema in c("dima", "lmf", "eco")){
+  for (schema in c("dima", "lmf", "eco")) {
     cat(paste0("\nimporting ", schema, " tables...\n\n"))
-    for (t in get(paste0(schema, ".tables.get"))){
+    for (t in get(paste0(schema, ".tables.get"))) {
       cat(paste0("importing ", t, "...\n"))
-      if (compat$con.type == "access"){
-        if(compat$con.sub == "odbc"){
+      if (compat$con.type == "access") {
+        if(compat$con.sub == "odbc") {
           tbl <- tibble::as_tibble(dplyr::tbl(access.con, t))
-        } else if (compat$con.sub == "mdbtools"){
-          cmd.str <- paste0('mdb-json -D "%Y-%m-%d" -T "%Y-%m-%d %H:%M:%S"',
-                            ' "{path}" "{t}"')
-          cmd <- glue::glue(cmd.str)
-          rows <- system(cmd, intern = TRUE)
-          tbl <- foreach::foreach(row=iterators::iter(rows),
-                                  .combine = dplyr::bind_rows) %do% {
-            tibble::as_tibble_row(rjson::fromJSON(json_str = row))
+        } else if (compat$con.sub == "mdbtools") {
+          ddl <- paste(system2(command = "mdb-schema", 
+                               args = c(shQuote(path), "-T", shQuote(t), 
+                                        "sqlite"), stdout = TRUE),
+                       collapse = "\n")
+
+          result <- DBI::dbExecute(memory.con, ddl)
+          insert <- paste(system2(command = "mdb-export",
+                                  args = c("-D", shQuote("%Y-%m-%d"), "-T",
+                                           shQuote("%Y-%m-%d %H:%M:%S"), "-I",
+                                           "sqlite", "-q", shQuote("'"),
+                                           shQuote(path), shQuote(t)),
+                                  stdout = TRUE),
+                          collapse = "\n")
+          insert.stmts <- statement.split(insert)
+          no.rows <- 0
+          for (stmt in insert.stmts) {
+            if (stringr::str_trim(stmt) != "") {
+              cnt <- DBI::dbExecute(memory.con, stmt)
+              no.rows <- no.rows + cnt
+            }
           }
+          tbl <- tibble::as_tibble(dplyr::tbl(memory.con, t))
         } else {
           stop(paste0("Error: Return of check.compatible() should have been ",
                       "either 'odbc' or 'mdbtools'."))
         }
-      } else if (compat$con.type == "gdb"){
+      } else if (compat$con.type == "gdb") {
         tbl <- tibble::as_tibble(
           suppressWarnings(rgdal::readOGR(dsn = path, layer = t,
                                   dropNULLGeometries = FALSE,
                                   stringsAsFactors = FALSE,
                                   verbose = FALSE, encoding = "UTF-8",
                                   use_iconv = TRUE)))
-      } else if (compat$con.type == "sqlite"){
-        if (compat$con.sub == "spatialite"){
+      } else if (compat$con.type == "sqlite") {
+        if (compat$con.sub == "spatialite") {
           spatial = TRUE
         } else {
           spatial = FALSE
@@ -940,10 +1139,11 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
         tbl <- DBI::dbFetch(result)
         DBI::dbClearResult(result)
       }
-      if (!is.null(tbl)){
-        tbl.processed <- tbl |> dplyr::rename_at(dplyr::vars(tidyselect::matches("dbkey")),
-                                                 stringr::str_to_lower)
-        if ("dbkey" %in% colnames(tbl.processed)){
+      if (!is.null(tbl)) {
+        tbl.processed <- tbl |> 
+          dplyr::rename_at(dplyr::vars(tidyselect::matches("dbkey")),
+                           stringr::str_to_lower)
+        if ("dbkey" %in% colnames(tbl.processed)) {
           tbl.processed <- tbl.processed |>
             dplyr::mutate(dbkey = ifelse(is.na(dbkey), key, dbkey))
         }
@@ -951,28 +1151,27 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
       }
     }
   }
-  if (compat$con.type == "access" & compat$con.sub == "odbc"){
+  if (compat$con.type == "access" & compat$con.sub == "odbc") {
     DBI::dbDisconnect(access.con)
-  } else if (compat$con.type == "sqlite"){
+  } else if (compat$con.type == "access" & compat$con.sub == "mdbtools") {
+    DBI::dbDisconnect(memory.con)
+  } else if (compat$con.type == "sqlite") {
     DBI::dbDisconnect(sqlite.con)
   }
 
   # dealing with data with existing dbkeys in their plot-level table
   schemas <- names(tables)
-  for (schema in schemas){
+  for (schema in schemas) {
     plot <-  tables[[schema]][c("tblPlots", "POINT", "point")]
     # checks to makes there is at list 1 plot table
-    if(!all(is.na(names(plot)))){
+    if(!all(is.na(names(plot)))) {
       plot <- plot[lengths(plot) != 0][[1]]
-      if ("dbkey" %in% stringr::str_to_lower(colnames(plot))){
+      if ("dbkey" %in% stringr::str_to_lower(colnames(plot))) {
         db.sep <-  plot |> dplyr::select(tidyselect::matches("dbkey")) |>
           dplyr::rename_all(stringr::str_to_lower) |> dplyr::group_by(dbkey) |>
           dplyr::summarize(.groups = "drop") |> dplyr::filter(!is.na(dbkey)) |>
-          dplyr::mutate(dbpath = path, md5hash = md5hash, description = desc) 
-        db.comb <- tibble::as_tibble(
-          list(dbkey = key, dbpath = path, md5hash = md5hash, description = desc))
-        tables[[schema]][["db"]] <- dplyr::bind_rows(db.sep, db.comb)
-
+          dplyr::mutate(dbpath = path, md5hash = md5hash, description = desc)
+        tables[[schema]][["db"]] <- db
       }
     }
   }
@@ -998,15 +1197,15 @@ get.src.tables <- function(path, md5hash, key, desc = NULL){
 #'   DIMA schema, as well as other data such as database keys found in TerrAdat,
 #'   and other values (source path, md5hash, key, description and table name
 #'   list)
-process.terradat <-  function(imported){
+process.terradat <-  function(imported) {
   tbls <- imported$tables
   cat(paste0("Converting TerrADat data to fit within DIMA schema...\n"))
   key.fields = c("SiteKey", "PlotKey", "LineKey", "RecKey", "SoilKey",
                  "CommentID")
   process.schemas <- c("dima")
-  for (schema in process.schemas){
+  for (schema in process.schemas) {
     tbl.names <- names(tbls[[schema]])
-    for (name in tbl.names){
+    for (name in tbl.names) {
       cat(paste0("Post-processing ", schema, ".", name))
       dest.info <- get.dest.info(schema = schema, table = name)
       char.fields <- dest.info$col.info |>
@@ -1023,10 +1222,10 @@ process.terradat <-  function(imported){
                         TRUE ~ .)))
       # process fields which have text entries too long (truncate)
       cat("\n\t... Trimming fields:")
-      for (i in rownames(char.fields)){
+      for (i in rownames(char.fields)) {
         colname <-  char.fields[i, "column_name"]
         maxlen <-  char.fields[i, "character_maximum_length"]
-        if (colname %in% src.col.names & !(colname %in% key.fields)){
+        if (colname %in% src.col.names & !(colname %in% key.fields)) {
           cat(paste0("\n\t\t... ", colname, " @ ", maxlen))
           tbl[[colname]] <-
             stringr::str_sub(tbl[[colname]], 1, maxlen)
@@ -1037,7 +1236,7 @@ process.terradat <-  function(imported){
 
       # terradat data in tblSpecRichDetail has been split out and needs to be
       # recombined
-      if (name == "tblSpecRichDetail"){
+      if (name == "tblSpecRichDetail") {
         cat("Flattening tblSpecRichDetail...\n")
         tbl <- tbls[[schema]][[name]] |>
           dplyr::arrange(dbkey, RecKey, subPlotID, SpeciesList) |>
@@ -1047,13 +1246,16 @@ process.terradat <-  function(imported){
                     .groups = "drop")
         tbls[[schema]][[name]] <- tbl
       }
-      if (name == "tblPlots"){
+      if (name == "tblPlots") {
+        cat(paste0("Replacing missing SiteKeys in tblPlots with 'Unknown'.\n"))
+        tbl <- tbls[[schema]][["tblPlots"]] |>
+          dplyr::mutate(SiteKey = ifelse(is.na(SiteKey), "Unknown", SiteKey))
         cat(paste0("Replacing missing SiteKeys in tblPlots with 'Unknown'.\n"))
         tbl <- tbls[[schema]][["tblPlots"]] |>
           dplyr::mutate(SiteKey = ifelse(is.na(SiteKey), "Unknown", SiteKey))
         tbls[[schema]][["tblPlots"]] <- tbl
       }
-      if (name == "tblPlotNotes"){
+      if (name == "tblPlotNotes") {
         cat(paste0("Populating missing CommentIDs in tblPlotNotes.\n"))
         tbl <- tbls[[schema]][["tblPlotNotes"]] |>
           dplyr::mutate(CommentID =
@@ -1065,7 +1267,7 @@ process.terradat <-  function(imported){
           dplyr::rename(Note = Notes)
         tbls[[schema]][["tblPlotNotes"]] <- tbl
       }
-      if (name == "tblSites"){
+      if (name == "tblSites") {
         cat(paste0("Populating missing sites in tblSites with values",
                    " from tblPlots...\n"))
         sitekeys <- tbls[[schema]][["tblPlots"]] |>
@@ -1084,7 +1286,7 @@ process.terradat <-  function(imported){
         tbl <- dplyr::bind_rows(tbls[[schema]][["tblSites"]], sitekeys)
         tbls[[schema]][["tblSites"]] <- tbl
       }
-      if (name == "tblGapDetail"){
+      if (name == "tblGapDetail") {
         cat(paste0("Populating missing SeqNos in tblGapDetail.\n"))
         tbl <- tbls[[schema]][["tblGapDetail"]] |>
           dplyr::group_by(RecKey, RecType) |>
@@ -1111,11 +1313,11 @@ process.terradat <-  function(imported){
 #'
 #' @return A list with compatibility characteristics.
 #' @export
-check.compatible <- function(path){
+check.compatible <- function(path) {
   ret <- list(compatible = FALSE, con.type = NA, con.sub = NA, error.msg = NA,
               warn.msg = NA)
   if (stringr::str_to_lower(tools::file_ext(path)) %in% c("mdb", "accdb")) {
-    if (!file.exists(path)){
+    if (!file.exists(path)) {
       ret$error.msg <- "File does not exist."
       return(ret)
     }
@@ -1148,33 +1350,33 @@ check.compatible <- function(path){
         }
       )
     }
-    if (inherits(connect, "DBIConnection")){
+    if (inherits(connect, "DBIConnection")) {
       odbc::dbDisconnect(connect)
     }
     # try mdbtools
-    if (try.mdbtools == TRUE){
+    if (try.mdbtools == TRUE) {
       try <- suppressWarnings(
         system("mdb-json --version > /dev/null 2>&1")
         )
-      if (try == 0){
+      if (try == 0) {
         mdbtools <- TRUE
         }
     }
-    if (!("error" %in% class(connect))){
-      if (!("error" %in% class(tables))){
+    if (!("error" %in% class(connect))) {
+      if (!("error" %in% class(tables))) {
         ret$compatible <- TRUE
         ret$con.sub <- "odbc"
-      } else if (mdbtools == TRUE){
+      } else if (mdbtools == TRUE) {
         ret$compatible <- TRUE
         ret$con.sub <- "mdbtools"
       }
-    } else if (mdbtools == TRUE){
+    } else if (mdbtools == TRUE) {
       ret$compatible <- TRUE
       ret$con.sub <- "mdbtools"
     }
   } else if (stringr::str_to_lower(
     tools::file_ext(stringr::str_remove(path, "[/\\\\]+$"))) == "gdb") {
-    if (!dir.exists(path)){
+    if (!dir.exists(path)) {
       ret$error.msg <- "Directory does not exist."
       return(ret)
     }
@@ -1188,13 +1390,13 @@ check.compatible <- function(path){
         return(cond)
       }
     )
-    if (!("error" %in% class(tables))){
+    if (!("error" %in% class(tables))) {
       ret$compatible <- TRUE
       ret$con.sub <- "gdal"
     }
   } else if (stringr::str_to_lower(
-    tools::file_ext(path)) %in% c("db", "sqlite", "gpkg")){
-    if (!file.exists(path)){
+    tools::file_ext(path)) %in% c("db", "sqlite", "gpkg")) {
+    if (!file.exists(path)) {
       ret$error.msg <- "Path does not exist."
       return(ret)
     }
@@ -1211,7 +1413,7 @@ check.compatible <- function(path){
         return(cond)
       }
     )
-    if (inherits(connect, "DBIConnection")){
+    if (inherits(connect, "DBIConnection")) {
       tables <- tryCatch(
         {
           DBI::dbListTables(connect)
@@ -1222,40 +1424,40 @@ check.compatible <- function(path){
           return(cond)
         }
       )
-      if (!("error" %in% class(tables))){
+      if (!("error" %in% class(tables))) {
         no_tables <- length(tables)
       }
     }
-    if (try.spatial == TRUE){
+    if (try.spatial == TRUE) {
       spatial <- tryCatch(
         expr = {
           DBI::dbExecute(connect,
                          "SELECT load_extension('mod_spatialite');")
           TRUE
         },
-        error = function(cond){
+        error = function(cond) {
           ret$error.msg <<- cond
           return(cond)
         },
-        warning = function(cond){
+        warning = function(cond) {
           ret$warn.msg <<- cond
           return(NULL)
         }
       )
-      if (spatial == TRUE){
+      if (spatial == TRUE) {
         ret$con.sub <- "spatialite"
       } else {
         ret$con.sub <- "sqlite"
       }
     }
-    if (inherits(connect, "DBIConnection")){
+    if (inherits(connect, "DBIConnection")) {
       odbc::dbDisconnect(connect)
     }
-    if(!inherits(connect, "DBIConnection")){
+    if(!inherits(connect, "DBIConnection")) {
       ret$compatible <- FALSE
-    } else if ("error" %in% class(tables)){
+    } else if ("error" %in% class(tables)) {
       ret$compatible <- FALSE
-    } else if (no_tables == 0){
+    } else if (no_tables == 0) {
       ret$compatible <- FALSE
       ret$error.msg <- "Database is empty."
     } else {
@@ -1273,9 +1475,6 @@ check.compatible <- function(path){
 #' PostGIS database
 #'
 #' @param dbname A string. The database name to connect to in the postgres
-#'   instance.
-#' @param user A string. The database user used to connect to the database.
-#' @param password A string. The password used to connect to the database.
 #' @param src.path A string file path pointing to the source database or saved
 #'   RDS file. File name extensions must be one of (.mdb, .accdb, .sqlite, .db,
 #'   .rds) and folder paths must have the extension of (.gdb).
@@ -1311,33 +1510,33 @@ import.to.post <-  function(
     dbname, user, password = getPass::getPass(), src.path, key, desc,
     host = "localhost", port = 5432, update = FALSE, log = FALSE,
     save.raw = NULL, save.processed = NULL, verbose = FALSE,
-    chunk.size = 1000, skip.refresh = FALSE){
+    chunk.size = 1000, skip.refresh = FALSE) {
   compat <- check.compatible(path = src.path)
   con <<- DBI::dbConnect(RPostgres::Postgres(), dbname = dbname,
                   host = host, port = port,
                   user = user, password = password)
   res <- DBI::dbExecute(con, "SET client_min_messages TO WARNING;")
-  if (log == TRUE){
+  if (log == TRUE) {
     log.name <-  paste0("./import_",
                       strftime(Sys.time(), format="%Y%m%d%H%M%S"), ".log")
   } else{
     log.name <-  NULL
   }
   # in case the tables have already been saved in RDS format
-  if (stringr::str_to_lower(tools::file_ext(src.path)) == "rds"){
+  if (stringr::str_to_lower(tools::file_ext(src.path)) == "rds") {
     imported <- readRDS(src.path)
     key <- imported$key
     hash <- imported$md5hash
   # in case a fresh import is needed
   } else {
-    if (is.null(key)){
+    if (is.null(key)) {
       key <- stringr::str_sub(digest::digest(src.path, algo = "md5"),
                               start = -6)
     }
     hash <- get.key(src.path)
     imported <- get.src.tables(path = src.path, md5hash = hash, key = key,
                                desc = desc)
-    if (!is.null(save.raw)){
+    if (!is.null(save.raw)) {
       cat(paste0("Saving raw tables as ", save.raw),
           "\n")
       saveRDS(imported, save.raw)
@@ -1345,11 +1544,10 @@ import.to.post <-  function(
   }
   # process the data if it is in terradat format so we can place it into
   # the dima schema.
-  if (imported$terradat == TRUE & imported$processed == FALSE){
+  if (imported$terradat == TRUE && imported$processed == FALSE) {
       processed <- process.terradat(imported = imported)
-      if (!is.null(save.processed)){
-        cat(paste0("Saving processed tables as ", save.processed),
-            "\n")
+      if (!is.null(save.processed)) {
+        cat(paste0("Saving processed tables as ", save.processed), "\n")
         saveRDS(processed, save.processed)
       }
     } else {
@@ -1359,7 +1557,7 @@ import.to.post <-  function(
         desc = desc, path = src.path, hash = hash, log = log.name,
         verbose = verbose, named = FALSE,
         chunk.size = chunk.size)
-  if (skip.refresh == FALSE){
+  if (skip.refresh == FALSE) {
     refresh.views()
   }
   DBI::dbDisconnect(con)
@@ -1369,7 +1567,7 @@ import.to.post <-  function(
 
 # run only if called from a script.
 if (sys.nframe() == 0) {
-  option_list <-  list (
+  option_list <-  list(
     optparse::make_option(opt_str = c("-p", "--port"), default = 5432,
                           type = "integer",
                 help = paste0("The Postgres connection port ",
@@ -1442,7 +1640,7 @@ if (sys.nframe() == 0) {
 
   args = commandArgs(trailingOnly = TRUE)
   opt = optparse::parse_args(opt_parser, positional_arguments = 3, args = args)
-  if (is.null(opt$options$password)){
+  if (is.null(opt$options$password)) {
     opt$options$password = getPass::getPass()
   }
   import.to.post(
