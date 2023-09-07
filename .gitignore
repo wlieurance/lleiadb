@@ -129,7 +129,11 @@ dmypy.json
 .RData
 .Rhistory
 priming.R
+.Rproj.user
 
 # vim
 tags
-.Rproj.user
+
+# project specific
+local_utils/
+
