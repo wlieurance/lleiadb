@@ -1,0 +1,80 @@
+- name: tree
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first == "Tree"
+    )
+- name: shrub
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first %in% c("Shrub", "Subshrub")
+    )
+- name: graminoid
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first == "Graminoid"
+    )
+- name: forb
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first %in% c("Forb/herb", "Vine")
+    )
+- name: perennial_graminoid
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first == "Graminoid" & 
+    duration_first == "Perennial"
+    )
+- name: perennial_forb
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first %in% c("Forb/herb", "Vine") &
+    duration_first == "Perennial"
+    )
+- name: introduced_annual_gram
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    grepl("L48(I)", native_status, fixed = TRUE) & 
+    growth_habit_first == "Graminoid" & 
+    duration_first == "Annual"
+    )
+- name: introduced_annual_forb
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    grepl("L48(I)", native_status, fixed = TRUE) & 
+    growth_habit_first == "Forb/herb" & 
+    duration_first %in% c("Annual", "Biennial")
+    )
+- name: total_litter
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    stringr::str_to_lower(hit) %in% c("l", "hl", "wl", "nl", "vl", "d", "el", 
+      "al", "om")
+    )
+- name: bare_soil
+  filter.tbl: wide
+  filter.exp: dplyr::filter(hits, 
+    hit1_t == "None" & 
+    stringr::str_to_lower(hit9_s) %in% c("s", "cy")
+    ) |> 
+    dplyr::filter_at(dplyr::vars(tidyselect::starts_with("hit") & 
+    tidyselect::ends_with("_l")), dplyr::all_vars((is.na(.)))
+    )
+- name: total_rock
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    stringr::str_to_lower(hit) %in% c("rf", "gr", "r", "cb", "br", "st", "by")
+    )
+- name: biological_crust
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    stringr::str_to_lower(hit) %in% c("cy", "m", "lc")
+    )
+- name: total
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    !(stringr::str_to_lower(hit) %in% c("s", "hl", "l", "rf", "gr", "wl", "r", 
+      "m", "lc", "el", "cb", "d", "br", "st", "cy", "om", "by", "nl", "vl", 
+      "w", "al", "wa", "ds")) & 
+    hit != "None"
+    )
+

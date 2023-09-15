@@ -1,0 +1,126 @@
+- name: tree
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first == "Tree"
+    )
+- name: shrub
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first %in% c("Shrub", "Subshrub")
+    )
+- name: shrub_sagebrush
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    stringr::str_to_lower(genus) == "artemisia" & 
+    !(stringr::str_to_lower(species) %in% c("frigida", "ludoviciana")) & 
+    stringr::str_to_lower(growth_habit_first) %in% c("tree", "shrub", 
+    "subshrub")
+    )
+- name: shrub_not_sagebrush
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    stringr::str_to_lower(genus) != "artemisia" & 
+    stringr::str_to_lower(growth_habit_first) %in% c("Shrub", "Subshrub")
+    )
+- name: perennial_graminoid
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first == "Graminoid" & 
+    duration_first== "Perennial"
+    )
+- name: perennial_forb
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first %in% c("Forb/herb", "Vine") &
+    duration_first == "Perennial"
+    )
+- name: annual_graminoid
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first == "Graminoid" & 
+    duration_first == "Annual"
+    )
+- name: annual_forb
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    growth_habit_first %in% c("Forb/herb", "Vine") &
+    duration_first %in% c("Annual", "Biennial")
+    )
+- name: grass_shallow
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    hit %in% c("AGGI2", "ARPUF", "ARPUP5", "BOCU", "BOER4", "BOGR2", "BRIN2", 
+    "BRMA4", "CACA4", "CAPU", "DAPU7", "DAUN", "DECE", "DEEL", "DISP", "ELEL5", 
+    "ELELE", "ELLA3", "ELLAL", "ELMU3", "ELRE4", "ELTR7", "ELTRT", "FEIDI2", 
+    "FERU2", "HECO26", "HOJU", "KOMA", "MEBU", "MURI", "PHAR3", "PHPR3", 
+    "PLJA", "PLRI3", "POBU", "POCO", "POCU3", "POFE", "POFEL", "POPR", 
+    "POPRP2", "POSE", "SPCR")
+    )
+- name: grass_deep
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    hit %in% c("ACHY", "ACLE9", "ACNE9", "ACNED", "ACNEN2","ACOC3", "ACSP12", 
+    "ACTH7", "ACWE3", "AGCR", "AGDE2", "ELGL", "ELWA2", "FEID", "LECI4", 
+    "LETR5", "NAPU4", "NAVI4", "PASM", "PSJU3", "PSSP6", "PSSPI", "PSSPS", 
+    "SCAR7", "SPAI", "THIN6", "THPO7")
+    )
+- name: shrub_sprout
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    grepl("Artemisia cana", scientific_name, fixed = TRUE) | 
+    grepl("Chrysothamnus viscidiflorus", scientific_name, fixed = TRUE) |
+    grepl("Ericameria nauseosa", scientific_name, fixed = TRUE) | 
+    hit %in% c("AMAL2", "AMUT", "ATFA", "BAAM4", "BAPR5", "CEVE", "EPNE", 
+    "EPVI", "ERPA30", "GRSP", "HYSA", "KRER", "KRGR", "PRAN2", "PRFA", "PRVI", 
+    "PUGL2", "QUGA", "QUTU2", "ROWO", "SAME", "SAEX", "SAVE4", "SHAR", "SYAL", 
+    "SYLO", "TECA2", "TEGL", "TESP2", "THMO", "YUBA", "YUBR", "YUSC2")
+    )
+- name: total_litter
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    stringr::str_to_lower(hit) %in% c("l", "hl", "wl", "nl", "vl", "d", "el", 
+    "al", "om")
+    )
+- name: bare_litter
+  filter.tbl: wide
+  filter.exp: dplyr::union(
+    dplyr::filter(hits, hit1_t != "None" & dead1_t == 1), 
+    dplyr::filter_at(hits, 
+      dplyr::vars(c(tidyselect::ends_with("_l"), tidyselect::ends_with("_s"))), 
+      dplyr::any_vars((stringr::str_to_lower(.) %in% c("l", "hl", "wl", "nl", 
+        "vl", "lc", "d", "el", "al", "om")))) |> 
+    dplyr::filter(hit1_t == "None")
+    )
+- name: bare_soil
+  filter.tbl: wide
+  filter.exp: dplyr::filter(hits, 
+    hit1_t == "None" & 
+    stringr::str_to_lower(hit9_s) %in% c("s", "cy")
+    ) |> 
+    dplyr::filter_at(dplyr::vars(tidyselect::starts_with("hit") & 
+    tidyselect::ends_with("_l")), dplyr::all_vars((is.na(.)))
+    )
+- name: bare_ground
+  filter.tbl: wide
+  filter.exp: dplyr::filter(hits, 
+    hit1_t == "None" & 
+    stringr::str_to_lower(hit9_s) %in% c("s", "rf", "gr", "r", "cb", "br", 
+      "st", "by", "cy")
+    ) |> 
+    dplyr::filter_at(dplyr::vars(tidyselect::starts_with("hit") & 
+    tidyselect::ends_with("_l")), dplyr::all_vars((is.na(.)))
+    )
+- name: total_rock
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    stringr::str_to_lower(hit) %in% c("rf", "gr", "r", "cb", "br", "st", "by")
+    )
+- name: total_cover
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    !(stringr::str_to_lower(hit) %in% c("s", "hl", "l", "rf", "gr", "wl", "r", 
+      "m", "lc", "el", "cb", "d", "br", "st", "cy", "om", "by", "nl", "vl", 
+      "w","al","wa","ds")) & 
+    hit != "None"
+    )
+

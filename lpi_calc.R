@@ -3,7 +3,7 @@
 # libraries = c("dbplyr", "doParallel", "dplyr", "getPass", "glue",
 #               "lubridate", "optparse", "parallel", "readr",
 #               "RPostgres", "stringi", "stringr", "tictoc", "tidyr",
-#               "tools")
+#               "tools", "yaml")
 #
 # for (lib in libraries){
 #   suppressMessages(library(lib, character.only = TRUE))
@@ -120,18 +120,8 @@ import.data <- function(dbname, host, port, user, password){
       duration_alt = dplyr::case_when(
         growth_habit_alt %in% c("AF", "AG", "2FA", "2GA") |
           hit %in% c("AAFF", "AAGG", "AASU")  ~ "Annual",
-        growth_habit_alt %in% c(
-          "PF",
-          "PG",
-          "2FP",
-          "2GP",
-          "SH",
-          "TR",
-          "2SHRUB",
-          "2SUBS",
-          "2TREE",
-          "2VW"
-        ) |
+        growth_habit_alt %in% c("PF", "PG", "2FP", "2GP", "SH", "TR", "2SHRUB",
+                                "2SUBS", "2TREE", "2VW") |
           hit %in% c("PPFF", "PPGG", "PPSH", "PPTR",
                      "PPSU")  ~ "Perennial",
         growth_habit_alt %in% c("2BRY", "2MOSS") ~
@@ -243,16 +233,20 @@ import.data <- function(dbname, host, port, user, password){
 #' @return A tibble containing the filter statements from \code{indicators}.
 load.indicators <- function(indicators){
   if (!is.null(indicators)){
-    indicator.list <- tibble::as_tibble(
-      utils::read.delim(indicators, sep = "\t",
-                        comment.char = "#",
-                        quote = "", stringsAsFactors = FALSE,
-                        blank.lines.skip = TRUE)) |>
-      dplyr::mutate_if(is.character, .funs = function(x) stringr::str_trim(x))
+    # indicator.list <- tibble::as_tibble(
+    #   utils::read.delim(indicators, sep = "\t",
+    #                     comment.char = "#",
+    #                     quote = "", stringsAsFactors = FALSE,
+    #                     blank.lines.skip = TRUE)) |>
+    #   dplyr::mutate_if(is.character, .funs = function(x) stringr::str_trim(x))
+
+    ind.list <- yaml::read_yaml(indicators)
+    ind.tbl <- dplyr::bind_rows(lapply(X = ind.list,
+                                       FUN = function(x) tibble::as_tibble(x)))
   } else {
-    indicator.list <-  NULL
+    ind.tbl <-  NULL
   }
-  return(indicator.list)
+  return(ind.tbl)
 }
 
 #' This function will take a point intercept data data (either wide or long)
@@ -271,7 +265,7 @@ load.indicators <- function(indicators){
 #'   record.
 #'
 #' @return A tibble, with the \code{filter.exp} applied to \code{hits}
-#' @examples calc.indicators("tree", 'dplyr::filter(hits, growth_habit_first ==
+#' @examples ("tree", 'dplyr::filter(hits, growth_habit_first ==
 #'   "Tree", "long", pintercept.long')
 calc.indicators <- function(name = NULL, filter.exp = NULL, calc.type, hits,
                             ptcount) {
@@ -451,8 +445,10 @@ calc.indicators <- function(name = NULL, filter.exp = NULL, calc.type, hits,
 #'
 #' @return A tibble, with the \code{filter.exp} applied to \code{hits}
 #'
-#' @examples test.indicators("tree", 'dplyr::filter(hits, growth_habit_first ==
-#'   "Tree", "long", pintercept.long')
+#' @examples
+#'   test.indicators("tree", 'dplyr::filter(hits, 
+#'   growth_habit_first == "Tree", "long", pintercept.long')
+
 test.indicators <- function(name, filter.exp, calc.type, hits) {
   # filter by user defined expression(s) to get marks with indicator present for
   # any cover class
@@ -508,7 +504,8 @@ calc.plot <-  function(imported, indicators, indicator.list = NULL){
       dplyr::summarize(survey_date_min = min(survey_date),
                 .groups = "drop")
     all.indicators <- dplyr::select(indicator.list, filter.tbl, name) |>
-      dplyr::left_join(hit.types, by = c("filter.tbl" = "calc_type")) |>
+      dplyr::left_join(hit.types, by = c("filter.tbl" = "calc_type"),
+                       relationship = "many-to-many") |>
       dplyr::rename(calc_type = filter.tbl, indicator = name)
     plot.indicators.all <-  tidyr::crossing(all.lines, all.indicators)
   }
@@ -532,6 +529,7 @@ calc.plot <-  function(imported, indicators, indicator.list = NULL){
               .groups = "drop")
   return(plot.indicators.sum)
 }
+
 
 #' This function takes an indicator list, and runs \code{calc.indicators()} on
 #' every indicator in the list, then binds the rows together into a final table.
@@ -634,6 +632,7 @@ do.indicator.test <- function(imported, indicator.list, test.dir, sep = ","){
   tictoc::toc(log = TRUE, quiet = TRUE)
 }
 
+
 #' The main processing function for the module
 #'
 #' @param dbname A string. The database name to connect to in the postgres
@@ -683,9 +682,9 @@ calc.lpi <- function(
       test.dir = test, sep = sep)
   # Indicator calculation and processing
   } else {
-    out.table <- do.indicator.calc( imported = imported,
-                                    indicator.list = indicator.list,
-                                    num.cores = num.cores, use.mc = use.mc)
+    out.table <- do.indicator.calc(imported = imported,
+                                   indicator.list = indicator.list,
+                                   num.cores = num.cores, use.mc = use.mc)
     tictoc::tic(msg = "Writing output")
     if (tools::file_ext(out.file) == "csv") {
       cat(paste("Writing delimited output to", out.file, "\n"))
@@ -711,7 +710,7 @@ calc.lpi <- function(
 
 # Run if module is called from Rscript.
 if (sys.nframe() == 0) {
-  option_list = list (
+  option_list <- list(
     optparse::make_option(opt_str = c("-p", "--port"), default = 5432,
                           type = "integer",
                 help = paste0("The Postgres connection port ",
@@ -739,9 +738,9 @@ if (sys.nframe() == 0) {
                               "to test different dplyr filter strings.")),
     optparse::make_option(opt_str = c("-s", "--sep"), default = ",",
                 help = paste0("Separator to use for delimited output. In the ",
-                              r"{case of escaped characters (e.g. \t) you must}",
-                              " pass the literal character recongnized your ",
-                              r"{shell (e.g. $'\t' for bash). }",
+                              r"{case of escaped characters (e.g. \t) you }",
+                              "must pass the literal character recognized ",
+                              r"{your shell (e.g. $'\t' for bash). }",
                               "[default: %default].")),
     optparse::make_option(opt_str = c("-e", "--enable_parallel"),
                           action = 'store_true',
@@ -749,7 +748,7 @@ if (sys.nframe() == 0) {
                 help = paste0("Enable parallel processing. This is currently ",
                               "not recommended for use in large datasets as
                               the parallel performance increases are ",
-                              "outweighed by the memory and communitication ",
+                              "outweighed by the memory and communication ",
                               "overhead of executing in parallel, even on ",
                               "fork compatible POSIX systems. ",
                               "[default: %default]"))
@@ -762,14 +761,14 @@ if (sys.nframe() == 0) {
                "from the line-point intercept method.\ndbname is the name of ",
                "the database to connect to and user is the database user.")
   )
-  args = commandArgs(trailingOnly = TRUE)
-  opt = optparse::parse_args(opt_parser, positional_arguments = 2, args = args)
+  args <- commandArgs(trailingOnly = TRUE)
+  opt <- optparse::parse_args(opt_parser, positional_arguments = 2, args = args)
 
   # option checks
   if (is.null(opt$options$password)){
     opt$options$password = getPass::getPass()
   }
-  if (is.null(opt$options$test) & is.null(opt$options$outfile)){
+  if (is.null(opt$options$test) && is.null(opt$options$outfile)){
     stop("One option, either --test or --outfile is necessary. Exiting...")
   }
   if(!is.null(opt$options$outfile)){
@@ -777,7 +776,8 @@ if (sys.nframe() == 0) {
       stop("Output file must have extension .csv or .rds")
     }
     if (!dir.exists(dirname(opt$options$outfile))){
-      stop(paste0("Directory ", dirname(opt$options$outfile), " does not exist."))
+      stop(paste0("Directory ", dirname(opt$options$outfile), 
+                  " does not exist."))
     }
   }
   time <- calc.lpi(

@@ -1,0 +1,61 @@
+- name: shrub_live
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    stringr::str_to_lower(growth_habit_first) %in% c("shrub", "subshrub") & 
+    (dead != 1 | is.na(dead)) & 
+    family != "Cactaceae"
+    )
+- name: sagebrush_live
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    stringr::str_to_lower(genus) == "artemisia" & 
+    !(stringr::str_to_lower(species) %in% c("frigida", "ludoviciana")) & 
+    stringr::str_to_lower(growth_habit_first) %in% c("tree", "shrub", 
+      "subshrub") & 
+    (dead != 1 | is.na(dead))
+    )
+- name: big_sagebrush_live
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    stringr::str_to_lower(genus) == "artemisia" & 
+    stringr::str_to_lower(species) == "tridentata" & 
+    (dead != 1 | is.na(dead))
+    )
+- name: herb_live
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    (stringr::str_to_lower(growth_habit_first) %in% c("forb/herb", "graminoid", 
+      "vine") | family == "Cactaceae") & 
+    (dead != 1 | is.na(dead))
+    )
+- name: annual_herb_live
+  filter.tbl: long
+  filter.exp: dplyr::filter(hits, 
+    duration_first == "Annual" & 
+    stringr::str_to_lower(growth_habit_first) %in% c("forb/herb", "graminoid", 
+      "vine") & 
+    (dead != 1 | is.na(dead))
+    )
+- name: bare_litter
+  filter.tbl: wide
+  filter.exp: dplyr::union(
+    dplyr::filter(hits, hit1_t != "None" & dead1_t == 1), 
+    dplyr::filter_at(hits,
+      dplyr::vars(c(tidyselect::ends_with("_l"), tidyselect::ends_with("_s"))), 
+      dplyr::any_vars((stringr::str_to_lower(.) %in% c("l", "hl", "wl", "nl", 
+        "vl", "lc", "d", "el", "al", "om")))
+    ) |> 
+    dplyr::filter(hit1_t == "None")
+    )
+- name: bare_ground
+  filter.tbl: wide
+  filter.exp: dplyr::filter(hits, 
+    hit1_t == "None" & 
+    stringr::str_to_lower(hit9_s) %in% c("s", "rf", "gr", "r", "cb", "br", 
+      "st", "by", "cy")
+    ) |> 
+    dplyr::filter_at(
+      dplyr::vars(tidyselect::starts_with("hit") & 
+      tidyselect::ends_with("_l")), dplyr::all_vars((is.na(.)))
+    )
+
