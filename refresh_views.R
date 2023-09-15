@@ -21,7 +21,7 @@ if (sys.nframe() == 0) {
                               "[default: %default].")),
     optparse::make_option(opt_str = c("-w", "--password"),
                 help = paste0("The password for the user [the user will be ",
-                              "prompted if no password is supplied].")),
+                              "prompted if no password is supplied]."))
   )
 
   description <- paste0(
