@@ -2031,6 +2031,24 @@ SELECT accepted_symbol, code_type, NULL scientific_name, NULL common_name, famil
 SELECT * FROM plant_fam;
 COMMENT ON VIEW public.plant_mod IS 'creates a version of the ''plant'' table with first growth habit and duration extracted and family codes added';
 
+
+--
+-- convert_to_integer function for use in method_species_regex
+--
+CREATE OR REPLACE FUNCTION convert_to_integer(v_input text)
+RETURNS INTEGER AS $$
+DECLARE v_int_value INTEGER DEFAULT NULL;
+BEGIN
+    BEGIN
+        v_int_value := v_input::INTEGER;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Invalid integer value: "%".  Returning NULL.', v_input;
+        RETURN NULL;
+    END;
+RETURN v_int_value;
+END;
+$$ LANGUAGE plpgsql;
+
 --
 -- method_species_regex
 --
@@ -2060,19 +2078,20 @@ SELECT a.species_code
 SELECT species_code, 
        regexp_match(species_code, '^([a-zA-Z][a-zA-Z\d]{2,})\s*(?<!AA|PP)(AF|PF|AG|PG|SH|TR|SU)$') unk_genus,
        regexp_match(species_code, '^(AA|PP)(SU|SH|TR|GG|FF)$') unk_generic,
-       regexp_match(species_code, '^(AF|PF|AG|PG|SH|TR|SU)\s*(\d+|XX)$') unk_aim,
+       regexp_match(species_code, '^(AF|PF|AG|PG|SH|TR|SU)\s*(\d+|XX+)$') unk_aim,
        regexp_match(species_code, '^(2[a-zA-Z]+)(\d+)$') unk_usda
   FROM unk_code_list
 
 ), code_reg2 AS (
 SELECT species_code, unk_genus, unk_generic, unk_aim, unk_usda, 
        coalesce(unk_genus[1], unk_usda[1]) code_base,
-       coalesce(unk_aim[2]::integer, unk_usda[2]::integer) unk_no,
+	   coalesce(unk_aim[2], unk_usda[2]) unk_char,
+       coalesce(convert_to_integer(unk_aim[2]), convert_to_integer(unk_usda[2])) unk_no,
        coalesce(unk_genus[2], unk_aim[1]) gh_code
   FROM code_reg
 
 ), code_reg3 AS (
-SELECT a.species_code, a.code_base, a.unk_no,
+SELECT a.species_code, a.code_base, a.unk_char, a.unk_no,
        CASE WHEN a.gh_code IN ('AF', 'AG') OR a.unk_generic[1] = 'AA' THEN 'Annual'
             WHEN a.gh_code IN ('PF', 'PG', 'SH', 'TR') OR a.unk_generic[1] = 'PP' THEN 'Perennial'
             ELSE NULL END duration,
@@ -2084,14 +2103,20 @@ SELECT a.species_code, a.code_base, a.unk_no,
   FROM code_reg2 a
 
 ), code_reg4 AS (
-SELECT a.species_code, a.code_base, a.unk_no, 
+SELECT a.species_code, a.code_base, a.unk_char, a.unk_no, 
        coalesce(a.duration, b.duration) duration_code, 
        coalesce(a.growth_habit, b.growth_habit) growth_habit_code,
        b.*
   FROM code_reg3 a
   LEFT JOIN family_genus_unk b ON a.code_base = b.accepted_symbol
+
+), code_reg_final AS (
+SELECT * 
+  FROM code_reg4 
+ WHERE coalesce(accepted_symbol, unk_char, duration, growth_habit) IS NOT NULL
 )
-SELECT * FROM code_reg4 WHERE coalesce(accepted_symbol, unk_no::varchar, duration, growth_habit) IS NOT NULL;
+
+SELECT * FROM code_reg_final;
 COMMENT ON VIEW public.method_species_regex IS 'parses method species codes that are unmatched in the plant table given known patterns.';
 
 
