@@ -1789,7 +1789,12 @@ SELECT "SoilKey" reckey,
        -- Horizon and Layer Designations, 2-2
        "ESD_Horizon" horizon_lbl,
        -- Soil Color, 2-8
-       "ESD_Hue" color_hue, "ESD_Value"::double precision color_value, "ESD_Chroma" color_chroma, lower("ESD_Color") color_measure_type,
+       CASE WHEN "ESD_Color" = 'Dry' OR "ESD_Color" IS NULL THEN "ESD_Hue" ELSE NULL END color_hue_dry,
+       CASE WHEN "ESD_Color" = 'Dry' OR "ESD_Color" IS NULL THEN "ESD_Value"::double precision ELSE NULL END color_value_dry,
+       CASE WHEN "ESD_Color" = 'Dry' OR "ESD_Color" IS NULL THEN "ESD_Chroma" ELSE NULL END color_chroma_dry,
+       CASE WHEN "ESD_Color" = 'Moist' THEN "ESD_Hue" ELSE NULL END color_hue_wet,
+       CASE WHEN "ESD_Color" = 'Moist' THEN "ESD_Value"::double precision ELSE NULL END color_value_wet,
+       CASE WHEN "ESD_Color" = 'Moist' THEN "ESD_Chroma" ELSE NULL END color_chroma_wet,
        -- Concentrations, 2-20
        "ESD_GravelCarbonateCoatPct"::double precision/100 conc_gr_co3_pct,
        -- Pedogenic Carbonate Stages (Discussion), 2-28
@@ -1820,7 +1825,9 @@ SELECT "SoilKey" reckey,
 
 ), dima_final AS (
 SELECT reckey, row_number() over(partition by reckey order by depth_upper_cm) seq_no,
-       depth_upper_cm, depth_lower_cm, horizon_lbl, color_hue, color_value, color_chroma, color_measure_type, 
+       depth_upper_cm, depth_lower_cm, horizon_lbl, 
+       color_hue_dry, color_value_dry, color_chroma_dry,
+       color_hue_wet, color_value_wet, color_chroma_wet,
        conc_gr_co3_pct, conc_carbonate_stage, film_clay, texture, texture_modifier, texture_gypsic, frag_total_pct, 
        frag_petrocalcic, struct_type1, struct_grade1, struct_size1, struct_verb, struct_type2, struct_grade2, struct_size2, 
        rupture_resist, root_size, root_qty, pore_size, pore_qty, chem_ph, chem_effer_class, chem_caco3_equiv_pct, 
@@ -1848,7 +1855,9 @@ SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", '6') reckey,
 SELECT reckey, seq_no,
        coalesce(round(depth_upper_in::numeric * 2.54, 1), 0) depth_upper_cm, 
        round(depth_lower_in::numeric * 2.54, 1) depth_lower_cm,
-       NULL horizon_lbl, NULL color_hue, NULL::double precision color_value, NULL::double precision color_chroma, NULL color_measure_type, 
+       NULL horizon_lbl, 
+       NULL color_hue_dry, NULL::double precision color_value_dry, NULL::double precision color_chroma_dry,
+       NULL color_hue_wet, NULL::double precision color_value_wet, NULL::double precision color_chroma_wet,
        NULL::double precision conc_gr_co3_pct, NULL::smallint conc_carbonate_stage, NULL::boolean film_clay, 
        texture, texture_modifier, 
        NULL::boolean texture_gypsic, 
@@ -2519,6 +2528,74 @@ SELECT a.plotkey, a.survey_year, a.class_no, a.class_lbl, a.species_code,
 
 SELECT * FROM plot_joined;
 COMMENT ON VIEW public.plantdensity_plot  IS 'summarizes plant density in plants/hectare at the plot/class/species level.';
+
+--
+-- plantdensity alternative method
+--
+DROP VIEW IF EXISTS public.plantdensity_plot_alt CASCADE;
+CREATE VIEW public.plantdensity_plot_alt AS
+WITH class_sub_species AS (
+-- creates a unique list of all species found in a plot for later joining
+SELECT a.plotkey, b.reckey, 
+	   date_part('year', b.survey_date) survey_year, 
+	   d.subsize_m2, e.class_no, e.class_lbl, c.species_code, c.total
+  FROM transect a
+ INNER JOIN plantdensity_meta b ON a.linekey = b.linekey
+ INNER JOIN plantdensity c ON b.reckey = c.reckey
+ INNER JOIN plantdensity_subplot d ON c.reckey = d.reckey AND c.subid = d.subid
+ INNER JOIN plantdensity_class e ON c.reckey = e.reckey AND c.class_no = e.class_no
+	
+), class_sub_grp AS (
+-- defines species relevant to a plot/class/subquad size
+-- usefull for if some species were counted only in specific subquad sizes and classes
+SELECT plotkey, species_code, survey_year, subsize_m2, class_no, class_lbl, 
+	   count(reckey) n
+  FROM class_sub_species
+ WHERE total != 0
+ GROUP BY plotkey, species_code, survey_year, subsize_m2, class_no, class_lbl
+
+), class_sub_rec AS (
+-- attaches the reckey to the plot/subquad/class list for later joining
+SELECT b.reckey, c.*
+  FROM transect a
+  INNER JOIN plantdensity_meta b ON a.linekey = b.linekey
+  INNER JOIN class_sub_grp c ON a.plotkey = c.plotkey 
+         AND date_part('year', b.survey_date) = c.survey_year
+
+), density_calc AS (
+-- joins the count data to the plot/subquad/class table and calculates
+-- density in plants/hectare	
+SELECT a.*, a.total/a.subsize_m2 * 10000 density_ha
+  FROM class_sub_species a
+ INNER JOIN class_sub_rec b ON a.reckey = b.reckey 
+        AND a.species_code = b.species_code AND a.subsize_m2 = b.subsize_m2
+		AND a.class_no = b.class_no
+
+), density_mean AS (
+-- calculates density on a plot/class basis
+SELECT plotkey, survey_year, class_no, class_lbl, species_code, 
+       avg(density_ha) density_ha_mean, stddev(density_ha) density_ha_sd,
+	   count(subsize_m2) n
+  FROM density_calc
+ GROUP BY plotkey, survey_year, class_no, class_lbl, species_code
+
+), plant_join AS (
+-- joins calculations to plant table for names, durations, etc
+SELECT a.plotkey, a.survey_year, a.class_no, a.class_lbl, 
+       a.species_code, b.scientific_name, b.common_name, 
+	   b.growth_habit_first growth_habit, b.duration_first duration,
+       a.density_ha_mean::numeric(10,2) density_ha_mean, 
+	   a.density_ha_sd::numeric(10,2)
+  FROM density_mean a
+  LEFT JOIN plant_mod b ON a.species_code = b.accepted_symbol
+)
+
+SELECT * FROM plant_join;
+COMMENT ON VIEW public.plantdensity_plot_alt IS 
+'Summarizes plant density in plants/hectare at the plot/class/species level. 
+Is more selective about species used in class calculations than plantdensity_plot
+in that it pregenerates a list of species to use by plot/subquadsize/class so that 
+errant zeros are not present on a transect/class where they were not searched for.';
 
 --
 -- production
