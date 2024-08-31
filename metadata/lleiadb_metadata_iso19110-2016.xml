@@ -4267,7 +4267,12 @@
 						xlink:href="#eco.plantdensity_subplot" />
 					<gfc:memberName>subid</gfc:memberName>
 					<gfc:definition>
-						<gco:CharacterString>The unique alphanumeric subplot identifier for a transect.</gco:CharacterString>
+						<gco:CharacterString>
+							The unique alphanumeric subplot identifier for the subplot on a trancsect.
+							An common example of the need for this field would be when there are 10 sq. m quadrats
+							labeled 1-10 and a single 50 sq. m belt transect for each line. Then the subplot ids for
+							the quadrats and belt transects could look like '1_1m', '2_1m' and '1_50m' respecively.
+					        </gco:CharacterString>
 					</gfc:definition>
 					<gfc:cardinality>
 						<gco:CharacterString>1</gco:CharacterString>
@@ -6858,13 +6863,13 @@
 					</gfc:listedValue>
 				</gfc:FC_FeatureAttribute>
 			</gfc:carrierOfCharacteristics>
-			<!--color_hue -->
+			<!--color_hue_dry -->
 			<gfc:carrierOfCharacteristics>
 				<gfc:FC_FeatureAttribute>
 					<gfc:featureType xlink:href="#eco.soil" />
-					<gfc:memberName>color_hue</gfc:memberName>
+					<gfc:memberName>color_hue_dry</gfc:memberName>
 					<gfc:definition>
-						<gco:CharacterString>The hue of the soil (wet or dry) as determined with a Munsell Soil Color Chart.</gco:CharacterString>
+						<gco:CharacterString>The hue of the soil (dry) as determined with a Munsell Soil Color Chart.</gco:CharacterString>
 					</gfc:definition>
 					<gfc:cardinality>
 						<gco:CharacterString>1</gco:CharacterString>
@@ -6925,13 +6930,13 @@
 					</gfc:valueType>
 				</gfc:FC_FeatureAttribute>
 			</gfc:carrierOfCharacteristics>
-			<!--color_value -->
+			<!--color_value_dry -->
 			<gfc:carrierOfCharacteristics>
 				<gfc:FC_FeatureAttribute>
 					<gfc:featureType xlink:href="#eco.soil" />
-					<gfc:memberName>color_value</gfc:memberName>
+					<gfc:memberName>color_value_dry</gfc:memberName>
 					<gfc:definition>
-						<gco:CharacterString>The value of the soil (wet or dry) as determined with a Munsell Soil Color Chart.</gco:CharacterString>
+						<gco:CharacterString>The value of the soil (dry) as determined with a Munsell Soil Color Chart.</gco:CharacterString>
 					</gfc:definition>
 					<gfc:cardinality>
 						<gco:CharacterString>1</gco:CharacterString>
@@ -6952,13 +6957,134 @@
 					</gfc:valueType>
 				</gfc:FC_FeatureAttribute>
 			</gfc:carrierOfCharacteristics>
-			<!--color_chroma -->
+			<!--color_chroma_dry -->
+			<gfc:carrierOfCharacteristics>
+				<gfc:FC_FeatureAttribute>
+					<gfc:featureType xlink:href="#eco.soil" />
+					<gfc:memberName>color_chroma_dry</gfc:memberName>
+					<gfc:definition>
+						<gco:CharacterString>The chroma of the soil (dry) as determined with a Munsell Soil Color Chart.</gco:CharacterString>
+					</gfc:definition>
+					<gfc:cardinality>
+						<gco:CharacterString>1</gco:CharacterString>
+					</gfc:cardinality>
+					<gfc:definitionReference>
+						<gfc:FC_DefinitionReference>
+							<gfc:definitionSource
+								xlink:title="munsell soil color"
+								xlink:href="#3c8350d3-5e21-47a9-8f45-c859a7ce2994" />
+						</gfc:FC_DefinitionReference>
+					</gfc:definitionReference>
+					<gfc:valueType>
+						<gco:TypeName>
+							<gco:aName>
+								<gco:CharacterString>NUMERIC (3,1)</gco:CharacterString>
+							</gco:aName>
+						</gco:TypeName>
+					</gfc:valueType>
+				</gfc:FC_FeatureAttribute>
+			</gfc:carrierOfCharacteristics>
+			<!--color_hue_wet -->
+			<gfc:carrierOfCharacteristics>
+				<gfc:FC_FeatureAttribute>
+					<gfc:featureType xlink:href="#eco.soil" />
+					<gfc:memberName>color_hue_wet</gfc:memberName>
+					<gfc:definition>
+						<gco:CharacterString>The hue of the soil (wet) as determined with a Munsell Soil Color Chart.</gco:CharacterString>
+					</gfc:definition>
+					<gfc:cardinality>
+						<gco:CharacterString>1</gco:CharacterString>
+					</gfc:cardinality>
+					<gfc:definitionReference>
+						<gfc:FC_DefinitionReference>
+							<gfc:definitionSource
+								xlink:title="munsell soil color"
+								uuidref="3c8350d3-5e21-47a9-8f45-c859a7ce2994">
+								<gfc:FC_DefinitionSource>
+									<gfc:source>
+										<cit:CI_Citation>
+											<cit:title>
+												<gco:CharacterString>Munsell Color (Firm). (2010). Munsell
+													soil color charts : with genuine Munsell color chips. Grand
+													Rapids, MI :Munsell Color</gco:CharacterString>
+											</cit:title>
+											<cit:date>
+												<cit:CI_Date>
+													<cit:date>
+														<gco:Date>2010</gco:Date>
+													</cit:date>
+													<cit:dateType>
+														<cit:CI_DateTypeCode
+															codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode"
+															codeListValue="publication" />
+													</cit:dateType>
+												</cit:CI_Date>
+											</cit:date>
+											<cit:citedResponsibleParty>
+												<cit:CI_Responsibility>
+													<cit:role>
+														<cit:CI_RoleCode
+															codeList="https://standards.iso.org/iso/19115/-3/cit/1.0/codelists.xml"
+															codeListValue="resourceProvider">resourceProvider</cit:CI_RoleCode>
+													</cit:role>
+													<cit:party>
+														<cit:CI_Organisation>
+															<cit:name>
+																<gco:CharacterString>Munsell Color</gco:CharacterString>
+															</cit:name>
+														</cit:CI_Organisation>
+													</cit:party>
+												</cit:CI_Responsibility>
+											</cit:citedResponsibleParty>
+										</cit:CI_Citation>
+									</gfc:source>
+								</gfc:FC_DefinitionSource>
+							</gfc:definitionSource>
+						</gfc:FC_DefinitionReference>
+					</gfc:definitionReference>
+					<gfc:valueType>
+						<gco:TypeName>
+							<gco:aName>
+								<gco:CharacterString>VARCHAR (6)</gco:CharacterString>
+							</gco:aName>
+						</gco:TypeName>
+					</gfc:valueType>
+				</gfc:FC_FeatureAttribute>
+			</gfc:carrierOfCharacteristics>
+			<!--color_value_wet -->
+			<gfc:carrierOfCharacteristics>
+				<gfc:FC_FeatureAttribute>
+					<gfc:featureType xlink:href="#eco.soil" />
+					<gfc:memberName>color_value_wet</gfc:memberName>
+					<gfc:definition>
+						<gco:CharacterString>The value of the soil (wet) as determined with a Munsell Soil Color Chart.</gco:CharacterString>
+					</gfc:definition>
+					<gfc:cardinality>
+						<gco:CharacterString>1</gco:CharacterString>
+					</gfc:cardinality>
+					<gfc:definitionReference>
+						<gfc:FC_DefinitionReference>
+							<gfc:definitionSource
+								xlink:title="munsell soil color"
+								xlink:href="#3c8350d3-5e21-47a9-8f45-c859a7ce2994" />
+						</gfc:FC_DefinitionReference>
+					</gfc:definitionReference>
+					<gfc:valueType>
+						<gco:TypeName>
+							<gco:aName>
+								<gco:CharacterString>NUMERIC (3,1)</gco:CharacterString>
+							</gco:aName>
+						</gco:TypeName>
+					</gfc:valueType>
+				</gfc:FC_FeatureAttribute>
+			</gfc:carrierOfCharacteristics>
+			<!--color_chroma_wet -->
 			<gfc:carrierOfCharacteristics>
 				<gfc:FC_FeatureAttribute>
 					<gfc:featureType xlink:href="#eco.soil" />
 					<gfc:memberName>color_chroma</gfc:memberName>
 					<gfc:definition>
-						<gco:CharacterString>The chroma of the soil (wet or dry) as determined with a Munsell Soil Color Chart.</gco:CharacterString>
+						<gco:CharacterString>The chroma of the soil (wet) as determined with a Munsell Soil Color Chart.</gco:CharacterString>
 					</gfc:definition>
 					<gfc:cardinality>
 						<gco:CharacterString>1</gco:CharacterString>
@@ -6977,44 +7103,6 @@
 							</gco:aName>
 						</gco:TypeName>
 					</gfc:valueType>
-				</gfc:FC_FeatureAttribute>
-			</gfc:carrierOfCharacteristics>
-			<!--color_measure_type -->
-			<gfc:carrierOfCharacteristics>
-				<gfc:FC_FeatureAttribute>
-					<gfc:featureType xlink:href="#eco.soil" />
-					<gfc:memberName>color_measure_type</gfc:memberName>
-					<gfc:definition>
-						<gco:CharacterString>The moisture content of the soil when the color was measured.</gco:CharacterString>
-					</gfc:definition>
-					<gfc:cardinality>
-						<gco:CharacterString>1</gco:CharacterString>
-					</gfc:cardinality>
-					<gfc:valueType>
-						<gco:TypeName>
-							<gco:aName>
-								<gco:CharacterString>VARCHAR (5)</gco:CharacterString>
-							</gco:aName>
-						</gco:TypeName>
-					</gfc:valueType>
-					<gfc:listedValue>
-						<gfc:FC_ListedValue>
-							<gfc:label gco:nilReason="inapplicable" />
-							<gfc:definition>
-								<gco:CharacterString>NRCS Soil Moisture State Values</gco:CharacterString>
-							</gfc:definition>
-							<gfc:definitionReference>
-								<gfc:FC_DefinitionReference>
-									<gfc:sourceIdentifier>
-										<gco:CharacterString>Moisture State - Class, 2-9</gco:CharacterString>
-									</gfc:sourceIdentifier>
-									<gfc:definitionSource
-										xlink:title="nrcs describing soils"
-										xlink:href="#722d15de-03fa-4d6d-96f2-2189dbe4cc78" />
-								</gfc:FC_DefinitionReference>
-							</gfc:definitionReference>
-						</gfc:FC_ListedValue>
-					</gfc:listedValue>
 				</gfc:FC_FeatureAttribute>
 			</gfc:carrierOfCharacteristics>
 			<!--conc_gr_co3_pct -->

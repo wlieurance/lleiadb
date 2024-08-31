@@ -328,6 +328,10 @@ CREATE TABLE eco.rangehealth (
     rate_abbr character varying(7), 
     rate_type character varying(1), 
     rating smallint, 
+    color_hue character varying(6), 
+    color_value double precision, 
+    color_chroma double precision, 
+    color_measure_type character varying(5),
     note text,
     PRIMARY KEY (reckey, seq_no),
     FOREIGN KEY (reckey) REFERENCES eco.rangehealth_meta ON UPDATE CASCADE ON DELETE CASCADE
@@ -345,10 +349,12 @@ CREATE TABLE eco.soil (
     horizon_lbl character varying(10), 
     
     -- Soil Color, 2-8
-    color_hue character varying(6), 
-    color_value double precision, 
-    color_chroma double precision, 
-    color_measure_type character varying(5),
+    color_hue_dry character varying(6), 
+    color_value_dry double precision, 
+    color_chroma_dry double precision, 
+    color_hue_wet character varying(6), 
+    color_value_wet double precision, 
+    color_chroma_wet double precision, 
     
     -- Concentrations, 2-20
     conc_gr_co3_pct double precision CHECK (conc_gr_co3_pct BETWEEN 0 AND 1), 
@@ -472,6 +478,7 @@ CREATE TABLE eco.plantdensity_subplot (
     subid character varying(15), 
     subplot integer,
     subsize_m2 numeric(7, 2) CHECK (subsize_m2 > 0),
+    note text,
     PRIMARY KEY (reckey, subid),
     FOREIGN KEY (reckey) REFERENCES eco.plantdensity_meta(reckey) ON UPDATE CASCADE ON DELETE CASCADE
 );
