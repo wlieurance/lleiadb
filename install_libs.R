@@ -52,14 +52,6 @@ for (lib in sorted.libs){
   libs.df[i,] <- c(lib, NA_character_)
 }
 
-# check to make sure we don't need to install devtools
-ck <- libs.df[which(libs.df$name %in% need.install & !is.na(libs.df$location)),]
-if (nrow(ck) > 0){
-  if("devtools" %in% rownames(installed.packages()) == FALSE){
-    libs.df <- rbind(c("devtools", NA_character_), libs.df)
-  }
-}
-
 # figure out which ones need installing
 need.install <- character()
 already.installed <- character()
@@ -71,7 +63,14 @@ for (lib in libs.df$name){
   }
 }
 
-
+# check to make sure we don't need to install devtools
+ck <- libs.df[which(libs.df$name %in% need.install & !is.na(libs.df$location)),]
+if (nrow(ck) > 0){
+  if("devtools" %in% rownames(installed.packages()) == FALSE){
+    libs.df <- rbind(c("devtools", NA_character_), libs.df)
+    need.install <- c("devtools", need.install)
+  }
+}
 
 if (length(already.installed) > 0){
   cat("The required libraries are already installed:\n\n")
