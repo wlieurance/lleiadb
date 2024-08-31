@@ -1141,13 +1141,13 @@ DROP MATERIALIZED VIEW IF EXISTS public.plantdensity_subplot CASCADE;
 CREATE MATERIALIZED VIEW public.plantdensity_subplot AS
 WITH lmf_lower AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", 'SE7') reckey, 'plot_low' subid, 1 subplot, 
-       1641.6::numeric(7,2) subsize_m2
+       1641.6::numeric(7,2) subsize_m2, NULL note
   FROM lmf."PLANTCENSUS"
   GROUP BY reckey, subid, subplot, subsize_m2
     
 ), lmf_upper AS (
 SELECT concat("SURVEY", "STATE", "COUNTY", "PSU", "POINT", 'SE7') reckey, 'plot_high' subid, 2 subplot, 
-       1641.6::numeric(7,2) subsize_m2
+       1641.6::numeric(7,2) subsize_m2, NULL note
   FROM lmf."PLANTCENSUS"
   GROUP BY reckey, subid, subplot, subsize_m2
 
@@ -1167,7 +1167,7 @@ SELECT "RecKey" reckey,
   WHERE "SubQuadSize" > 0   
 
 ), dima_final AS (
-SELECT reckey, subid, subplot, subsize_m2
+SELECT reckey, subid, subplot, subsize_m2, NULL note
   FROM dima_process0
  GROUP BY reckey, subid, subplot, subsize_m2
 )
@@ -1177,7 +1177,6 @@ SELECT * FROM lmf_final
 SELECT * FROM dima_final
  UNION ALL
 SELECT * FROM eco.plantdensity_subplot;
-
 
 
 --
