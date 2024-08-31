@@ -29,13 +29,13 @@ for (f in files){
   src <- readChar(f, file.info(f)$size)
   # need to pass regex mode set 'multiline' and 'dotall' as part of the pattern
   # see https://www.regular-expressions.info/modifiers.html
-  pattern = r"{(?ms)^github_libraries\s*=\s*c\((.+?\))\s*\)}"
+  pattern = r"{(?ms)^#?\s?github_libraries\s*=\s*c\((.+?\))[#\s]*\)}"
   gitlib.match <- gregexpr(pattern = pattern, src, perl = T)
   if (all(gitlib.match[[1]] != -1)) {
     gitlib.txt <- substr(src, attr(gitlib.match[[1]], "capture.start"), 
                       attr(gitlib.match[[1]], "capture.start") + 
                         attr(gitlib.match[[1]], "capture.length") - 1)
-    gitlib.cleaned <- gsub(r'{\s+}', "", gitlib.txt)
+    gitlib.cleaned <- gsub(r'{\s+|#}', "", gitlib.txt)
     gitlib.split <- strsplit(gitlib.cleaned, r"{,(?=\s*list)}", perl = T)[[1]]
     for (g in gitlib.split){
       i <- nrow(git.libs) + 1
@@ -44,13 +44,20 @@ for (f in files){
   } 
 }
 
-
 sorted.libs <- sort(unique(all.libs))
 sorted.git <- git.libs[!duplicated(git.libs), ]
 libs.df <- sorted.git
 for (lib in sorted.libs){
   i <- nrow(libs.df) + 1
   libs.df[i,] <- c(lib, NA_character_)
+}
+
+# check to make sure we don't need to install devtools
+ck <- libs.df[which(libs.df$name %in% need.install & !is.na(libs.df$location)),]
+if (nrow(ck) > 0){
+  if("devtools" %in% rownames(installed.packages()) == FALSE){
+    libs.df <- rbind(c("devtools", NA_character_), libs.df)
+  }
 }
 
 # figure out which ones need installing
@@ -64,13 +71,6 @@ for (lib in libs.df$name){
   }
 }
 
-# check to make sure we don't need to install devtools
-ck <- libs.df[which(libs.df$name %in% need.install & !is.na(libs.df$location)),]
-if (nrow(ck) > 0){
-  if("devtools" %in% rownames(installed.packages()) == FALSE){
-    libs.df <- rbind(c("devtools", NA_character_), libs.df)
-  }
-}
 
 
 if (length(already.installed) > 0){
