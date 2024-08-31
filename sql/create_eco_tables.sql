@@ -328,10 +328,6 @@ CREATE TABLE eco.rangehealth (
     rate_abbr character varying(7), 
     rate_type character varying(1), 
     rating smallint, 
-    color_hue character varying(6), 
-    color_value double precision, 
-    color_chroma double precision, 
-    color_measure_type character varying(5),
     note text,
     PRIMARY KEY (reckey, seq_no),
     FOREIGN KEY (reckey) REFERENCES eco.rangehealth_meta ON UPDATE CASCADE ON DELETE CASCADE
