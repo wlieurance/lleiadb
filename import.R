@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # libraries = c("optparse", "dplyr", "tibble", "digest", "tictoc", "DBI", "pool",
-#               "RPostgres", "RSQLite", "odbc", "rgdal", "getPass", "tools",
+#               "RPostgres", "RSQLite", "odbc", "sf", "getPass", "tools",
 #               "stringr", "glue")
 #
 # for (lib in libraries) {
@@ -1067,7 +1067,8 @@ get.src.tables <- function(path, md5hash, key, desc = NULL) {
                   " 'odbc' or 'mdbtools'."))
     }
   } else if (compat$con.type == "gdb") {
-    avail.tables <- rgdal::ogrListLayers(dsn = path)
+    avail.layers <- sf::st_layers(dsn = path)
+    avail.tables <- avail.layers$name
     if ("terradat" %in% stringr::str_to_lower(avail.tables)) {
       terradat = TRUE
     }
@@ -1121,12 +1122,8 @@ get.src.tables <- function(path, md5hash, key, desc = NULL) {
                       "either 'odbc' or 'mdbtools'."))
         }
       } else if (compat$con.type == "gdb") {
-        tbl <- tibble::as_tibble(
-          suppressWarnings(rgdal::readOGR(dsn = path, layer = t,
-                                  dropNULLGeometries = FALSE,
-                                  stringsAsFactors = FALSE,
-                                  verbose = FALSE, encoding = "UTF-8",
-                                  use_iconv = TRUE)))
+        tbl <- tibble::as_tibble(sf::st_read(dsn = path,
+                                             layer = t, quiet = TRUE))
       } else if (compat$con.type == "sqlite") {
         if (compat$con.sub == "spatialite") {
           spatial = TRUE
@@ -1167,11 +1164,14 @@ get.src.tables <- function(path, md5hash, key, desc = NULL) {
     if(!all(is.na(names(plot)))) {
       plot <- plot[lengths(plot) != 0][[1]]
       if ("dbkey" %in% stringr::str_to_lower(colnames(plot))) {
-        db.sep <-  plot |> dplyr::select(tidyselect::matches("dbkey")) |>
-          dplyr::rename_all(stringr::str_to_lower) |> dplyr::group_by(dbkey) |>
-          dplyr::summarize(.groups = "drop") |> dplyr::filter(!is.na(dbkey)) |>
+        db.sep <- plot |>
+          dplyr::select(tidyselect::matches("dbkey")) |>
+          dplyr::rename_all(stringr::str_to_lower) |>
+          dplyr::group_by(dbkey) |>
+          dplyr::summarize(.groups = "drop") |>
+          dplyr::mutate(dbkey = ifelse(is.na(dbkey), key, dbkey)) |>
           dplyr::mutate(dbpath = path, md5hash = md5hash, description = desc)
-        tables[[schema]][["db"]] <- db
+        tables[[schema]][["db"]] <- db.sep
       }
     }
   }
@@ -1272,7 +1272,8 @@ process.terradat <-  function(imported) {
                    " from tblPlots...\n"))
         sitekeys <- tbls[[schema]][["tblPlots"]] |>
           dplyr::left_join(tbls[[schema]][["tblSites"]],
-                    by = c("SiteKey" = "SiteKey"), keep = TRUE) |>
+                    by = c("SiteKey" = "SiteKey"), keep = TRUE,
+                    relationship = "many-to-many") |>
           dplyr::filter(is.na(SiteKey.y)) |>
           dplyr::select(SiteKey.x, dbkey.x) |>
           dplyr::rename(SiteKey = SiteKey.x, dbkey = dbkey.x) |>
@@ -1383,7 +1384,7 @@ check.compatible <- function(path) {
     ret$con.type <- "gdb"
     tables <- tryCatch(
       {
-        rgdal::ogrListLayers(dsn = path)
+        sf::st_layers(dsn = path)
       },
       error=function(cond) {
         ret$error.msg <<- cond
