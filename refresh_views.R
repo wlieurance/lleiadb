@@ -46,3 +46,5 @@ establish.con(dbname = opt$args[1], user = opt$args[2],
 
 refresh.views()
 print("Script finished.")
+}
+
