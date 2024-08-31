@@ -7082,7 +7082,7 @@
 			<gfc:carrierOfCharacteristics>
 				<gfc:FC_FeatureAttribute>
 					<gfc:featureType xlink:href="#eco.soil" />
-					<gfc:memberName>color_chroma</gfc:memberName>
+					<gfc:memberName>color_chroma_wet</gfc:memberName>
 					<gfc:definition>
 						<gco:CharacterString>The chroma of the soil (wet) as determined with a Munsell Soil Color Chart.</gco:CharacterString>
 					</gfc:definition>
