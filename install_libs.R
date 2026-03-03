@@ -63,12 +63,12 @@ for (lib in libs.df$name){
   }
 }
 
-# check to make sure we don't need to install devtools
+# check to make sure we don't need to install remotes
 ck <- libs.df[which(libs.df$name %in% need.install & !is.na(libs.df$location)),]
 if (nrow(ck) > 0){
-  if("devtools" %in% rownames(installed.packages()) == FALSE){
-    libs.df <- rbind(c("devtools", NA_character_), libs.df)
-    need.install <- c("devtools", need.install)
+  if("remotes" %in% rownames(installed.packages()) == FALSE){
+    libs.df <- rbind(c("remotes", NA_character_), libs.df)
+    need.install <- c("remotes", need.install)
   }
 }
 
@@ -93,7 +93,7 @@ if (length(need.install > 0)){
       if (is.na(location)){
         install.packages(lib, repos = "https://cloud.r-project.org")
       } else {
-        devtools::install_github(location)
+        remotes::install_github(location)
       }
     }
   }
