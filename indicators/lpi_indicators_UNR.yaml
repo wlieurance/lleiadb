@@ -46,7 +46,7 @@
     growth_habit_first %in% c("Forb/herb", "Vine") &
     duration_first %in% c("Annual", "Biennial")
     )
-- name: grass_shallow
+- name: pgram_shallow
   filter.tbl: long
   filter.exp: dplyr::filter(hits, 
     hit %in% c("AGGI2", "ARPUF", "ARPUP5", "BOCU", "BOER4", "BOGR2", "BRIN2", 
@@ -56,13 +56,17 @@
     "PLJA", "PLRI3", "POBU", "POCO", "POCU3", "POFE", "POFEL", "POPR", 
     "POPRP2", "POSE", "SPCR")
     )
-- name: grass_deep
+- name: pgram_deep
   filter.tbl: long
   filter.exp: dplyr::filter(hits, 
-    hit %in% c("ACHY", "ACLE9", "ACNE9", "ACNED", "ACNEN2","ACOC3", "ACSP12", 
-    "ACTH7", "ACWE3", "AGCR", "AGDE2", "ELGL", "ELWA2", "FEID", "LECI4", 
-    "LETR5", "NAPU4", "NAVI4", "PASM", "PSJU3", "PSSP6", "PSSPI", "PSSPS", 
-    "SCAR7", "SPAI", "THIN6", "THPO7")
+    growth_habit_first == "Graminoid" & 
+    duration_first== "Perennial" &
+    !hit %in% c("AGGI2", "ARPUF", "ARPUP5", "BOCU", "BOER4", "BOGR2", "BRIN2", 
+    "BRMA4", "CACA4", "CAPU", "DAPU7", "DAUN", "DECE", "DEEL", "DISP", "ELEL5", 
+    "ELELE", "ELLA3", "ELLAL", "ELMU3", "ELRE4", "ELTR7", "ELTRT", "FEIDI2", 
+    "FERU2", "HECO26", "HOJU", "KOMA", "MEBU", "MURI", "PHAR3", "PHPR3", 
+    "PLJA", "PLRI3", "POBU", "POCO", "POCU3", "POFE", "POFEL", "POPR", 
+    "POPRP2", "POSE", "SPCR")
     )
 - name: shrub_sprout
   filter.tbl: long
