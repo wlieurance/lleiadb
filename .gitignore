@@ -136,4 +136,4 @@ tags
 
 # project specific
 local_utils/
-
+.lintr
