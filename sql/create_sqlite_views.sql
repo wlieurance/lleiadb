@@ -76,7 +76,7 @@ SELECT a.*, b.reckey
   
 -- calculates indicators at the mark level
 ), mark_grp AS (
-SELECT reckey, mark, hit, hit_type, avg(height_cm::float) height_cm, bool_and(dead) dead
+SELECT reckey, mark, hit, hit_type, avg(cast(height_cm as real)) height_cm, bool_and(dead) dead
   FROM pintercept
  WHERE hit NOT IN ('None', 'N')
  GROUP BY reckey, mark, hit, hit_type
@@ -114,7 +114,7 @@ SELECT a.*, b.total_mark,
 ), rec_calc AS (
 -- calculates indicators at the method record level
 SELECT plotkey, survey_year, hit, hit_type, reckey, total_mark, mark_n, height_cm, dead_n,
-       mark_n::float/total_mark hit_pct, dead_n::float/mark_n dead_pct
+       cast(mark_n AS REAL)/total_mark hit_pct, CAST(dead_n AS REAL)/mark_n dead_pct
   FROM rec_joined
 
 ), plt_grp AS (
@@ -145,7 +145,9 @@ SELECT * FROM pi_final;
 
 --
 -- gap
---
+-- needs major rework for sqlite
+
+/*
 DROP VIEW IF EXISTS gap_plot;
 --summarizes basic gap intecept data by plot, measure type and gap class.
 CREATE VIEW gap_plot AS
@@ -290,7 +292,7 @@ SELECT a.plotkey, a.survey_year, a.rectype,
 )
 
 SELECT * FROM final_calcs;
-
+*/
 --
 -- plantcensus
 --
