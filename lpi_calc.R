@@ -261,11 +261,11 @@ load_indicators <- function(indicators) {
 #' strings evaluated as an expression on the raw table.
 #'
 #' @param name A string. The name of the indicator.
-#' @param filter_exp A string. A \code{dpylr::filter()} expression
-#'   (or union-ed set thereof) which is used to filter the table.
+#' @param filtered A tibble. Either the pintercept.long or pintercept.wide
+#'   tibble from import_data() with a filter expression applied such that
+#'   every reckey and mark combo with a valid hit is represented.
 #' @param calc_type A string. The table type on which to perform the filter
 #'   expression.
-#' @param hits A tibble. The table to perform the filter on.
 #' @param ptcount A tibble which contains two fields,"reckey" and "pt_count",
 #'   the former a string field containing a unique set of record keys and the
 #'   latter an integer field containing the number of complete points for that
@@ -280,20 +280,20 @@ load_indicators <- function(indicators) {
 #'     "calc_type = 'long', hits = pintercept.long, ptcount = my_ptcount)"
 #'   )
 #' )
-calc_indicators <- function(name = NULL, filter_exp, calc_type, hits,
+calc_indicators <- function(name = NULL, filtered, calc_type,
                             ptcount) {
-  # if there is no filter expression, function defaults to calculating
-  # species level indicators
-  if (is.null(filter_exp)) {
-    filter_exp <- paste0(
-      'dplyr::filter(hits, !(hit %in% c("N", "L", "HL", "WL", ',
-      '"NL", "DS", "W", "VL", "S", "LC", "M", "D", "R", ',
-      '"CY", "EL", "GR", "CB", "ST", "BY", "BR", "None", ',
-      '"RF", "AL", "OM", "WA")) &  !is.na(hit) & hit != "")'
-    )
-    calc_type <- "long"
-  }
-  filtered <- eval(parse(text = filter_exp))
+  # # if there is no filter expression, function defaults to calculating
+  # # species level indicators
+  # if (is.null(filter_exp)) {
+  #   filter_exp <- paste0(
+  #     'dplyr::filter(hits, !(hit %in% c("N", "L", "HL", "WL", ',
+  #     '"NL", "DS", "W", "VL", "S", "LC", "M", "D", "R", ',
+  #     '"CY", "EL", "GR", "CB", "ST", "BY", "BR", "None", ',
+  #     '"RF", "AL", "OM", "WA")) &  !is.na(hit) & hit != "")'
+  #   )
+  #   calc_type <- "long"
+  # }
+  # filtered <- eval(parse(text = filter_exp))
 
   if (calc_type == "long") {
     if (is.null(name)) {
@@ -618,6 +618,52 @@ calc_plot <-  function(imported, indicators, indicator_list = NULL) {
 }
 
 
+# Used to split reckeys into partitioned data instead of indicators.
+# Not used for now. Partitioning by reckey for multicore use explodes memory
+# use (parallelizing all chunks and running every indicator calculation for each
+# chunk).
+chunk_vector <- function(x, n_chunks) {
+  split(x, ((seq_along(x) - 1) %% n_chunks) + 1)
+}
+
+
+#' This function takes an imported data (pintercept) as a tibble, and applies
+#' filter expressions
+#'
+#' @param imported A list of tibbles produced from \code{import_data()}
+#' @param indicator_list A tibble produced from \code{load_indicators()}
+#'
+#' @return A list containing filtered tibbles, the calcualtion type, and the
+#'   name of the indicator
+chunk_indicators <- function(indicator_list, imported, sample = 0L) {
+  if (sample > 0) {
+    wide <- dplyr::slice_head(imported$pintercept.wide, n = sample)
+    long <- dplyr::slice_head(imported$pintercept.long, n = sample)
+  } else {
+    wide <- imported$pintercept.wide
+    long <- imported$pintercept.long
+  }
+
+  lapply(
+    X = seq_len(nrow(indicator_list)),
+    FUN = function(i) {
+      name <- indicator_list$name[i]
+      filter_exp <- indicator_list$filter.exp[i]
+      calc_type <- indicator_list$filter.tbl[i]
+      if (indicator_list$filter.tbl[i] == "wide") {
+        hits <- wide
+      } else {
+        hits <- long
+      }
+      # hits table needs to be defined for this
+      filtered <- eval(parse(text = filter_exp))
+
+      list(name = name, calc_type = calc_type, filtered = filtered)
+    }
+  )
+}
+
+
 #' This function takes an indicator list, and runs \code{calc_indicators()} on
 #' every indicator in the list, then binds the rows together into a final table.
 #'
@@ -630,153 +676,79 @@ calc_plot <-  function(imported, indicators, indicator_list = NULL) {
 #'
 #' @return A tibble containing rows for every indicator processed for each
 #'   unique plotkey and survey year.
-#' @importFrom foreach %do% %dopar%
-do_indicator_calc <- function(imported, indicator_list = NULL, num_cores = 1,
+do_indicator_calc <- function(imported, indicator_list = NULL,
+                              num_cores = 1,
                               use_mc = FALSE) {
   tictoc::tic(msg = "Calculating indicators", quiet = TRUE)
   # for indicators
   if (!is.null(indicator_list)) {
-    # do indicator calculations. PSOCK type parallel is way too inefficient due
-    # to the overhead of copying the base data to different sockets. FORKing
-    # shows performance improvement but is unavailable in windows. Thus the
-    # multicore functionality of the following code is useful only to POSIX type
-    # systems.
+    # resricts data to smaller size before we send them to multiple cores
+    # at the cost of creating a large new variable in system memory
+    cat("Filtering indicators...\n")
+    tictoc::tic(msg = "Filtering indicators", quiet = TRUE)
+    chunks <- chunk_indicators(indicator_list, imported)
+    point_count <- imported$point.count
+    tictoc::toc(log = TRUE, quiet = TRUE)
+
     if (use_mc) {
+      # set parallelization. right now parallel execution is slower than
+      # serial execution due to data overhead. Fixing this (if it is fixable)
+      # will require major refactoring of calc_indicators() 
+      old_plan <- future::plan()
+      future::plan(future::multisession, workers = nrow(indicator_list))
+      on.exit(future::plan(old_plan), add = TRUE)
       cat(paste("Calculating indicators on", num_cores, "cores...\n"))
-      cl <- parallel::makeCluster(num_cores, type = "FORK")
-      doParallel::registerDoParallel(cl)
-    } else {
-      cat(paste("Calculating indicators...\n"))
-    }
-    # by using suppressWarnings(), we can just write one %dopar% which will
-    # default to a foreach::`%do%` if no parallel cluster has been registered
-    indicators <-  suppressWarnings(
-      foreach::foreach(
-        i = seq_len(nrow(indicator_list)), .combine = dplyr::bind_rows
-        #, .packages = c("dplyr", "tidyr", "stringr")
-        #, .export = c("pintercept.long", "pintercept.wide")
-      ) %dopar% {
-        cat(paste0("\t", indicator_list$name[i], "...\n"))
-        calc_indicators(
-          name = indicator_list$name[i],
-          filter_exp = indicator_list$filter.exp[i],
-          calc_type = indicator_list$filter.tbl[i],
-          hits = eval(parse(
-            text = paste0(
-              "imported$pintercept.", indicator_list$filter.tbl[i]
-            )
-          )),
-          ptcount = imported$point.count
-        )
-      }
-    )
-    if (use_mc) {
-      parallel::stopCluster(cl)
-    }
-  } else {
-    cat(paste("Calculating species codes...\n"))
-    # for species
-    indicators <- calc_indicators(calc_type = "long",
-                                  hits = imported$pintercept.long,
-                                  ptcount = imported$point.count)
-  }
-  tictoc::toc(log = TRUE, quiet = TRUE)
-
-  tictoc::tic(msg = "Averaging values and sorting", quiet = TRUE)
-  cat("Averaging indicators for plot...\n")
-  plot.indicators <- calc_plot(imported = imported, indicators = indicators,
-                               indicator_list = indicator_list)
-  tictoc::toc(log = TRUE, quiet = TRUE)
-  return(plot.indicators)
-}
-
-
-# Used to split reckeys into partitioned data instead of indicators.
-# Not used for now. Partitioning by reckey for multicore use explodes memory
-# use (parallelizing all chunks and running every indicator calculation for each
-# chunk).
-chunk_vector <- function(x, n_chunks) {
-  split(x, ((seq_along(x) - 1) %% n_chunks) + 1)
-}
-
-# Maybe faster than do_indicator_calc(), utilizing better vectorizion.
-# Unfortunately, using future.apply::future_lapply() with multiple cores is
-# less efficient (due to overhead) than just using lapply().
-# Using this new function requires refactoring calc_indicators to accept a
-# pre-filtered df caled 'filtered' instead of the full df (hits) and a 
-# filter expression (filter_exp).  Leaving this function for future development,
-# but for now, not a better solution that original function.
-do_indicator_calc_new <- function(imported, indicator_list = NULL,
-                                  num_cores = 1,
-                                  use_mc = FALSE) {
-  tictoc::tic(msg = "Calculating indicators", quiet = TRUE)
-  # for indicators
-  if (!is.null(indicator_list)) {
-    if (use_mc) {
-      cat(paste("Calculating indicators on", num_cores, "cores...\n"))
-      # resricts data to smaller size before we send them to multiple cores
-      # at the cost of creating a large new variable in system memory
-      chunks <- lapply(
-        X = seq_len(nrow(indicator_list)),
-        FUN = function(i) {
-          name <- indicator_list$name[i]
-          filter_exp <- indicator_list$filter.exp[i]
-          calc_type <- indicator_list$filter.tbl[i]
-          hits <- eval(parse(
-            text = paste0(
-              "imported$pintercept.", indicator_list$filter.tbl[i]
-            )
-          ))
-          filtered <- eval(parse(text = filter_exp))
-          list(name = name, calc_type = calc_type, filtered = filtered)
+      cat("Indicator status will not be avialable during parallel execution.\n")
+      # tictoc::tic()
+      indicators <- future.apply::future_lapply(
+        X = chunks,
+        future.packages = c("dplyr", "tidyr", "stringr"),
+        FUN = function(chunk_i) {
+          calc_indicators(
+            name = chunk_i$name,
+            filtered = chunk_i$filtered,
+            calc_type = chunk_i$calc_type,
+            ptcount = point_count
+          )
         }
-      )
-      point.count = imported$point.count
-      tictoc::toc(log = TRUE, quiet = TRUE)
+      ) |>
+        dplyr::bind_rows()
+      # tictoc::toc()
     } else {
       cat(paste("Calculating indicators...\n"))
+      indicators <- lapply(
+        X = chunks,
+        FUN = function(chunk_i) {
+          cat(paste0("\t", chunk_i$name, "...\n"))
+          calc_indicators(
+            name = chunk_i$name,
+            filtered = chunk_i$filtered,
+            calc_type = chunk_i$calc_type,
+            ptcount = point_count
+          )
+        }
+      ) |>
+        dplyr::bind_rows()
     }
-
-
-    # set parallelization
-    old_plan <- future::plan()
-    future::plan(future::multisession, workers = nrow(indicator_list))
-    on.exit(future::plan(old_plan), add = TRUE)
-
-    # tictoc::tic()
-    indicators <- future.apply::future_lapply(
-      X = chunks,
-      future.packages = c("dplyr", "tidyr", "stringr"),
-      FUN = function(chunk_i) {
-        cat(paste0("\t", chunk_i$name, "...\n"))
-        calc_indicators(
-          name = chunk_i$name,
-          filtered = chunk_i$filtered,
-          calc_type = chunk_i$calc_type,
-          ptcount = point.count
-        )
-      }
-    ) |>
-      dplyr::bind_rows()
-    # tictoc::toc()
 
   } else {
     cat(paste("Calculating species codes...\n"))
     # for species
-    if (is.null(filter_exp)) {
-      filtered <- imported$pintercept.long |>
-        dplyr::filter(
-          !(.data$hit %in% c(
-            "N", "L", "HL", "WL", "NL", "DS", "W", "VL", "S", "LC", "M", "D",
-            "R", "CY", "EL", "GR", "CB", "ST", "BY", "BR", "None", "RF", "AL",
-            "OM", "WA"
-          )) &  
-          !is.na(.data$hit) & 
-          .data$hit != "")
-      
+    filtered <- imported$pintercept.long |>
+      dplyr::filter(
+        !(.data$hit %in% c(
+          "N", "L", "HL", "WL", "NL", "DS", "W", "VL", "S", "LC", "M", "D",
+          "R", "CY", "EL", "GR", "CB", "ST", "BY", "BR", "None", "RF", "AL",
+          "OM", "WA"
+        )) &
+          !is.na(.data$hit) &
+          .data$hit != ""
+      )
+
     indicators <- calc_indicators(calc_type = "long",
                                   filtered = filtered,
                                   ptcount = imported$point.count)
+
   }
   tictoc::toc(log = TRUE, quiet = TRUE)
 
@@ -805,21 +777,21 @@ do_indicator_test <- function(imported, indicator_list, test_dir, sep = ",") {
     cat(paste0("creating directory ", test_dir, "\n"))
     dir.create(test_dir)
   }
-  foreach::foreach(i = seq_len(nrow(indicator_list))
-  ) %do% {
-    raw_out <- test_indicators(
-      name = indicator_list$name[i],
-      filter_exp = indicator_list$filter.exp[i],
-      calc_type = indicator_list$filter.tbl[i],
-      hits = eval(parse(
-        text = paste0("imported$pintercept.", indicator_list$filter.tbl[i])
-      ))
-    )
+
+  chunks <- chunk_indicators(indicator_list, imported, sample = 2000)
+  for (chunk in chunks) {
     cat(paste0("Writing delimited output to ",
-               file.path(test_dir, indicator_list$name[i]), ".csv\n"))
+               file.path(test_dir, chunk$name), ".csv\n"))
+    raw_out <- calc_indicators(
+      name = chunk$name,
+      filtered = chunk$filtered,
+      calc_type = chunk$calc_type,
+      ptcount = imported$point.count
+    )
+
     utils::write.table(
       raw_out,
-      file = paste0(file.path(test_dir, indicator_list$name[i]), ".csv"),
+      file = paste0(file.path(test_dir, chunk$name), ".csv"),
       row.names = FALSE, na = "", col.names = TRUE, sep = sep
     )
   }
@@ -860,22 +832,6 @@ calc_lpi <- function(
   } else {
     num_cores <- 1
   }
-  if (enable_parallel == TRUE) {
-    use_mc <- switch(
-      Sys.info()[["sysname"]],
-      Windows = {
-        FALSE
-      },
-      Linux  = {
-        TRUE
-      },
-      Darwin = {
-        TRUE
-      }
-    )
-  } else {
-    use_mc <- FALSE
-  }
   imported <- import_data(con = con)
 
   if (!is.null(test) && !is.null(indicator_list)) {
@@ -885,7 +841,8 @@ calc_lpi <- function(
   } else {
     out_table <- do_indicator_calc(imported = imported,
                                    indicator_list = indicator_list,
-                                   num_cores = num_cores, use_mc = use_mc)
+                                   num_cores = num_cores,
+                                   use_mc = enable_parallel)
     tictoc::tic(msg = "Writing output")
     if (!is.null(out_file)) {
       if (tolower(tools::file_ext(out_file)) %in% c("csv", "tsv")) {
@@ -1044,7 +1001,7 @@ if (sys.nframe() == 0) {
 
   valid_ext <- c("rds", "csv", "tsv", "parquet", "pqt")
   if (!is.null(opt$options$out_file)) {
-    if (!(tolower(tools::file_ext(opt$options$outfile)) %in% valid_exts)) {
+    if (!(tolower(tools::file_ext(opt$options$out_file)) %in% valid_ext)) {
       stop(
         paste0(
           "Output file extension must be one of: ",
@@ -1052,8 +1009,8 @@ if (sys.nframe() == 0) {
         )
       )
     }
-    if (!dir.exists(dirname(opt$options$outfile))) {
-      stop(paste0("Directory ", dirname(opt$options$outfile),
+    if (!dir.exists(dirname(opt$options$out_file))) {
+      stop(paste0("Directory ", dirname(opt$options$out_file),
                   " does not exist."))
     }
   }
@@ -1062,7 +1019,7 @@ if (sys.nframe() == 0) {
     con = con,
     indicator_path = opt$options$indicators,
     test = opt$options$test,
-    out_file = opt$options$outfile,
+    out_file = opt$options$out_file,
     table_name = opt$options$table_name,
     schema_out = opt$options$schema_out,
     sep = opt$options$sep,
