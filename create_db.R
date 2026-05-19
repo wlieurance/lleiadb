@@ -14,106 +14,70 @@
 # }
 
 
-
-#' Creates a pooled database object that other functions use to interact with
-#' the database.
+#' Loads SQL statements from \code{path} and executes them, glueing parameters
+#' as necessary. Can use the \code{parsesql} library to separate statements
+#' and execute them individually if the DBI backend does not support block
+#' execute via DBI::dbExecute(... immediate = TRUE), though parseql is much
+#' slower for large sql files with many statements.
 #'
-#' @param dbname A character vector. The database name to connect to in the postgres
-#'   instance.
-#' @param host A character vector. The IP address or DNS name which hosts the database.
-#' @param port An integer. The port which the postgres service monitors for
-#'   connections.
-#' @param user A character vector. The database user used to connect to the database.
-#' @param password A character vector. The password used to connect to the database.
-create.pool <- function(dbname, host = "localhost", port = 5432,
-                        user, password){
-  tryCatch(
-    expr = {
-      pool::dbPool(RPostgres::Postgres(), dbname = dbname, host = host,
-                       port = port, user = user, password = password)
-    },
-    error = function(e){
-      exists <- paste0('database "', dbname, '" does not exist')
-      # print(e)
-      if(grepl(exists, e, fixed = TRUE)){
-        #print("caught it")
-        if (interactive()){
-          x <- tolower(substr(readline(
-            prompt=paste(exists, "create it? (y/n): ")), 1, 1))
-        } else {
-          cat(exists, "create it? (y/n): ")
-          resp <- readLines("stdin", n=1)
-          x <- tolower(substr(resp, 1, 1))
-          }
-        if (x == "y"){
-          print(paste0("Attemping temp connection to db '", user,
-                       "' for db creation..."))
-          con <- DBI::dbConnect(RPostgres::Postgres(), dbname = user, host = host,
-                    port = port, user = user, password = password)
-          stmt <- paste0("CREATE DATABASE ", dbname, ";")
-          DBI::dbExecute(con, stmt)
-          DBI::dbDisconnect(con)
-          print(paste0("Connecting to ", dbname, "..."))
-          pool::dbPool(RPostgres::Postgres(), dbname = dbname, host = host,
-                    port = port, user = user, password = password)
-        }
-      }
-    } #,
-    # warning = function(w){},
-    # finally = {}
-  )
-}
-
-
-#' Loads SQL statements from \code{path}, separates them, and executes them in
-#' order.
-#'
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
 #' @param path A character vector directory path which points to the location
 #'   where SQL statements to be executed on the PostGIS instance are stored.
 #' @param params A named list of variables, which can be used with
 #'   glue syntax to replace parameters in \code{path}.
 #' @param verbose Boolean. If TRUE will direct the function to print
 #'   status messages.
-#' @param raw Boolean. If TRUE will direct the function to load the
-#'   SQL from the SQL files directly instead of using the \code{sql.list}
-#'   variable.
-execute.sql <- function(path, params = NA, verbose = FALSE, raw = TRUE){
-  if (verbose == TRUE & raw == TRUE){
+#' @param immediate Boolean. If FALSE will direct the function to load the
+#'   SQL from the SQL files and parse the indivually as a list to execute them
+#'   individually. Else all statements will be sent to the PostgreSQL backend
+#'   to be executed as a block statement
+execute_sql <- function(con, path, params = NA, verbose = FALSE,
+                        immediate = TRUE) {
+  if (verbose == TRUE) {
+    # consider using message() here and for other cat() when packaging
     cat("\tReading in SQL from file...\n")
   }
-  if (raw == TRUE){
-    sql.obj <- parsesql::sql_parser$new(
-      file = path, params = params, standard = 'PostgreSQL', verbose = verbose,
-      fast = TRUE)
-    sql <- sql.obj$sql
-  } else {
-
-    sql <- lleiadb::sql.list[[basename(path)]][["sql"]]
-  }
-  if (verbose == TRUE){
-    cat("\tExecuting SQL statements...\n\t")
-  }
-  no_stmts = length(sql)
-  n = 1
-  for (stmt in sql){
-    # cat(stmt)
-    if (verbose == TRUE){
-      complete_pct = round(n/no_stmts * 100, 1)
-      cat(paste0(complete_pct, "%..."))
+  if (immediate == TRUE) {
+    sql_raw <- readr::read_file(path)
+    if (!is.na(params)) {
+      sql <- glue::glue_data(.x = params, sql_raw)
+    } else {
+      sql <- sql_raw
     }
-    res <- tryCatch(
-      expr = {
-        DBI::dbExecute(pool, stmt)
-      },
-      error = function(e){
-        cat(stmt)
-        print(e)
-        stop(e)
-      })
-    # print(res)
-    n <- n + 1
+    DBI::dbExecute(con, sql, immediate = TRUE)
+  } else {
+    sql_obj <- parsesql::sql_parser$new(
+      file = path, params = params, standard = "PostgreSQL", verbose = verbose,
+      fast = TRUE
+    )
+    sql <- sql_obj$sql
+
+    if (verbose == TRUE) {
+      cat("\tExecuting SQL statements...\n\t")
+    }
+    no_stmts <- length(sql)
+    n <- 1
+    for (stmt in sql) {
+      # cat(stmt)
+      if (verbose == TRUE) {
+        complete_pct <- round(n / no_stmts * 100, 1)
+        cat(paste0(complete_pct, "%..."))
+      }
+      tryCatch(
+        expr = {
+          DBI::dbExecute(con, stmt)
+        },
+        error = function(e) {
+          cat(stmt)
+          print(e)
+          stop(e)
+        }
+      )
+      n <- n + 1
+    }
   }
-  if (verbose == TRUE){
+  if (verbose == TRUE) {
     cat("\n")
   }
 }
@@ -121,116 +85,136 @@ execute.sql <- function(path, params = NA, verbose = FALSE, raw = TRUE){
 
 #' Creates extensions on the public schema of the Postgres instance.
 #'
-#' @param sql.path A character vector directory path which points to the
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
+#' @param sql_path A character vector directory path which points to the
 #'   location where SQL statements to be executed on the PostGIS instance are
 #'   stored.
-create.exts <-  function(sql.path){
+create_exts <- function(con, sql_path) {
   cat("PUBLIC: creating extensions...\n")
-  execute.sql(path = file.path(sql.path, "execute_init.sql"))
+  execute_sql(con = con, path = file.path(sql_path, "execute_init.sql"))
 }
 
 
 #' Creates, loads data into, and executes other statements within dima schema
 #' of the Postgres instance.
 #'
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
 #' @param sql.path A character vector directory path which points to the
 #'   location where SQL statements to be executed on the PostGIS instance are
 #'   stored.
-create.dima <- function(sql.path){
+create_dima <- function(con, sql_path) {
   cat("DIMA: creating tables...\n")
-  execute.sql(path = file.path(sql.path, "create_dima_tables.sql"))
+  execute_sql(con, path = file.path(sql_path, "create_dima_tables.sql"))
   cat("DIMA: inserting base data...\n")
-  execute.sql(path = file.path(sql.path, "create_dima_data.sql"))
+  execute_sql(con, path = file.path(sql_path, "create_dima_data.sql"))
   cat("DIMA: creating triggers...\n")
-  execute.sql(path = file.path(sql.path, "create_dima_triggers.sql"))
+  execute_sql(con, path = file.path(sql_path, "create_dima_triggers.sql"))
   cat("DIMA: commenting...\n")
-  execute.sql(path = file.path(sql.path, "create_dima_comments.sql"))
+  execute_sql(con, path = file.path(sql_path, "create_dima_comments.sql"))
 }
 
 
 #' Creates, loads data into, and executes other statements within lmf schema
 #' of the Postgres instance.
 #'
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
 #' @param sql.path A character vector directory path which points to the
 #'   location where SQL statements to be executed on the PostGIS instance are
 #'   stored.
-create.lmf <- function(sql.path){
+create_lmf <- function(con, sql_path) {
   cat("LMF: creating tables...\n")
-  execute.sql(path = file.path(sql.path, "create_lmf_tables.sql"))
+  execute_sql(con, path = file.path(sql_path, "create_lmf_tables.sql"))
   cat("LMF: commenting...\n")
-  execute.sql(path = file.path(sql.path, "create_lmf_comments.sql"))
+  execute_sql(con, path = file.path(sql_path, "create_lmf_comments.sql"))
 }
 
 
 #' Creates, loads data into, and executes other statements within eco schema
 #' of the Postgres instance.
 #'
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
 #' @param sql.path A character vector directory path which points to the
 #'   location where SQL statements to be executed on the PostGIS instance are
 #'   stored.
-create.eco <- function(sql.path){
+create_eco <- function(con, sql_path) {
   cat("ECO: creating tables...\n")
-  execute.sql(path = file.path(sql.path, "create_eco_tables.sql"))
+  execute_sql(con, path = file.path(sql_path, "create_eco_tables.sql"))
 }
 
 
 #' Creates, loads data into, and executes other statements within public schema
 #' of the Postgres instance.
 #'
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
 #' @param sql.path A character vector directory path which points to the
 #'   location where SQL statements to be executed on the PostGIS instance are
 #'   stored.
-create.public <- function(sql.path){
+create_public <- function(con, sql_path) {
   cat("PUBLIC: creating tables...\n")
-  execute.sql(path = file.path(sql.path, "create_public_tables.sql"))
+  execute_sql(con = con, path = file.path(sql_path, "create_public_tables.sql"))
   cat("PUBLIC: inserting base data...\n")
-  execute.sql(path = file.path(sql.path, "create_public_data.sql"), verbose = T)
+  execute_sql(con = con, path = file.path(sql_path, "create_public_data.sql"))
   cat("PUBLIC: creating views...\n")
-  execute.sql(path = file.path(sql.path, "create_public_views.sql"))
+  execute_sql(con = con, path = file.path(sql_path, "create_public_views.sql"))
   cat("PUBLIC: executing statements...\n")
-  execute.sql(path = file.path(sql.path, "execute_public_statements.sql"))
+  execute_sql(con  = con,
+              path = file.path(sql_path, "execute_public_statements.sql"))
 }
 
 
 #' Imports spatial features into the PostGIS database.
 #'
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
 #' @param spatial.path A character vector directory path which points to the
 #'   location where spatial data to be imported into the PostGIS instance is
 #'   stored.
-create.spatial <- function(spatial.path){
+create_spatial <- function(con, spatial_path) {
   cat("PUBLIC: importing spatial features...\n")
-  stmt.d = "DROP TABLE IF EXISTS public.timezone CASCADE;"
-  stmt.c = paste0("CREATE TABLE public.timezone (tzid VARCHAR(30) PRIMARY KEY,",
-                " geom geometry(MULTIPOLYGON, 4326));")
-  DBI::dbExecute(pool, stmt.d)
-  DBI::dbExecute(pool, stmt.c)
-  timezones <- sf::read_sf(file.path(spatial.path, "tz_world_mp.shp")) |>
+  stmt_d <- "DROP TABLE IF EXISTS public.timezone CASCADE;"
+  stmt_c <- paste0(
+    "CREATE TABLE public.timezone (tzid VARCHAR(30) PRIMARY KEY,",
+    " geom geometry(MULTIPOLYGON, 4326));"
+  )
+  DBI::dbExecute(con, stmt_d)
+  DBI::dbExecute(con, stmt_c)
+  timezones <- sf::read_sf(file.path(spatial_path, "tz_world_mp.shp")) |>
     dplyr::rename_all(tolower) |>
-    dplyr::rename(geom = geometry) |>
+    dplyr::rename(geom = "geometry") |>
     sf::st_set_crs(4326)
-  suppressMessages(sf::st_write(obj = timezones, dsn = pool, layer = "timezone",
-                           quiet = TRUE, append = TRUE))
+  suppressMessages(
+    sf::st_write(obj = timezones, dsn = con, layer = "timezone",
+                 quiet = TRUE, append = TRUE)
+  )
 }
 
 
 #' An SQL execution function which uses a try-catch statement to skip/print
 #' errors if found in the comment SQL.
 #'
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
 #' @param sql character vector. The SQL to execute.
-execute.comment <- function(sql){
-  res <- tryCatch(
+execute_comment <- function(con, sql) {
+  tryCatch(
     expr = {
-      DBI::dbExecute(pool, sql)
+      DBI::dbExecute(con, sql)
     },
-    error = function(e){
+    error = function(e) {
       print(e)
       cat(paste0("FAILED: ", sql, " skipping...\n\n"))
-    })
+    }
+  )
 }
 
 #' Creates comment SQL.
 #'
-#' @param tbl.type character vector. The type of comment to be created. One of
+#' @param tbl_type character vector. The type of comment to be created. One of
 #'   c("table", "view", "column")
 #' @param schema character vector. The name of the schema on which to comment.
 #' @param name character vector. The name of the table or view on which to
@@ -241,22 +225,22 @@ execute.comment <- function(sql){
 #'
 #' @return character vector. An SQL statement that can be executed by the
 #'   database.
-create.comment.sql <- function(tbl.type, schema, name, def, col = NULL){
-  type <- stringr::str_to_upper(tbl.type)
-  name.frmt <- paste0('"', name, '"')
-  if (!is.null(col)){
-    col.frmt <- paste0('"', col, '"')
+create_comment_sql <- function(tbl_type, schema, name, def, col = NULL) {
+  type <- stringr::str_to_upper(tbl_type)
+  name_frmt <- paste0('"', name, '"')
+  if (!is.null(col)) {
+    col_frmt <- paste0('"', col, '"')
   } else {
-    col.frmt <- col
+    col_frmt <- col
   }
-  def.frmt <- def |>
+  def_frmt <- def |>
     stringr::str_replace_all("&#60;|&lt;", "<") |>
     stringr::str_replace_all("&#62;|&gt;", ">") |>
     stringr::str_replace_all("&#38;|&amp;", "&") |>
     stringr::str_replace_all("&#39;|&apos;|'", "''") |>
     stringr::str_replace_all("&#34;|&quot;", '"')
-  fullname <- paste(c(schema, name.frmt, col.frmt), collapse = ".")
-  sql <- glue::glue("COMMENT ON {type} {fullname} IS '{def.frmt}';")
+  fullname <- paste(c(schema, name_frmt, col_frmt), collapse = ".")
+  sql <- glue::glue("COMMENT ON {type} {fullname} IS '{def_frmt}';")
   return(sql)
 }
 
@@ -264,179 +248,188 @@ create.comment.sql <- function(tbl.type, schema, name, def, col = NULL){
 #' Main processing function for inserting iso19110-2016 catalog metadata in XML
 #' format into the database as comments.
 #'
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
 #' @param xml.path A character vector. Path to the xml metadata for the
 #'   database.
-comment.from.xml <- function(xml.path){
+comment_from_xml <- function(con, xml_path) {
   cat("Writing table/view and field COMMENTs to database from metadata...\n")
-  data <- XML::xmlParse(xml.path)
+  data <- XML::xmlParse(xml_path)
   xml_data <- XML::xmlToList(data)
 
   # extract xml FC_FeatureType and FC_FeatureAttribute to list
   # and check for xlink mismatches in xml.
-  comment.list <- list()
+  comment_list <- list()
   i <- 0  # a counter to keep track of iterations in the outer loop
   for (tag in xml_data){
-    i <-  i + 1
-    if (class(tag) == "list"){
-      if (!is.null(tag$FC_FeatureType)){
+    i <- i + 1
+    if (class(tag) == "list") {
+      if (!is.null(tag$FC_FeatureType)) {
         name <- tag$FC_FeatureType$typeName
         def <- tag$FC_FeatureType$definition$CharacterString
         abstract <- tag$FC_FeatureType$isAbstract$Boolean
-        if (abstract == "false"){
+        if (abstract == "false") {
           type <- "table"
         } else {
           type <- "view"
         }
         id <- tag$FC_FeatureType$.attrs[["id"]]
-        if (id != name){
+        if (id != name) {
           print(paste0("mismatch: id: ", id, " name: ", name))
         }
         j <- 0  # a counter to keep track of iterations in the inner loop
-        field.list <- list()
+        field_list <- list()
         for (tag2 in tag$FC_FeatureType){
-          j <-  j + 1
-          if (!is.null(tag2) & class(tag2) == "list"){
-            if (!is.null(tag2$FC_FeatureAttribute)){
-              if (!is.null(tag2$FC_FeatureAttribute$featureType)){
+          j <- j + 1
+          if (!is.null(tag2) && class(tag2) == "list") {
+            if (!is.null(tag2$FC_FeatureAttribute)) {
+              if (!is.null(tag2$FC_FeatureAttribute$featureType)) {
                 link <- tag2$FC_FeatureAttribute$featureType[["href"]]
                 memname <- tag2$FC_FeatureAttribute$memberName
                 memdef <- tag2$FC_FeatureAttribute$definition$CharacterString
               }
-              if (paste0("#", id) != link){
+              if (paste0("#", id) != link) {
                 print(paste0("in table ", id, ": xlink mismatch: ", link,
                              " for memberName: ", memname))
               }
-              field.sub <- list(type="column", name=memname, def=memdef)
-              field.list[[length(field.list) + 1]] <- field.sub
+              field_sub <- list(type = "column", name = memname, def = memdef)
+              field_list[[length(field_list) + 1]] <- field_sub
             }
           }
         }
-        comment.sub <- list(type=type, name=name, def=def, fields=field.list)
-        comment.list[[length(comment.list) + 1]] <- comment.sub
+        comment_sub <- list(type = type, name = name, def = def,
+                            fields = field_list)
+        comment_list[[length(comment_list) + 1]] <- comment_sub
       }
     }
   }
 
   # construct comment sql for each table/view and column within.
-  sql.v = character()
-  for (comment in comment.list){
+  sql_v <- character()
+  for (comment in comment_list) {
     element <- stringr::str_split(comment$name, "\\.")[[1]]
     schema <- element[1]
     tbl <- element[2]
-    sql <- create.comment.sql(tbl.type = comment$type, schema = schema,
+    sql <- create_comment_sql(tbl_type = comment$type, schema = schema,
                               name = tbl, def = comment$def)
     # print(sql)
-    sql.v <- c(sql.v, sql)
-    for (field in comment$fields){
-      sql.f <- create.comment.sql(tbl.type = field$type, schema = schema,
+    sql_v <- c(sql_v, sql)
+    for (field in comment$fields) {
+      sql_f <- create_comment_sql(tbl_type = field$type, schema = schema,
                                   name = tbl, col = field$name, def = field$def)
       # print(sql.f)
-      sql.v <- c(sql.v, sql.f)
+      sql_v <- c(sql_v, sql_f)
     }
   }
 
   # execute the comment sql
-  for (sql in sql.v){
-    execute.comment(sql)
+  for (sql in sql_v){
+    execute_comment(con, sql)
   }
 }
 
 #' Creates a PostGIS database and populates it with default data.
 #'
-#' @param dbname character vector. The database name to connect to in the
-#'   postgres instance.
-#' @param user character vector. The database user used to connect to the
-#'   database.
-#' @param password character vector. The password used to connect to
-#'   the database. If no password is provided, user will be prompted upon
-#'   execution.
-#' @param sql.path character vector directory path which points to
-#'   the location where the SQL files for DB creation are stored.
-#' @param spatial.path character vector directory path which
-#'   points to the location where spatial data to be imported into the PostGIS
-#'   instance is stored.
-#' @param host character vector. The IP address or DNS name which
-#'   hosts the database.
-#' @param port An integer. The port which the postgres service
-#'   monitors for connections.
-#' @param metadata.path character vector. The path to the xml metadata in 
-#'   iso 19110-2016 format.
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
 #' @export
-create.lleiadb <-  function(dbname, user, password = getPass::getPass(),
-                            sql.path = "sql", spatial.path = "spatial",
-                            host = "localhost", port = 5432, 
-                            metadata.path = "metadata/lleiadb_metadata_iso19110-2016.xml"){
-  # <<- creates global pool (parent scope of main())
-  pool <<- create.pool(dbname = dbname, host = host,
-                      port = port, user = user,
-                      password = password)
-  if (is.null(pool)){
-    cat("Connecting to database failed.")
-    quit()
-  }
-  # assign("pool", pool, envir = .GlobalEnv)
-  res <- DBI::dbExecute(pool, "SET client_min_messages TO WARNING;")
-  create.exts(sql.path)
-  create.dima(sql.path)
-  create.lmf(sql.path)
-  create.eco(sql.path)
-  create.spatial(spatial.path)
-  create.public(sql.path)
-  comment.from.xml(xml.path = metadata.path)
+create_lleiadb <-  function(con) {
 
-  pool::poolClose(pool)
-  rm(pool, envir = .GlobalEnv)
-  cat("\nScript finished.\n")
+  # these need to be retooled when this is (maybe) put into an R package
+  sql_path <- here::here("sql")
+  spatial_path <- here::here("spatial")
+  metadata_path <- here::here("metadata", "lleiadb_metadata_iso19110-2016.xml")
+
+  DBI::dbExecute(con, "SET client_min_messages TO WARNING;")
+  create_exts(con = con, sql_path = sql_path)
+  create_dima(con = con, sql_path = sql_path)
+  create_lmf(con = con, sql_path = sql_path)
+  create_eco(con = con, sql_path = sql_path)
+  create_spatial(con = con, spatial_path = spatial_path)
+  create_public(con = con, sql_path = sql_path)
+  comment_from_xml(con = con, xml_path = metadata_path)
 }
 
 # run only if called from a script.
 if (sys.nframe() == 0) {
-  option_list = list (
-    optparse::make_option(opt_str = c("-p", "--port"), default = 5432,
-                          type = "integer",
-                help = paste0("The Postgres connection port ",
-                              "[default: %default].")),
-    optparse::make_option(opt_str = c("-H", "--host"), default = "localhost",
-                help = paste0("The host name or ip address of the connection ",
-                              "[default: %default]")),
-    optparse::make_option(opt_str = c("-w", "--password"),
-                help = paste0("The password for the user [if blank user will ",
-                              "be prompted interactively].")),
-    optparse::make_option(opt_str = c("-s", "--sql_dir"), default = "./sql",
-                help = paste0("The directory where the database creation SQL ",
-                              "files are stored [default: %default].")),
-    optparse::make_option(opt_str = c("-S", "--spatial_dir"),
-                default = "./spatial",
-                help = paste0("The directory where the spatial data to be
-                              imported into the PostGIS instance is stored ",
-                              "[default: %default]."))
-  )
+  args <- commandArgs(trailingOnly = TRUE)
+  source(here::here("common.R"))
 
-  opt_parser = optparse::OptionParser(
-    usage = paste0("usage: %prog [options] dbname user"),
-    option_list=option_list,
-    prog = NULL,
-    description = paste(sep = ' ',
-                      "Will create an empty PostgreSQL database to store data",
-                      "from the following data sources:\n",
-                      "1) USDA-ARS Jornada's Database for Inventory Monitoring",
-                      "and Assessment (DIMA),\n",
-                      "2) U.S. DOI Bureau of Land Management's Landscape",
-                      "Monitoring Framework (LMF) database (should also be",
-                      "compatible with USDA-NRCS National Resources Inventory",
-                      "(NRI) data).\n",
-                      "3) Native format."
+  # change this when packaging to native package namespace resolution
+  spatial_dir <- here::here("spatial")
+  sql_dir <- here::here("sql")
+
+  option_list <- list(
+    optparse::make_option(
+      opt_str = c("-p", "--port"), default = 5432,
+      type = "integer",
+      help = "The Postgres connection port [default: %default]."
+    ),
+    optparse::make_option(
+      opt_str = c("-H", "--host"), default = "localhost",
+      help = paste0("The host name or ip address of the connection ",
+                    "[default: %default].")
+    ),
+    optparse::make_option(
+      opt_str = c("-u", "--user"),
+      help = "The user name for the database connection"
+    ),
+    optparse::make_option(
+      opt_str = c("-w", "--password"),
+      help = paste0("The password for the user [the user will be ",
+                    "prompted if no password is supplied and is required].")
+    ),
+    optparse::make_option(
+      opt_str = c("-c", "--allow_create"), action = "store_true",
+      default = FALSE,
+      help = paste0("Allows for database creation if the database does not ",
+                    "already exist in the PostgreSQL isntance ",
+                    "[default: %default].")
+    ),
+    optparse::make_option(
+      opt_str = c("-m", "--maint_db"),
+      help = paste0("If database creation is allowed, which existing ",
+                    "maintenance database should be used for connection and ",
+                    "execution of CREATE DATABASE statement. Will ",
+                    "default to database of same name as `USER` if not ",
+                    "supplied.")
     )
   )
-  args = commandArgs(trailingOnly = TRUE)
-  opt = optparse::parse_args(opt_parser, positional_arguments = 2, args = args)
-  if (is.null(opt$options$password)){
-    opt$options$password = getPass::getPass()
-  }
 
-  create.lleiadb(
-    dbname = opt$args[1], user = opt$args[2],
-    password = opt$options$password, sql.path = opt$options$sql_dir,
-    spatial.path = opt$options$spatial_dir, host = opt$options$host,
-    port = opt$options$port)
+  opt_parser <- optparse::OptionParser(
+    usage = paste0("usage: %prog [options] dbname"),
+    option_list = option_list,
+    prog = NULL,
+    description = paste(
+      "Will create an empty PostgreSQL database to store data",
+      "from the following data sources:\n",
+      "1) USDA-ARS Jornada's Database for Inventory Monitoring",
+      "and Assessment (DIMA),\n",
+      "2) U.S. DOI Bureau of Land Management's Landscape",
+      "Monitoring Framework (LMF) database (should also be",
+      "compatible with USDA-NRCS National Resources Inventory",
+      "(NRI) data).\n",
+      "3) Native format.",
+      sep = " "
+    )
+  )
+  opt <- optparse::parse_args(opt_parser, positional_arguments = 1, args = args)
+
+  con <- connect_pg(
+    dbname = opt$args[1],
+    host = opt$options$host,
+    port = opt$options$port,
+    user = opt$options$user,
+    password = opt$options$password,
+    allow_create = opt$options$allow_create,
+    maintenance_db = opt$options$maint_db
+  )
+
+  create_lleiadb(con = con)
+
+  DBI::dbDisconnect(con)
+  rm(con, envir = .GlobalEnv)
+
+  cat("\nScript finished.\n")
+
 }
