@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # libraries = c("optparse", "dplyr", "tibble", "digest", "tictoc", "DBI",
 #               "pool", "RPostgres", "RSQLite", "odbc", "sf", "getPass",
-#               "tools", "stringr", "glue")
+#               "tools", "stringr", "glue", "here")
 #
 # for (lib in libraries) {
 #   suppressMessages(library(lib, character.only = TRUE))
@@ -79,6 +79,8 @@ statement_split <- function(string, pattern = NULL) {
 
 #' Queries the Postgres LLEIA db instance for tables in a specific schema
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param schema A string. The schema to query for tables.
 #'
 #' @return A table containing the table names in \code{schema}.
@@ -96,6 +98,8 @@ get_dest_tables <- function(con, schema) {
 
 #' Retrieves Foreign keys for a table in Postgres
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param schema A string. The name of the schema to be queried in the Postgres
 #'   connection.
 #' @param tbl_name A string. The name of the table to retrieve information about
@@ -134,6 +138,8 @@ get_foreign_keys <- function(con, schema, tbl_name) {
 
 #' Retrieves Primary keys for a table in Postgres
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param schema A string. The name of the schema to be queried in the Postgres
 #'   connection.
 #' @param tbl_name A string. The name of the table to retrieve information about
@@ -158,6 +164,8 @@ get_primary_keys <- function(con, schema, tbl_name) {
 
 #' Retrieves Primary and Foreign keys for a table in Postgres
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param schema A string. The name of the schema to be queried in the Postgres
 #'   connection.
 #' @param tbl_name A string. The name of the table to retrieve information about
@@ -234,6 +242,8 @@ get_key <- function(src) {
 #' where tables that are foreign key parents are listed in order before their
 #' children
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param schema A string. The schema to be queried.
 #' @param level An integer. An internal parameter that the function uses to keep
 #'   track of how many times it has self called.
@@ -290,6 +300,8 @@ insert_order <- function(con, schema, level = 0, processed_tables = NULL,
 
 #' Gets column names from a Postgres schema/table.
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param schema A string. The schema that contains the table to return info
 #'   about.
 #' @param table A string. The table name to return info about.
@@ -325,7 +337,6 @@ get_dest_info <- function(con, schema, table) {
 }
 
 
-
 #' Returns information about field types for imported source data.
 #'
 #' @param tbl A tibble containing the source data.
@@ -350,8 +361,7 @@ get_src_info <- function(tbl) {
 
 
 #' Determines which columns have different types between a data source and
-#' destination. and
-#'  type
+#' destination.
 #'
 #' @param src_cols A tibble with two fields, column_name (string) and
 #'   data_type (string), the former containing column names from source tibble
@@ -398,6 +408,8 @@ compare_types <- function(src_cols, dest_cols) {
 #' Gathers information about both source and destination tables and determines
 #' which fields are matched in name and type.
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param schema A string. The name of the schema to be queried in the Postgres
 #'   connection.
 #' @param tbl_name A string. The name of the table to retrieve information about
@@ -429,11 +441,11 @@ get_info <- function(con, schema, tbl_name, src_data) {
 ## INSERTING functions ##
 #########################
 
-
-
 #' Will create an INSERT SQL statement for a Postgres table based on the
 #' contents of the data source.
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param schema A string. The name of the schema in the destination.
 #' @param table_name A name of the table in the destination for which to build
 #    the INSERT statement
@@ -539,6 +551,8 @@ create_insert <- function(con, schema, table_name, named = FALSE,
 
 #' Used to insert individual rows via apply() family function or iterative loop
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param row A named list or tibble containing the values to bind to the INSERT
 #'   statement via parameter substitution.
 #' @param stmt A string containing the INSERT statement with named parameters to
@@ -588,6 +602,8 @@ insert_row <- function(con, row, stmt, log = NULL, verbose = FALSE) {
 #' parameter bind, but allows the insert process to capture single row insert
 #' errors, log them, and continue processing.
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param update logical. A flag that instructs the function to construct an
 #'   UPSERT statement instead of an INSERT statement.
 #' @param schema A string. The name of the schema in the destination.
@@ -628,6 +644,8 @@ rowwise_insert <- function(con, update, schema, table, table_name, cols, cast,
 #' instead of glue::glue functionality like \code{rowwise.insert()}.
 #' CURRENTLY NOT IMPLEMENTED but kept for reference.
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param table A tibble containing the source data to be inserted.
 #' @param insert A list constructed via \code{create.insert()}.
 #'
@@ -669,6 +687,8 @@ dbbind_insert_rw <- function(con, table, insert) {
 #' \code{chunk.size} can speed up inserts for data where foreign key issues
 #' are common.
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param update logical. A flag that instructs the function to construct an
 #'   UPSERT statement instead of an INSERT statement.
 #' @param schema A string. The name of the schema in the destination.
@@ -771,6 +791,8 @@ dbbind_insert <- function(con, update, schema, table, table_name, cols, cast,
 #' definitions found in the postgres database passed with dbname and created
 #' via the create_db.R script.
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param schema A string. The schema of the source table in the Postgres
 #'   database.
 #' @param tbl_name A string. The name of the source table in the PostgreSQL
@@ -824,6 +846,8 @@ remove_orphans <- function(con, schema, tbl_name, tbl, tbl_set) {
 #' violations within the postgres databse passed with dbname and created via the
 #' create_db.R script.
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param schema A string. The schema of the source table in the Postgres
 #'   database
 #' @param tbl_name A string. The name of the source table in the Postgres
@@ -864,6 +888,8 @@ remove_duplicates <- function(con, schema, tbl_name, tbl) {
 #' insert order and constructs parameters needed for the table-level insert
 #' functions \code{dbbind_insert} and \code{rowwise_insert}
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param tbls A list of tables produced by \code{get_src_tables()}
 #' @param update logical. A flag that instructs the function to construct an
 #'   UPSERT statement instead of an INSERT statement.
@@ -1052,6 +1078,8 @@ to_db <- function(con, tbls, update, dbkey, desc, path, hash, verbose = FALSE,
 #' materialized views will be refreshed after the view it depends on is
 #' refreshed.
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param done A string vector. An internal parameter which the function uses to
 #'   keep track of which views have already been refreshed.
 #' @param level An integer. An internal parameter which the function uses to
@@ -1116,7 +1144,7 @@ refresh_views <- function(con, done = character(0), level = 0) {
 #' sqlite database because that is the field type sqlite assumes when a table
 #' CREATE statement uses a data type of TIMESTAMP, DATE, OR DATETIME.
 #'
-#' @param sqlite_con An \code{Rsqlite} connection object.
+#' @param sqlite_con An \code{Rsqlite} DBI connection object.
 #' @param table A string. The name of the table to build the select statement
 #'   for.
 #' @param spatial logical. A flag which tells the function to convert geometry
@@ -1155,6 +1183,8 @@ create_sqlite_select <- function(sqlite_con, table, spatial) {
 
 #' Retrieves data tables from data source and returns them as a list of tibbles.
 #'
+#' @param con A DBI connection. A database connection object to the LLEIA
+#'    PostgreSQL database
 #' @param path A string file path pointing to the source database. File name
 #'   extensions must be one of (.mdb, .accdb, .sqlite, .db) and folder paths
 #'   must have the extension of (.gdb).
@@ -1681,7 +1711,8 @@ check_compatible <- function(path) {
 #' The main processing function used to import data from source data into a
 #' PostGIS database
 #'
-#' @param dbname A string. The database name to connect to in the postgres
+#' @param con A DBI connection. A database connection object to the already
+#'    created (via create_db) LLEIA PostgreSQL database
 #' @param src_path A string file path pointing to the source database or saved
 #'   RDS file. File name extensions must be one of (.mdb, .accdb, .sqlite, .db,
 #'   .rds) and folder paths must have the extension of (.gdb).
@@ -1689,9 +1720,6 @@ check_compatible <- function(path) {
 #'   will identify data in the destination DB as coming from a specific source.
 #' @param desc A string. The description the will be used to describe the source
 #'   database contents which are imported into the Postgres destination.
-#' @param host A string. The IP address or DNS name which hosts the database.
-#' @param port An integer. The port which the postgres service monitors for
-#'   connections.
 #' @param update logical. A flag that instructs the function to construct an
 #'   UPSERT statement instead of an INSERT statement.
 #' @param log logical. A flag that tells the function to create a log file of
@@ -1767,7 +1795,7 @@ import_to_post <-  function(
 
 # run only if called from a script.
 if (sys.nframe() == 0) {
-  source(file.path("common.R"))
+  source(here::here("common.R"))
   args <- commandArgs(trailingOnly = TRUE)
 
   option_list <-  list(
