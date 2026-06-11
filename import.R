@@ -11,6 +11,7 @@
 `%do%` <- foreach::`%do%`
 `%dopar%` <- foreach::`%dopar%`
 .data <- rlang::.data
+.env <- rlang::.env
 
 #' This vectorizes the digest function from the digest package
 vdigest <- Vectorize(digest::digest)
@@ -857,7 +858,8 @@ remove_orphans <- function(con, schema, tbl_name, tbl, tbl_set) {
 #' @return A list containing the number of duplicate records found as well as
 #'   the filtered table with duplicates removed
 remove_duplicates <- function(con, schema, tbl_name, tbl) {
-  filtered_table <- tbl
+  filtered_table <- tbl |>
+
   keys <- get_primary_keys(con = con, schema = schema, tbl_name = tbl_name)
   constraints <- unique(keys$constraint_name)
   for (constraint in constraints) {
@@ -1139,10 +1141,7 @@ refresh_views <- function(con, done = character(0), level = 0) {
 
 #' Constructs a SELECT statment which can be used to retrieve source data from
 #' A spatially enabled sqlite database by converting table geometry to WKT
-#' format and numeric DATETIME columns to TIMESTAMP compatible format.
-#' The function assumes that datetime values are stores numerically in the
-#' sqlite database because that is the field type sqlite assumes when a table
-#' CREATE statement uses a data type of TIMESTAMP, DATE, OR DATETIME.
+#' format .
 #'
 #' @param sqlite_con An \code{Rsqlite} DBI connection object.
 #' @param table A string. The name of the table to build the select statement
@@ -1162,24 +1161,72 @@ create_sqlite_select <- function(sqlite_con, table, spatial) {
     cols_new <- cols[cols != "geom"]
   }
 
-  dt_cols <- !is.na(as.vector(
-    info$type |>
-      stringr::str_match(stringr::regex("(?:timestamp|date)",
-                                        ignore_case = TRUE))
-  ))
 
-  cols_dt <- ifelse(
-    dt_cols,
-    paste0("datetime(", cols_new, ", 'unixepoch') || '-00'", cols_new),
-    cols_new
-  )
-
-  col_string <-  paste(cols_dt, collapse = ", ")
+  col_string <-  paste(cols_new, collapse = ", ")
   select <- paste0("SELECT ", col_string, "\n  FROM ", table, ";")
 
-  list(sql = select, cols = cols_new)
+  list(sql = select, cols = cols_new, pragma = info)
 }
 
+
+#' Corrects DBI imports from SQLite in the case where the ambiguous typing or 
+#' affinities can cause issues (esp. for all null columns)
+#'
+#' @param tbl A dataframe returned from 
+#'   DBI::GetQuery("SELECT * FROM my_table;").
+#' @param pragma A dataframe returned from 
+#'   DBI::GetQuery("PRAGMA table_info(my_table);")
+#'
+#' @return A version of \code{tbl} where date, datetime, timestamp, boolean, and
+#'   geometry columns have been explicitly typed.
+fix_sqlite_typing <- function(tbl, pragma) {
+  # convert date/time to posixct
+  new_tbl <- tbl
+  date_cols <- pragma |>
+    dplyr::filter(stringr::str_detect(type, "(?i)^date$")) |>
+    dplyr::pull("name")
+  if (length(date_cols) > 0) {
+    new_tbl <- new_tbl |>
+      dplyr::mutate(across(.cols = all_of(date_cols), 
+                           .fns = ~lubridate::as_date(.x)))
+  }
+  datetime_cols <- pragma |>
+    dplyr::filter(stringr::str_detect(
+      type, "(?i)(?:datetime|timestamp)")
+  ) |>
+    dplyr::pull("name")
+  if (length(datetime_cols) > 0) {
+    new_tbl <- new_tbl |>
+      dplyr::mutate(across(.cols = all_of(datetime_cols), 
+                           .fns = ~lubridate::as_datetime(.x)))
+  }
+  
+  # convert boolean to logical
+  boolean_cols <- pragma |>
+    dplyr::filter(stringr::str_detect(type, "(?i)^bool")) |>
+    dplyr::pull("name")
+  if (length(boolean_cols) > 0) {
+    new_tbl <- new_tbl |>
+      dplyr::mutate(across(.cols = all_of(boolean_cols), 
+                           .fns = ~as.logical(.x)))
+  }
+
+  # make sure geometry columns are text
+  geom_cols <- pragma |>
+    dplyr::filter(stringr::str_detect(
+      type, 
+      paste0("(?i)^(?:multi)?",
+             "(?:point|linestring|polygon|geometry(?:collection)?)[zm]*")
+    )) |>
+    dplyr::pull("name")
+  if (length(geom_cols) > 0) {
+    new_tbl <- new_tbl |>
+      dplyr::mutate(across(.cols = all_of(geom_cols), 
+                           .fns = ~as.character(.x)))
+  }
+
+  new_tbl
+}
 
 #' Retrieves data tables from data source and returns them as a list of tibbles.
 #'
@@ -1209,6 +1256,11 @@ get_src_tables <- function(con, path, md5hash, key, desc = NULL) {
   eco_tbls_sql <- paste0("SELECT table_name FROM information_schema.tables ",
                          "WHERE table_schema='eco';")
   eco_table_names <- (DBI::dbGetQuery(con, eco_tbls_sql))$table_name
+  aim_lotic_tbls_sql <- paste0(
+    "SELECT table_name FROM information_schema.tables ",
+    "WHERE table_schema='aim_lotic';"
+  )
+  aim_lotic_table_names <- (DBI::dbGetQuery(con, aim_lotic_tbls_sql))$table_name
   compat <- check_compatible(path)
   if (compat$compatible == FALSE) {
     cat("Data source not readable.\n")
@@ -1250,14 +1302,33 @@ get_src_tables <- function(con, path, md5hash, key, desc = NULL) {
       DBI::dbExecute(sqlite_con, "SELECT load_extension('mod_spatialite');")
     }
   }
+
+  shared_tables <- c("db")
   dima_tables_get <- intersect(avail_tables, dima_table_names)
   lmf_tables_get <- intersect(avail_tables, lmf_table_names)
   eco_tables_get <- intersect(avail_tables, eco_table_names)
+  aim_lotic_tables_get <- intersect(avail_tables, aim_lotic_table_names)
+
+
+  # remove a schema if they are JUST tables in shared_tables
+  if (length(dima_tables_get) > 0 && setequal(shared_tables, dima_tables_get)) {
+    dima_tables_get <- character(0)
+  }
+  if (length(lmf_tables_get) > 0 && setequal(shared_tables, lmf_tables_get)) {
+    lmf_tables_get <- character(0)
+  }
+  if (length(eco_tables_get) > 0 && setequal(shared_tables, eco_tables_get)) {
+    eco_tables_get <- character(0)
+  }
+  if (length(aim_lotic_tables_get) > 0 &&
+        setequal(shared_tables, aim_lotic_tables_get)) {
+    aim_lotic_tables_get <- character(0)
+  }
 
   # list append in R is as inefficient as R itself is ugly,
   # but like many other ugly things, we'll do them anyway
   tables <- list()
-  for (schema in c("dima", "lmf", "eco")) {
+  for (schema in c("dima", "lmf", "eco", "aim_lotic")) {
     cat(paste0("\nimporting ", schema, " tables...\n\n"))
     for (t in get(paste0(schema, "_tables_get"))) {
       cat(paste0("importing ", t, "...\n"))
@@ -1306,13 +1377,16 @@ get_src_tables <- function(con, path, md5hash, key, desc = NULL) {
         query <- create_sqlite_select(sqlite_con = sqlite_con, table = t,
                                       spatial = spatial)
         result <- DBI::dbSendQuery(sqlite_con, query$sql)
-        tbl <- DBI::dbFetch(result)
+        raw_tbl <- DBI::dbFetch(result)
         DBI::dbClearResult(result)
+       
+        tbl <- fix_sqlite_typing(tbl = raw_tbl, pragma = query$pragma)
       }
       if (!is.null(tbl)) {
         tbl_processed <- tbl |>
           dplyr::rename_at(dplyr::vars(tidyselect::matches("dbkey")),
                            stringr::str_to_lower)
+
         if ("dbkey" %in% colnames(tbl_processed)) {
           tbl_processed <- tbl_processed |>
             dplyr::mutate(dbkey = ifelse(is.na(.data$dbkey), key, .data$dbkey))
@@ -1330,9 +1404,23 @@ get_src_tables <- function(con, path, md5hash, key, desc = NULL) {
     DBI::dbDisconnect(sqlite_con)
   }
 
-  # dealing with data with existing dbkeys in their plot-level table
+  # post import modifications
   schemas <- names(tables)
   for (schema in schemas) {
+    # deals with existing but potentially inaccurate eco.db table
+    if (!is.null(tables[[schema]][["db"]])) {
+      old_db <- tables[[schema]][["db"]]
+      if (nrow(old_db) == 1) {
+        new_db <- old_db |>
+          dplyr::mutate(
+            dbpath = path,
+            md5hash = .env$md5hash
+          )
+        tables[[schema]][["db"]] <- new_db
+      }
+    }
+
+    # deals with data with existing dbkeys in their plot-level table
     plot <-  tables[[schema]][c("tblPlots", "POINT", "point")]
     # checks to makes there is at list 1 plot table
     if (!all(is.na(names(plot)))) {
@@ -1352,9 +1440,9 @@ get_src_tables <- function(con, path, md5hash, key, desc = NULL) {
     }
   }
 
-  return(list(terradat = terradat, processed = FALSE, path = path,
-              md5hash = md5hash, key = key, desc = desc,
-              tables = tables))
+  list(terradat = terradat, processed = FALSE, path = path,
+       md5hash = md5hash, key = key, desc = desc,
+       tables = tables)
 }
 
 
