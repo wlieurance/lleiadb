@@ -136,4 +136,8 @@ tags
 
 # project specific
 local_utils/
+metadata/archive/
+sql/archive
+
 .lintr
+
