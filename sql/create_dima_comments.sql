@@ -1,3 +1,38 @@
+/*-----------------
+DIMA: Custom Tables
+-----------------*/
+
+-- dima.db
+COMMENT ON TABLE dima."db" IS 'Custom non-DIMA schema table which keeps track of database imports into the schema.';
+COMMENT ON COLUMN dima."db"."dbkey" IS 'A unique alphanumeric string identifier for the source database';
+COMMENT ON COLUMN dima."db"."dbpath" IS 'The path at which the source database was located during import.';
+COMMENT ON COLUMN dima."db"."description" IS 'A description of the data source or the type/location/time of data collected.';
+COMMENT ON COLUMN dima."db"."md5hash" IS 'The md5hash of the source database during import. For fileGDBs, the hash of the individual file hashes, minus the  a00000004.gdbtable and a00000004.gdbtablx, a00000004.freelist, timestamps, and any lock files.';
+
+-- dima.db_line
+COMMENT ON TABLE dima."db_line" IS 'Custom non-DIMA schema table which, along with associated triggers/functions, acts as sort of a shim to intercept and store line keys from imported databases. Thus, while each LineKey must be unique in dima.tblLines, this table keeps track of which line keys have been imported from which databases present in the dima.db table.  If all records of a line key are completely removed from this table, it will then cascade and be removed from tblLines.';
+COMMENT ON COLUMN dima."db_line"."dbkey" IS 'A unique alphanumeric string identifier for the source database.';
+COMMENT ON COLUMN dima."db_line"."LineKey" IS 'A unique alphanumeric string identifier for a transect, generally in the date/time form of YYMMDDHHMMSSRRRR where R is a random digit and the time stamp is when the key was generated.';
+
+-- dima.db_plot
+COMMENT ON TABLE dima."db_plot" IS 'Custom non-DIMA schema table which, along with associated triggers/functions, acts as sort of a shim to intercept and store plot keys from imported databases. Thus, while each PlotKey must be unique in dima.tblPlots, this table keeps track of which plot keys have been imported from which databases present in the dima.db table.  If all records of a plot key are completely removed from this table, it will then cascade and be removed from tblPlots.';
+COMMENT ON COLUMN dima."db_plot"."dbkey" IS 'A unique alphanumeric string identifier for the source database.';
+COMMENT ON COLUMN dima."db_plot"."PlotKey" IS 'A unique alphanumeric string identifier for a plot, generally in the date/time form of YYMMDDHHMMSSRRRR where R is a random digit and the time stamp is when the key was generated.';
+
+-- dima.db_site
+COMMENT ON TABLE dima."db_site" IS 'Custom non-DIMA schema table which, along with associated triggers/functions, acts as sort of a shim to intercept and store site keys from imported databases. Thus, while each SiteKey must be unique in dima.tblSites, if a site key has been imported from multiple databases, this table keeps track of which site keys have been imported from which databases present in the dima.db table.  If all records of a site key are completely removed from this table, it will then cascade and be removed from tblSites.';
+COMMENT ON COLUMN dima."db_site"."dbkey" IS 'A unique alphanumeric string identifier for the source database.';
+COMMENT ON COLUMN dima."db_site"."SiteKey" IS 'A unique alphanumeric string identifier for a site (a geographic, temporal, or categorical grouping variable), generally in the date/time form of YYMMDDHHMMSSRRRR where R is a random digit and the time stamp is when the key was generated.';
+
+-- dima."tblEcolSites_delta"
+COMMENT ON TABLE dima."tblEcolSites_delta" IS 'Custom non-DIMA schema table which, along with associated triggers/functions, acts as sort of a shim to intercept and store inserts into the dima.tblEcolSites table within certain criteria. Base data is inserted into this table at the time of database creation. Records that are inserted into this table after db creation are checked against the base data, if there is a primary key violation and the non-key data to be inserted is not NULL or blank, but is also different than the base data, then the data gets intercepted and stored in this delta table. Data with PK violations but blank or null non-PK fields are not inserted into the delta table. Data with a primary key NOT in the base data get inserted into the delta table without checks. For more detail please see the eco_insert trigger definition on table dima.tblEcolSites.';
+
+-- dima."tblSpeciesGeneric_delta"
+COMMENT ON TABLE dima."tblSpeciesGeneric_delta" IS 'Custom non-DIMA schema table which, along with associated triggers/functions, acts as sort of a shim to intercept and store inserts into the dima.tblSpeciesGeneric table within certain criteria. Base data is inserted into this table at the time of database creation. Records that are inserted into this table after db creation are checked against the base data, if there is a primary key violation and the non-key data to be inserted is not NULL or blank, but is also different than the base data, then the data gets intercepted and stored in this delta table. Data with PK violations but blank or null non-PK fields are not inserted into the delta table. Data with a primary key NOT in the base data get inserted into the delta table without checks. For more detail please see the generic_insert trigger definition on table dima.tblSpeciesGeneric.';
+
+-- dima."tblSpecies_delta"
+COMMENT ON TABLE dima."tblSpecies_delta" IS 'Custom non-DIMA schema table which, along with associated triggers/functions, acts as sort of a shim to intercept and store inserts into the dima.tblSpecies table within certain criteria. Base data is inserted into this table at the time of database creation. Records that are inserted into this table after db creation are checked against the base data, if there is a primary key violation and the non-key data to be inserted is not NULL or blank, but is also different than the base data, then the data gets intercepted and stored in this delta table. Data with PK violations but blank or null non-PK fields are not inserted into the delta table. Data with a primary key NOT in the base data get inserted into the delta table without checks. For more detail please see the species_insert trigger definition on table dima.tblSpecies.';
+
 -- tblSites
 COMMENT ON TABLE dima."tblSites" IS 'Contains site level data (user defined plot groupings).';
 COMMENT ON COLUMN dima."tblSites"."SiteKey" IS 'Unique key for Site';
