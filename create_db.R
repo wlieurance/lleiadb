@@ -101,7 +101,7 @@ create_exts <- function(con, sql_path) {
 #'
 #' @param con A DBI connection. A database connection object to the
 #'    PostgreSQL database
-#' @param sql.path A character vector directory path which points to the
+#' @param sql_path A character vector directory path which points to the
 #'   location where SQL statements to be executed on the PostGIS instance are
 #'   stored.
 create_dima <- function(con, sql_path) {
@@ -121,7 +121,7 @@ create_dima <- function(con, sql_path) {
 #'
 #' @param con A DBI connection. A database connection object to the
 #'    PostgreSQL database
-#' @param sql.path A character vector directory path which points to the
+#' @param sql_path A character vector directory path which points to the
 #'   location where SQL statements to be executed on the PostGIS instance are
 #'   stored.
 create_lmf <- function(con, sql_path) {
@@ -137,12 +137,29 @@ create_lmf <- function(con, sql_path) {
 #'
 #' @param con A DBI connection. A database connection object to the
 #'    PostgreSQL database
-#' @param sql.path A character vector directory path which points to the
+#' @param sql_path A character vector directory path which points to the
 #'   location where SQL statements to be executed on the PostGIS instance are
 #'   stored.
 create_eco <- function(con, sql_path) {
   cat("ECO: creating tables...\n")
   execute_sql(con, path = file.path(sql_path, "create_eco_tables.sql"))
+  cat("ECO: commenting...\n")
+  execute_sql(con, path = file.path(sql_path, "create_eco_comments.sql"))
+}
+
+#' Creates, loads data into, and executes other statements within aim_lotic
+#' schema of the Postgres instance.
+#'
+#' @param con A DBI connection. A database connection object to the
+#'    PostgreSQL database
+#' @param sql_path A character vector directory path which points to the
+#'   location where SQL statements to be executed on the PostGIS instance are
+#'   stored.
+create_aim_lotic <- function(con, sql_path) {
+  cat("AIM_LOTIC: creating tables...\n")
+  execute_sql(con, path = file.path(sql_path, "create_aim_lotic_tables.sql"))
+  cat("AIM_LOTIC: commenting...\n")
+  execute_sql(con, path = file.path(sql_path, "create_aim_lotic_comments.sql"))
 }
 
 
@@ -151,7 +168,7 @@ create_eco <- function(con, sql_path) {
 #'
 #' @param con A DBI connection. A database connection object to the
 #'    PostgreSQL database
-#' @param sql.path A character vector directory path which points to the
+#' @param sql_path A character vector directory path which points to the
 #'   location where SQL statements to be executed on the PostGIS instance are
 #'   stored.
 create_public <- function(con, sql_path) {
@@ -161,6 +178,9 @@ create_public <- function(con, sql_path) {
   execute_sql(con = con, path = file.path(sql_path, "create_public_data.sql"))
   cat("PUBLIC: creating views...\n")
   execute_sql(con = con, path = file.path(sql_path, "create_public_views.sql"))
+  cat("PUBLIC: commenting...\n")
+  execute_sql(con = con,
+              path = file.path(sql_path, "create_public_comments.sql"))
   cat("PUBLIC: executing statements...\n")
   execute_sql(con  = con,
               path = file.path(sql_path, "execute_public_statements.sql"))
@@ -194,140 +214,6 @@ create_spatial <- function(con, spatial_path) {
 }
 
 
-#' An SQL execution function which uses a try-catch statement to skip/print
-#' errors if found in the comment SQL.
-#'
-#' @param con A DBI connection. A database connection object to the
-#'    PostgreSQL database
-#' @param sql character vector. The SQL to execute.
-execute_comment <- function(con, sql) {
-  tryCatch(
-    expr = {
-      DBI::dbExecute(con, sql)
-    },
-    error = function(e) {
-      print(e)
-      cat(paste0("FAILED: ", sql, " skipping...\n\n"))
-    }
-  )
-}
-
-#' Creates comment SQL.
-#'
-#' @param tbl_type character vector. The type of comment to be created. One of
-#'   c("table", "view", "column")
-#' @param schema character vector. The name of the schema on which to comment.
-#' @param name character vector. The name of the table or view on which to
-#'   comment.
-#' @param def character vector. The comment text.
-#' @param col character vector. The name of the column on which to
-#'   comment. Can be NULL to make a table or view comment.
-#'
-#' @return character vector. An SQL statement that can be executed by the
-#'   database.
-create_comment_sql <- function(tbl_type, schema, name, def, col = NULL) {
-  type <- stringr::str_to_upper(tbl_type)
-  name_frmt <- paste0('"', name, '"')
-  if (!is.null(col)) {
-    col_frmt <- paste0('"', col, '"')
-  } else {
-    col_frmt <- col
-  }
-  def_frmt <- def |>
-    stringr::str_replace_all("&#60;|&lt;", "<") |>
-    stringr::str_replace_all("&#62;|&gt;", ">") |>
-    stringr::str_replace_all("&#38;|&amp;", "&") |>
-    stringr::str_replace_all("&#39;|&apos;|'", "''") |>
-    stringr::str_replace_all("&#34;|&quot;", '"')
-  fullname <- paste(c(schema, name_frmt, col_frmt), collapse = ".")
-  sql <- glue::glue("COMMENT ON {type} {fullname} IS '{def_frmt}';")
-  return(sql)
-}
-
-
-#' Main processing function for inserting iso19110-2016 catalog metadata in XML
-#' format into the database as comments.
-#'
-#' @param con A DBI connection. A database connection object to the
-#'    PostgreSQL database
-#' @param xml.path A character vector. Path to the xml metadata for the
-#'   database.
-comment_from_xml <- function(con, xml_path) {
-  cat("Writing table/view and field COMMENTs to database from metadata...\n")
-  data <- XML::xmlParse(xml_path)
-  xml_data <- XML::xmlToList(data)
-
-  # extract xml FC_FeatureType and FC_FeatureAttribute to list
-  # and check for xlink mismatches in xml.
-  comment_list <- list()
-  i <- 0  # a counter to keep track of iterations in the outer loop
-  for (tag in xml_data){
-    i <- i + 1
-    if (class(tag) == "list") {
-      if (!is.null(tag$FC_FeatureType)) {
-        name <- tag$FC_FeatureType$typeName
-        def <- tag$FC_FeatureType$definition$CharacterString
-        abstract <- tag$FC_FeatureType$isAbstract$Boolean
-        if (abstract == "false") {
-          type <- "table"
-        } else {
-          type <- "view"
-        }
-        id <- tag$FC_FeatureType$.attrs[["id"]]
-        if (id != name) {
-          print(paste0("mismatch: id: ", id, " name: ", name))
-        }
-        j <- 0  # a counter to keep track of iterations in the inner loop
-        field_list <- list()
-        for (tag2 in tag$FC_FeatureType){
-          j <- j + 1
-          if (!is.null(tag2) && class(tag2) == "list") {
-            if (!is.null(tag2$FC_FeatureAttribute)) {
-              if (!is.null(tag2$FC_FeatureAttribute$featureType)) {
-                link <- tag2$FC_FeatureAttribute$featureType[["href"]]
-                memname <- tag2$FC_FeatureAttribute$memberName
-                memdef <- tag2$FC_FeatureAttribute$definition$CharacterString
-              }
-              if (paste0("#", id) != link) {
-                print(paste0("in table ", id, ": xlink mismatch: ", link,
-                             " for memberName: ", memname))
-              }
-              field_sub <- list(type = "column", name = memname, def = memdef)
-              field_list[[length(field_list) + 1]] <- field_sub
-            }
-          }
-        }
-        comment_sub <- list(type = type, name = name, def = def,
-                            fields = field_list)
-        comment_list[[length(comment_list) + 1]] <- comment_sub
-      }
-    }
-  }
-
-  # construct comment sql for each table/view and column within.
-  sql_v <- character()
-  for (comment in comment_list) {
-    element <- stringr::str_split(comment$name, "\\.")[[1]]
-    schema <- element[1]
-    tbl <- element[2]
-    sql <- create_comment_sql(tbl_type = comment$type, schema = schema,
-                              name = tbl, def = comment$def)
-    # print(sql)
-    sql_v <- c(sql_v, sql)
-    for (field in comment$fields) {
-      sql_f <- create_comment_sql(tbl_type = field$type, schema = schema,
-                                  name = tbl, col = field$name, def = field$def)
-      # print(sql.f)
-      sql_v <- c(sql_v, sql_f)
-    }
-  }
-
-  # execute the comment sql
-  for (sql in sql_v){
-    execute_comment(con, sql)
-  }
-}
-
 #' Creates a PostGIS database and populates it with default data.
 #'
 #' @param con A DBI connection. A database connection object to the
@@ -338,16 +224,15 @@ create_lleiadb <-  function(con) {
   # these need to be retooled when this is (maybe) put into an R package
   sql_path <- here::here("sql")
   spatial_path <- here::here("spatial")
-  metadata_path <- here::here("metadata", "lleiadb_metadata_iso19110-2016.xml")
 
   DBI::dbExecute(con, "SET client_min_messages TO WARNING;")
   create_exts(con = con, sql_path = sql_path)
   create_dima(con = con, sql_path = sql_path)
   create_lmf(con = con, sql_path = sql_path)
   create_eco(con = con, sql_path = sql_path)
+  create_aim_lotic(con = con, sql_path = sql_path)
   create_spatial(con = con, spatial_path = spatial_path)
   create_public(con = con, sql_path = sql_path)
-  comment_from_xml(con = con, xml_path = metadata_path)
 }
 
 # run only if called from a script.
