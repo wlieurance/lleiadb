@@ -2037,7 +2037,6 @@ SELECT accepted_symbol, code_type, NULL scientific_name, NULL common_name, famil
   FROM family_codes
 )
 SELECT * FROM plant_fam;
-COMMENT ON VIEW public.plant_mod IS 'creates a version of the ''plant'' table with first growth habit and duration extracted and family codes added';
 
 
 --
@@ -2125,7 +2124,6 @@ SELECT *
 )
 
 SELECT * FROM code_reg_final;
-COMMENT ON VIEW public.method_species_regex IS 'parses method species codes that are unmatched in the plant table given known patterns.';
 
 
 --
@@ -2146,7 +2144,6 @@ SELECT species_code accepted_symbol, 'parsed' code_type, scientific_name, common
        subspecies, variety_prefix, hybrid_variety_indicator, variety, forma_prefix, forma, genera_binomial_author, trinomial_author, 
        quadranomial_author, parents, state_and_province 
   FROM method_species_regex;
-COMMENT ON VIEW public.plant_regex IS 'unions plant_mod and method_species_regex to use as a modified plant table';
 
 
 --
@@ -2243,7 +2240,6 @@ SELECT a.plotkey, a.survey_year, a.hit,
 )
 
 SELECT * FROM pi_final;
-COMMENT ON VIEW public.pintercept_plot  IS 'summarizes basic LPI heights and cover by plot/species.';
 
 --
 -- gap
@@ -2391,7 +2387,6 @@ SELECT a.plotkey, a.survey_year, a.rectype,
 )
 
 SELECT * FROM final_calcs;
-COMMENT ON VIEW public.gap_plot  IS 'summarizes basic gap intecept data by plot, measure type and gap class.';
 
 --
 -- plantcensus
@@ -2416,7 +2411,6 @@ SELECT a.plotkey, a.survey_year, a.species_code,
 )
 
 SELECT * FROM joined;
-COMMENT ON VIEW public.plantcensus_plot  IS 'summarizes basic plant census data by plot and joins plant info.';
 
 --
 -- plantdensity
@@ -2526,7 +2520,6 @@ SELECT a.plotkey, a.survey_year, a.class_no, a.class_lbl, a.species_code,
 )
 
 SELECT * FROM plot_joined;
-COMMENT ON VIEW public.plantdensity_plot  IS 'summarizes plant density in plants/hectare at the plot/class/species level.';
 
 --
 -- plantdensity alternative method
@@ -2590,11 +2583,7 @@ SELECT a.plotkey, a.survey_year, a.class_no, a.class_lbl,
 )
 
 SELECT * FROM plant_join;
-COMMENT ON VIEW public.plantdensity_plot_alt IS 
-'Summarizes plant density in plants/hectare at the plot/class/species level. 
-Is more selective about species used in class calculations than plantdensity_plot
-in that it pregenerates a list of species to use by plot/subquadsize/class so that 
-errant zeros are not present on a transect/class where they were not searched for.';
+
 
 --
 -- production
@@ -2700,8 +2689,7 @@ SELECT a.plotkey, a.survey_year, a.species_code, b.scientific_name, b.common_nam
 )
     
 SELECT * FROM plot_joined;
-COMMENT ON VIEW public.production_plot  IS 'Summarizes production in grams/square meter at the plot/species level.
- Calculations assume that the same types of veg. were recorded for each method record';
+
 
 --
 -- rangehealth
@@ -2728,7 +2716,6 @@ SELECT a.plotkey, a.survey_date, a.ecoid_std, b.*
 )
 
 SELECT * FROM rh_final;
-COMMENT ON VIEW public.rangehealth_plot  IS 'Summarizes rangeland health data by plot in crosstab format.';
 
 --
 -- shrubshape
@@ -2803,7 +2790,6 @@ SELECT a.plotkey, a.survey_year, a.shape, a.species_code, b.scientific_name, b.c
 )
 
 SELECT * FROM plot_joined;
-COMMENT ON VIEW public.shrubshape_plot  IS 'Summarizes shrub shape data by plot.';
 
 --
 -- soilstability
@@ -2833,6 +2819,3 @@ SELECT plotkey, survey_year, rectype, veg, count(reckey) rec_n,
 )
 
 SELECT * FROM plot_sum;
-COMMENT ON VIEW public.soilstability_plot  IS 'Summarizes soils stability data by plot, year, and veg.';
-
-
