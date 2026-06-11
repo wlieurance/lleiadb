@@ -1,6 +1,9 @@
+CREATE SCHEMA IF NOT EXISTS aim_lotic;
+
 --
 -- LU
 --
+
 CREATE TABLE IF NOT EXISTS aim_lotic."LU_Ecoregion" (
     fid serial PRIMARY KEY,	
     "EcoregionLevel3" character varying(255),
@@ -22,7 +25,7 @@ CREATE TABLE IF NOT EXISTS aim_lotic."LU_SpeciesMetadata" (
     "WoodyHerb" character varying(255),
     "GrowthHabit" character varying(255),
     "Duration" character varying(255),
-    image character varying(255),
+    "Image" character varying(255),
     "AlwaysNoxious" character varying(255),
     "AlwaysNative" character varying(255),
     -- "RecordID" character varying(255),
@@ -42,6 +45,7 @@ CREATE TABLE IF NOT EXISTS aim_lotic."LU_StateSpeciesList" (
 --
 -- EvaluationID
 --
+
 CREATE TABLE IF NOT EXISTS aim_lotic."I_Indicators" (
     "Project" character varying(255),
     "BLM_AdminState" character varying(255),
@@ -65,6 +69,7 @@ CREATE TABLE IF NOT EXISTS aim_lotic."I_Indicators" (
     "OriginalDesign" character varying(255),
     "OriginalStratum" character varying(255),
     "StreamOrder" integer,
+    "EcoregionStreamSize" character varying(255),
     "DefaultBenchmarkGroup" character varying(255),
     "PctOverheadCover" double precision,
     "PctBankOverheadCover" double precision,
@@ -119,15 +124,19 @@ CREATE TABLE IF NOT EXISTS aim_lotic."I_Indicators" (
     "PctBankCoveredStableOld" integer,
     "BankfullHeightAvg" double precision,
     "BenchHeightAvg" double precision,
+    "BankfullDepthAvg" double precision,
+    "BenchDepthAvg" double precision,
     "ChannelIncision" double precision,
     "FloodplainConnectivity" double precision,
     "InstreamHabitatComplexity" double precision,
     "BankAngleAvg" double precision,
+    "PctBanksUndercut" integer,
     "ThalwegDepthCV" double precision,
     "ThalwegDepthAvg" double precision,
     "PctDry" double precision,
     "BankfullWidthAvg" double precision,
     "WettedWidthAvg" double precision,
+    "WettedWidthWithBarAvg" double precision,
     "EntrenchmentRiffle1" double precision,
     "EntrenchmentRiffle2" double precision,
     "PctSlope" double precision,
@@ -239,6 +248,7 @@ CREATE TABLE IF NOT EXISTS aim_lotic."F_WaterQualityMacroInvert_W_B" (
     "TotalAreaSampled" double precision,
     "NumMacroInvertJars" integer,
     "NAMC_MacroInvertSampleID" integer,
+    "NAMC_WaterSampleID" integer,
     "CalibrationDate" timestamp with time zone,
     "InstrumentSerialNum" character varying(255),
     "InstrumentModel" character varying(255),
